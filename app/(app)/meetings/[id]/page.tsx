@@ -4,6 +4,7 @@ import { getCurrentProfile } from '@/lib/queries/members';
 import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
 import { MeetingActions } from '@/components/meeting/MeetingActions';
 import { AttendanceToggle } from '@/components/meeting/AttendanceToggle';
+import { AttendanceSummary } from '@/components/meeting/AttendanceSummary';
 
 export default async function MeetingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,7 +18,7 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
     <div className="space-y-6">
       <MeetingDetailHeader meeting={meeting} />
       <AttendanceToggle meetingId={meeting.id} initialStatus={myStatus} />
-      {/* AttendanceSummary: Task 22 */}
+      <AttendanceSummary attendances={meeting.attendances} />
       {/* DiscussionQuestionList + Form: Task 23-24 */}
       {isHost && <MeetingActions meetingId={meeting.id} />}
     </div>
