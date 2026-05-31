@@ -117,3 +117,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* iOS 자동 줌 방지 */
+input, textarea, select { font-size: 16px; }
+button, [role="button"] { min-height: 44px; }

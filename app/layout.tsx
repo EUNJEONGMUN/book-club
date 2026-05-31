@@ -5,6 +5,8 @@ import './globals.css';
 export const metadata: Metadata = {
   title: '독서모임',
   description: '독서모임 이벤트 관리',
+  manifest: '/manifest.json',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: '독서모임' },
 };
 
 export const viewport: Viewport = {
@@ -12,6 +14,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#ffffff',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
