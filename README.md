@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 독서모임 이벤트 관리 웹 MVP
 
-## Getting Started
+독서모임 일정 관리를 위한 모바일 웹 앱.
 
-First, run the development server:
+## 시작하기
+
+### 요구 사항
+
+- Node.js 20+
+- pnpm
+- Docker (Supabase 로컬 실행용)
+
+### 로컬 개발 환경 설정
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+pnpm dlx supabase start
+pnpm dlx supabase db reset
+cp .env.example .env.local
+# .env.local에 supabase start 출력된 키 복사
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 http://localhost:3000 접속.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+기본 부트스트랩 계정/초대 토큰은 `docs/bootstrap.md` 참고.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 주요 기능
 
-## Learn More
+- 📚 모임 등록 (책 제목, 저자, 책 표지, 일시, 장소)
+- ✅ 참석 체크 (참석 / 불참 / 미정)
+- 💬 발제문 등록 및 조회
+- 👥 멤버 명단 + 참석·호스팅 횟수
+- 🔗 1회용 초대 링크로 멤버 가입 통제
+- 📷 책 표지 · 아바타 이미지 업로드
 
-To learn more about Next.js, take a look at the following resources:
+## 테스트
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+# 단위 테스트
+pnpm test
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# E2E 테스트 (Supabase 로컬 실행 필요)
+pnpm dlx supabase db reset
+pnpm test:e2e
+```
 
-## Deploy on Vercel
+## 기술 스택
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **프레임워크**: Next.js 16 (App Router, Server Components + Server Actions)
+- **언어**: TypeScript (strict)
+- **스타일**: Tailwind CSS v4 + shadcn/ui
+- **백엔드**: Supabase (Postgres, Auth, Storage, RLS)
+- **폼 검증**: React Hook Form + Zod v4
+- **날짜**: date-fns (한국어 로케일)
+- **테스트**: Vitest + Playwright
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 문서
+
+- 설계 스펙: `docs/superpowers/specs/2026-05-31-book-club-mvp-design.md`
+- 구현 계획: `docs/superpowers/plans/2026-05-31-book-club-mvp.md`
+- 부트스트랩: `docs/bootstrap.md`
