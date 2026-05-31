@@ -5,6 +5,8 @@ import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
 import { MeetingActions } from '@/components/meeting/MeetingActions';
 import { AttendanceToggle } from '@/components/meeting/AttendanceToggle';
 import { AttendanceSummary } from '@/components/meeting/AttendanceSummary';
+import { DiscussionQuestionList } from '@/components/meeting/DiscussionQuestionList';
+import { DiscussionQuestionForm } from '@/components/meeting/DiscussionQuestionForm';
 
 export default async function MeetingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,7 +21,10 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
       <MeetingDetailHeader meeting={meeting} />
       <AttendanceToggle meetingId={meeting.id} initialStatus={myStatus} />
       <AttendanceSummary attendances={meeting.attendances} />
-      {/* DiscussionQuestionList + Form: Task 23-24 */}
+      <DiscussionQuestionList meetingId={meeting.id} questions={meeting.questions} isHost={isHost} />
+      {isHost && (
+        <DiscussionQuestionForm meetingId={meeting.id} questionsCount={meeting.questions.length} />
+      )}
       {isHost && <MeetingActions meetingId={meeting.id} />}
     </div>
   );
