@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
-import { getMeetingDetail } from '@/lib/queries/meetings';
+import { getMeetingDetail, getMyAttendance } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
 import { MeetingActions } from '@/components/meeting/MeetingActions';
+import { AttendanceToggle } from '@/components/meeting/AttendanceToggle';
 
 export default async function MeetingDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -10,11 +11,12 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
   if (!meeting) notFound();
   const me = await getCurrentProfile();
   const isHost = me?.id === meeting.host_id;
+  const myStatus = me ? await getMyAttendance(meeting.id, me.id) : null;
 
   return (
     <div className="space-y-6">
       <MeetingDetailHeader meeting={meeting} />
-      {/* AttendanceToggle: Task 21 */}
+      <AttendanceToggle meetingId={meeting.id} initialStatus={myStatus} />
       {/* AttendanceSummary: Task 22 */}
       {/* DiscussionQuestionList + Form: Task 23-24 */}
       {isHost && <MeetingActions meetingId={meeting.id} />}
