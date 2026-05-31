@@ -7,7 +7,7 @@ import { updateProfile } from '@/lib/actions/profile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AvatarUploader } from '@/components/profile/AvatarUploader';
 
 export function ProfileForm({
   defaultName,
@@ -32,12 +32,7 @@ export function ProfileForm({
 
   return (
     <form onSubmit={save} className="space-y-4">
-      <div className="flex justify-center">
-        <Avatar className="w-20 h-20">
-          <AvatarImage src={avatarUrl ?? undefined} alt={name} />
-          <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
-        </Avatar>
-      </div>
+      <AvatarUploader initialUrl={avatarUrl} displayName={name} />
       <div className="space-y-1">
         <Label htmlFor="name">이름</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} />

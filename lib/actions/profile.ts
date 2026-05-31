@@ -35,3 +35,17 @@ export async function updateProfile(input: unknown) {
   revalidatePath('/more/profile');
   return { ok: true as const };
 }
+
+export async function updateAvatarUrl(url: string) {
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: '로그인이 필요합니다' };
+  const { error } = await supabase
+    .from('profiles')
+    .update({ avatar_url: url || null })
+    .eq('id', user.id);
+  if (error) return { ok: false as const, error: error.message };
+  revalidatePath('/more');
+  revalidatePath('/more/profile');
+  return { ok: true as const };
+}
