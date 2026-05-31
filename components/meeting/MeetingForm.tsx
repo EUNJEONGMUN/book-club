@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { z } from 'zod';
+import { BookCoverUploader } from './BookCoverUploader';
 
 type MeetingFormRaw = z.input<typeof meetingFormSchema>;
 
@@ -51,6 +52,12 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
   return (
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <FormField label="책 표지 (선택)">
+        <BookCoverUploader
+          value={form.watch('book_cover_url') ?? ''}
+          onChange={(url) => form.setValue('book_cover_url', url)}
+        />
+      </FormField>
       <FormField label="책 제목" error={form.formState.errors.book_title?.message}>
         <Input {...form.register('book_title')} placeholder="예: 미움받을 용기" />
       </FormField>
