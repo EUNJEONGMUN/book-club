@@ -24,7 +24,7 @@ export function MeetingDetailHeader({ meeting }: { meeting: Meeting & { host: Pr
           <p className="text-sm text-slate-700 mt-2">
             {format(date, 'yyyy.MM.dd (EEE) HH:mm', { locale: ko })}
           </p>
-          <p className="text-xs text-slate-500">호스트: {meeting.host.display_name}</p>
+          <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
         </div>
       </div>
       <div className="bg-slate-50 p-3 rounded space-y-1">

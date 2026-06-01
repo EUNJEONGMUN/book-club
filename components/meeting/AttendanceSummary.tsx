@@ -14,30 +14,61 @@ export function AttendanceSummary({
   return (
     <div className="space-y-3">
       <p className="text-sm font-medium">참석 현황</p>
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <Stat label="참석" count={groups.attending.length} />
-        <Stat label="불참" count={groups.not_attending.length} />
-        <Stat label="미정" count={groups.undecided.length} />
+      <div className="grid grid-cols-3 gap-2">
+        <StatusGroup
+          label="참석"
+          members={groups.attending}
+          bg="bg-blue-50"
+          text="text-blue-700"
+          countColor="text-blue-600"
+        />
+        <StatusGroup
+          label="불참"
+          members={groups.not_attending}
+          bg="bg-red-50"
+          text="text-red-700"
+          countColor="text-red-500"
+        />
+        <StatusGroup
+          label="미정"
+          members={groups.undecided}
+          bg="bg-amber-50"
+          text="text-amber-700"
+          countColor="text-amber-500"
+        />
       </div>
-      {groups.attending.length > 0 && (
-        <details className="text-sm">
-          <summary className="cursor-pointer text-slate-600">참석자 명단</summary>
-          <ul className="mt-2 space-y-1 pl-4 text-slate-700">
-            {groups.attending.map((a) => (
-              <li key={a.id}>· {a.profile.display_name}</li>
-            ))}
-          </ul>
-        </details>
-      )}
     </div>
   );
 }
 
-function Stat({ label, count }: { label: string; count: number }) {
+function StatusGroup({
+  label,
+  members,
+  bg,
+  text,
+  countColor,
+}: {
+  label: string;
+  members: Array<Attendance & { profile: Profile }>;
+  bg: string;
+  text: string;
+  countColor: string;
+}) {
   return (
-    <div className="bg-slate-50 rounded p-3">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-xl font-bold">{count}</p>
+    <div className={`${bg} rounded-lg p-3 space-y-2`}>
+      <div className="text-center">
+        <p className={`text-xs font-medium ${text}`}>{label}</p>
+        <p className={`text-2xl font-bold ${countColor}`}>{members.length}</p>
+      </div>
+      {members.length > 0 && (
+        <ul className="space-y-1">
+          {members.map((a) => (
+            <li key={a.id} className={`text-xs ${text} truncate`}>
+              · {a.profile.display_name}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
