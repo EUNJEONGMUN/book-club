@@ -29,9 +29,6 @@ export function MeetingDetailHeader({ meeting }: { meeting: Meeting & { host: Pr
       </div>
       <div className="bg-slate-50 p-3 rounded space-y-1">
         <p className="text-sm font-medium">📍 {meeting.location_name}</p>
-        {meeting.location_address && (
-          <p className="text-xs text-slate-600">{meeting.location_address}</p>
-        )}
         {meeting.location_url && (
           <a
             href={meeting.location_url}
