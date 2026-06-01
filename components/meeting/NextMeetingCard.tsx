@@ -34,6 +34,7 @@ export function NextMeetingCard({ meeting, myStatus }: Props) {
             <p className="text-sm text-slate-700 mt-1">
               {format(date, 'MM월 dd일 (EEE) HH:mm', { locale: ko })}
             </p>
+            <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
             <p className="text-xs text-slate-500">📍 {meeting.location_name}</p>
           </div>
         </div>
@@ -42,7 +43,7 @@ export function NextMeetingCard({ meeting, myStatus }: Props) {
 
         <Link href={`/meetings/${meeting.id}`}>
           <Button variant="outline" className="w-full">
-            발제문 {meeting.questions_count}개 보기 →
+            상세 정보 →
           </Button>
         </Link>
       </CardContent>
