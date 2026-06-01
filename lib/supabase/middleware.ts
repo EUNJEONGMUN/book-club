@@ -31,7 +31,7 @@ export async function updateSession(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // 인증됐지만 profile 없는 경우 → 로그아웃 + login 유도
+  // 인증됐지만 profile 없는 경우 (예: 구글 OAuth 첫 로그인) → /signup 으로 보내 초대 토큰 입력 유도
   if (user && !isPublic) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -39,10 +39,9 @@ export async function updateSession(req: NextRequest) {
       .eq('id', user.id)
       .maybeSingle();
     if (!profile) {
-      await supabase.auth.signOut();
       const url = req.nextUrl.clone();
-      url.pathname = '/login';
-      url.searchParams.set('error', 'profile-missing');
+      url.pathname = '/signup';
+      url.search = '';
       return NextResponse.redirect(url);
     }
   }

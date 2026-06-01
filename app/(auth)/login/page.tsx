@@ -28,7 +28,7 @@ export default function LoginPage() {
     router.refresh();
   }
 
-  async function signInOAuth(provider: 'google' | 'kakao') {
+  async function signInOAuth(provider: 'google') {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -54,10 +54,9 @@ export default function LoginPage() {
           </form>
           <div className="flex flex-col gap-2">
             <Button variant="outline" onClick={() => signInOAuth('google')}>Google로 로그인</Button>
-            <Button variant="outline" onClick={() => signInOAuth('kakao')}>카카오로 로그인</Button>
           </div>
           <p className="text-sm text-center text-slate-600">
-            초대 링크가 있나요? <Link href="/signup" className="underline">가입하기</Link>
+            계정이 없나요? <Link href="/signup" className="underline">회원가입</Link>
           </p>
         </CardContent>
       </Card>

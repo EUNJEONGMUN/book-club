@@ -1,4 +1,4 @@
--- 로컬 개발용 부트스트랩 멤버 + 초대 토큰
+-- 로컬 개발용 부트스트랩 멤버
 -- 운영 환경에서는 실행하지 않음
 DO $$
 DECLARE
@@ -27,7 +27,5 @@ BEGIN
       'email', now(), now()
     );
     INSERT INTO profiles (id, display_name) VALUES (bootstrap_id, '관리자');
-    INSERT INTO invites (token, created_by, expires_at)
-    VALUES ('local-dev-invite-token-aaaaaaaaaaaaaaaa', bootstrap_id, now() + INTERVAL '365 days');
   END IF;
 END $$;

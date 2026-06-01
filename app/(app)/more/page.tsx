@@ -23,18 +23,6 @@ export default async function MorePage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-0">
-          <Link
-            href="/more/invite"
-            className="flex items-center justify-between p-4 hover:bg-slate-50"
-          >
-            <span>초대 링크 관리</span>
-            <ChevronRight className="w-4 h-4 text-slate-400" />
-          </Link>
-        </CardContent>
-      </Card>
-
       <section className="space-y-1">
         <h2 className="text-sm font-semibold text-slate-700">멤버 {members.length}명</h2>
         <Card>
