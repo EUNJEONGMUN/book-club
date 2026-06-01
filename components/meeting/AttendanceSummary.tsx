@@ -21,6 +21,7 @@ export function AttendanceSummary({
           bg="bg-blue-50"
           text="text-blue-700"
           countColor="text-blue-600"
+          summaryColor="text-blue-500"
         />
         <StatusGroup
           label="불참"
@@ -28,6 +29,7 @@ export function AttendanceSummary({
           bg="bg-red-50"
           text="text-red-700"
           countColor="text-red-500"
+          summaryColor="text-red-400"
         />
         <StatusGroup
           label="미정"
@@ -35,6 +37,7 @@ export function AttendanceSummary({
           bg="bg-amber-50"
           text="text-amber-700"
           countColor="text-amber-500"
+          summaryColor="text-amber-400"
         />
       </div>
     </div>
@@ -47,12 +50,14 @@ function StatusGroup({
   bg,
   text,
   countColor,
+  summaryColor,
 }: {
   label: string;
   members: Array<Attendance & { profile: Profile }>;
   bg: string;
   text: string;
   countColor: string;
+  summaryColor: string;
 }) {
   return (
     <div className={`${bg} rounded-lg p-3 space-y-2`}>
@@ -61,13 +66,18 @@ function StatusGroup({
         <p className={`text-2xl font-bold ${countColor}`}>{members.length}</p>
       </div>
       {members.length > 0 && (
-        <ul className="space-y-1">
-          {members.map((a) => (
-            <li key={a.id} className={`text-xs ${text} truncate`}>
-              · {a.profile.display_name}
-            </li>
-          ))}
-        </ul>
+        <details className="text-xs">
+          <summary className={`cursor-pointer ${summaryColor} list-none text-center`}>
+            명단 보기
+          </summary>
+          <ul className="mt-2 space-y-1">
+            {members.map((a) => (
+              <li key={a.id} className={`${text} truncate`}>
+                · {a.profile.display_name}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </div>
   );
