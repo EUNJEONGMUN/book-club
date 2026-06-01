@@ -21,6 +21,7 @@ export function MeetingCard({ meeting }: { meeting: Meeting & { host: Profile } 
             <p className="text-xs text-slate-600 mt-1">
               {format(date, 'yyyy.MM.dd (EEE) HH:mm', { locale: ko })}
             </p>
+            <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
             <p className="text-xs text-slate-500 truncate">📍 {meeting.location_name}</p>
           </div>
         </CardContent>
