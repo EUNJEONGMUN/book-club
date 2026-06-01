@@ -51,7 +51,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
   const { date: initDate, time: initTime } = splitScheduledAt(defaultValues?.scheduled_at ?? '');
   const [scheduledDate, setScheduledDate] = useState(initDate);
-  const [scheduledTime, setScheduledTime] = useState(initTime || TIME_OPTIONS[12]); // 기본 12:00
+  const [scheduledTime, setScheduledTime] = useState(initTime || '');
 
   const form = useForm<MeetingFormRaw, unknown, MeetingFormInput>({
     resolver: zodResolver(meetingFormSchema),
@@ -114,7 +114,10 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
       </FormField>
 
       {/* 날짜 */}
-      <FormField label="날짜">
+      <FormField
+        label="날짜"
+        error={form.formState.isSubmitted && !scheduledDate ? '날짜를 선택해주세요' : undefined}
+      >
         <Input
           type="date"
           value={scheduledDate}
@@ -126,7 +129,10 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
       </FormField>
 
       {/* 시간 */}
-      <FormField label="시간" error={form.formState.errors.scheduled_at?.message}>
+      <FormField
+        label="시간"
+        error={form.formState.isSubmitted && !scheduledTime ? '시간을 선택해주세요' : undefined}
+      >
         <select
           value={scheduledTime}
           onChange={(e) => {
@@ -135,6 +141,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
           }}
           className="w-full h-10 rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
         >
+          <option value="" disabled>시간 선택</option>
           {TIME_OPTIONS.map((t) => (
             <option key={t} value={t}>{t}</option>
           ))}
@@ -142,7 +149,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
       </FormField>
 
       <FormField label="장소 이름" error={form.formState.errors.location_name?.message}>
-        <Input {...form.register('location_name')} placeholder="예: 강남역 스타벅스" />
+        <Input {...form.register('location_name')} placeholder="예: 아마츄어 작업실" />
       </FormField>
       <FormField label="장소 링크 (선택)" error={form.formState.errors.location_url?.message}>
         <Input {...form.register('location_url')} placeholder="https://..." />
