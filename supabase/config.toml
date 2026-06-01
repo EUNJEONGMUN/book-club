@@ -338,6 +338,8 @@ email_optional = false
 enabled = true
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+# 로컬 개발 전용. Supabase 로컬 서버에서 구글 OAuth nonce 검증이 지원되지 않아 true로 설정.
+# 운영 환경(Supabase 클라우드)에서는 반드시 false (기본값) 로 설정할 것.
 skip_nonce_check = true
 
 # Allow Solana wallet holders to sign in to your project via the Sign in with Solana (SIWS, EIP-4361) standard.
