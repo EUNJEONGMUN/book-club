@@ -105,51 +105,6 @@ export type Database = {
           },
         ]
       }
-      invites: {
-        Row: {
-          created_at: string
-          created_by: string
-          expires_at: string
-          id: string
-          token: string
-          used_at: string | null
-          used_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          expires_at?: string
-          id?: string
-          token: string
-          used_at?: string | null
-          used_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          expires_at?: string
-          id?: string
-          token?: string
-          used_at?: string | null
-          used_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invites_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "invites_used_by_fkey"
-            columns: ["used_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       meetings: {
         Row: {
           book_author: string
@@ -202,21 +157,27 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved: boolean
           avatar_url: string | null
           display_name: string
           id: string
+          is_admin: boolean
           joined_at: string
         }
         Insert: {
+          approved?: boolean
           avatar_url?: string | null
           display_name: string
           id: string
+          is_admin?: boolean
           joined_at?: string
         }
         Update: {
+          approved?: boolean
           avatar_url?: string | null
           display_name?: string
           id?: string
+          is_admin?: boolean
           joined_at?: string
         }
         Relationships: []

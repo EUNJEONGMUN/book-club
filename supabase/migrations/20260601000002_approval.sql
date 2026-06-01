@@ -1,0 +1,3 @@
+ALTER TABLE profiles
+  ADD COLUMN approved BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT false;

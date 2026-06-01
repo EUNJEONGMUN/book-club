@@ -8,11 +8,18 @@ export type MemberStats = {
   hosted_count: number;
 };
 
+export type PendingMember = {
+  id: string;
+  display_name: string;
+  joined_at: string;
+};
+
 export async function getAllMembersWithStats(): Promise<MemberStats[]> {
   const supabase = await getSupabaseServer();
   const { data: profiles, error } = await supabase
     .from('profiles')
     .select('id, display_name, avatar_url')
+    .eq('approved', true)
     .order('display_name', { ascending: true });
   if (error) throw error;
 
@@ -31,6 +38,17 @@ export async function getAllMembersWithStats(): Promise<MemberStats[]> {
     attended_count: attendedMap.get(p.id) ?? 0,
     hosted_count: hostedMap.get(p.id) ?? 0,
   }));
+}
+
+export async function getPendingMembers(): Promise<PendingMember[]> {
+  const supabase = await getSupabaseServer();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, display_name, joined_at')
+    .eq('approved', false)
+    .order('joined_at', { ascending: true });
+  if (error) throw error;
+  return data ?? [];
 }
 
 export async function getCurrentProfile() {

@@ -1,12 +1,18 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { getAllMembersWithStats, getCurrentProfile } from '@/lib/queries/members';
+import { getAllMembersWithStats, getCurrentProfile, getPendingMembers } from '@/lib/queries/members';
 import { MemberCard } from '@/components/member/MemberCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { LogoutButton } from './logout-button';
+import { ApproveButton } from './approve-button';
 
 export default async function MorePage() {
-  const [me, members] = await Promise.all([getCurrentProfile(), getAllMembersWithStats()]);
+  const me = await getCurrentProfile();
+  const [members, pending] = await Promise.all([
+    getAllMembersWithStats(),
+    me?.is_admin ? getPendingMembers() : Promise.resolve([]),
+  ]);
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">더보기</h1>
@@ -22,6 +28,33 @@ export default async function MorePage() {
           </Link>
         </CardContent>
       </Card>
+
+      {me?.is_admin && (
+        <section className="space-y-1">
+          <h2 className="text-sm font-semibold text-slate-700">
+            승인 대기 {pending.length}명
+          </h2>
+          {pending.length === 0 ? (
+            <p className="text-sm text-slate-400 px-1">대기 중인 사용자가 없습니다.</p>
+          ) : (
+            <Card>
+              <CardContent className="px-4 divide-y">
+                {pending.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between py-3">
+                    <div>
+                      <p className="font-medium">{p.display_name}</p>
+                      <p className="text-xs text-slate-500">
+                        {new Date(p.joined_at).toLocaleDateString('ko-KR')} 가입
+                      </p>
+                    </div>
+                    <ApproveButton userId={p.id} />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </section>
+      )}
 
       <section className="space-y-1">
         <h2 className="text-sm font-semibold text-slate-700">멤버 {members.length}명</h2>

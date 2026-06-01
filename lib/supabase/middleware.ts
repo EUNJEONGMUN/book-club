@@ -23,7 +23,7 @@ export async function updateSession(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const path = req.nextUrl.pathname;
-  const isPublic = path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/auth');
+  const isPublic = path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/auth') || path.startsWith('/pending');
 
   if (!user && !isPublic) {
     const url = req.nextUrl.clone();
@@ -39,12 +39,19 @@ export async function updateSession(req: NextRequest) {
   if (user && !isPublic) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, approved')
       .eq('id', user.id)
       .maybeSingle();
     if (!profile) {
       const url = req.nextUrl.clone();
       url.pathname = '/signup';
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
+    // 가입 승인 대기 중인 사용자 → /pending
+    if (!profile.approved) {
+      const url = req.nextUrl.clone();
+      url.pathname = '/pending';
       url.search = '';
       return NextResponse.redirect(url);
     }
