@@ -1,5 +1,6 @@
--- 로컬 개발용 관리자 계정 (admin@example.local)
+-- 로컬 개발용 관리자 계정
 -- 운영 환경에서는 실행하지 않음
+-- db reset 후 실제 관리자 계정으로 is_admin=true 수동 설정 필요 (docs/bootstrap.md 참고)
 DO $$
 DECLARE
   admin_id UUID := '00000000-0000-0000-0000-000000000001';
