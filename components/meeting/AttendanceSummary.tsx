@@ -14,7 +14,7 @@ export function AttendanceSummary({
   return (
     <div className="space-y-3">
       <p className="text-sm font-medium">참석 현황</p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 items-start">
         <StatusGroup
           label="참석"
           members={groups.attending}
@@ -22,6 +22,7 @@ export function AttendanceSummary({
           text="text-blue-700"
           countColor="text-blue-600"
           summaryColor="text-blue-500"
+          divider="border-blue-200"
         />
         <StatusGroup
           label="불참"
@@ -30,6 +31,7 @@ export function AttendanceSummary({
           text="text-red-700"
           countColor="text-red-500"
           summaryColor="text-red-400"
+          divider="border-red-200"
         />
         <StatusGroup
           label="미정"
@@ -38,6 +40,7 @@ export function AttendanceSummary({
           text="text-amber-700"
           countColor="text-amber-500"
           summaryColor="text-amber-400"
+          divider="border-amber-200"
         />
       </div>
     </div>
@@ -51,6 +54,7 @@ function StatusGroup({
   text,
   countColor,
   summaryColor,
+  divider,
 }: {
   label: string;
   members: Array<Attendance & { profile: Profile }>;
@@ -58,6 +62,7 @@ function StatusGroup({
   text: string;
   countColor: string;
   summaryColor: string;
+  divider: string;
 }) {
   return (
     <div className={`${bg} rounded-lg p-3 space-y-2`}>
@@ -66,8 +71,10 @@ function StatusGroup({
         <p className={`text-2xl font-bold ${countColor}`}>{members.length}</p>
       </div>
       {members.length > 0 && (
-        <details className="text-xs">
-          <summary className={`cursor-pointer ${summaryColor} list-none text-center`}>
+        <details className={`group text-xs border-t pt-2 ${divider}`}>
+          <summary className={`cursor-pointer list-none text-center select-none ${summaryColor}`}>
+            <span className="group-open:hidden">▶ </span>
+            <span className="hidden group-open:inline">▼ </span>
             명단 보기
           </summary>
           <ul className="mt-2 space-y-1">
