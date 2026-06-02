@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const TABS = [
   { href: '/', label: '홈', icon: Home, match: (p: string) => p === '/' },
   { href: '/meetings', label: '모임', icon: Calendar, match: (p: string) => p.startsWith('/meetings') },
-  { href: '/more', label: '더보기', icon: Menu, match: (p: string) => p.startsWith('/more') },
+  { href: '/more', label: '설정', icon: Menu, match: (p: string) => p.startsWith('/more') },
 ];
 
 export function BottomNav() {

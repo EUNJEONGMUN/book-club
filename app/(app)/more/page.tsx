@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import { getAllMembersWithStats, getCurrentProfile, getPendingMembers } from '@/lib/queries/members';
+import {
+  getAllMembersWithStats,
+  getCurrentProfile,
+  getPendingMembers,
+  getMemberHistory,
+  type MemberHistoryItem,
+} from '@/lib/queries/members';
 import { MemberCard } from '@/components/member/MemberCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { LogoutButton } from './logout-button';
@@ -13,9 +19,24 @@ export default async function MorePage() {
     me?.is_admin ? getPendingMembers() : Promise.resolve([]),
   ]);
 
+  const myHistory: MemberHistoryItem[] = me ? await getMemberHistory(me.id) : [];
+  const allHistories: Map<string, MemberHistoryItem[]> | null = me?.is_admin
+    ? new Map(
+        await Promise.all(
+          members.map(async (m) => [m.id, await getMemberHistory(m.id)] as const)
+        )
+      )
+    : null;
+
+  function getHistory(memberId: string): MemberHistoryItem[] | undefined {
+    if (allHistories) return allHistories.get(memberId) ?? [];
+    if (memberId === me?.id) return myHistory;
+    return undefined;
+  }
+
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">더보기</h1>
+      <h1 className="text-2xl font-bold">설정</h1>
 
       <Card>
         <CardContent className="p-0">
@@ -60,7 +81,7 @@ export default async function MorePage() {
         <h2 className="text-sm font-semibold text-slate-700">멤버 {members.length}명</h2>
         <Card>
           <CardContent className="px-4 divide-y">
-            {members.map((m) => <MemberCard key={m.id} member={m} />)}
+            {members.map((m) => <MemberCard key={m.id} member={m} history={getHistory(m.id)} />)}
           </CardContent>
         </Card>
       </section>
