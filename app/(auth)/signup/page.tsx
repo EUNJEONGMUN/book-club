@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { SignupForm } from './signup-form';
@@ -15,17 +16,42 @@ export default async function SignupPage() {
       .maybeSingle();
     if (profile) redirect('/');
 
-    // 구글 OAuth 첫 로그인 — 이름만 입력하면 됨
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-        <CompleteProfileForm userEmail={user.email ?? ''} />
+      <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
+        <div className="w-full max-w-sm space-y-8">
+          <div className="text-center space-y-2">
+            <div className="text-4xl">📖</div>
+            <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">부글부글</h1>
+            <p className="text-sm text-stone-500">이름을 입력하면 가입이 완료돼요</p>
+          </div>
+          <CompleteProfileForm userEmail={user.email ?? ''} />
+          <p className="text-sm text-center text-stone-500">
+            이미 계정이 있나요?{' '}
+            <Link href="/login" className="text-stone-800 font-medium underline underline-offset-4">
+              로그인
+            </Link>
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
-      <SignupForm />
+    <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
+      <div className="w-full max-w-sm space-y-8">
+        <div className="text-center space-y-2">
+          <div className="text-4xl">📖</div>
+          <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">부글부글</h1>
+          <p className="text-sm text-stone-500">함께 책 읽는 사람들</p>
+        </div>
+        <SignupForm />
+        <p className="text-sm text-center text-stone-500">
+          이미 계정이 있나요?{' '}
+          <Link href="/login" className="text-stone-800 font-medium underline underline-offset-4">
+            로그인
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
