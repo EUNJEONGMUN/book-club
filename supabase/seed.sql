@@ -1,10 +1,10 @@
--- 로컬 개발용 부트스트랩 멤버
+-- 로컬 개발용 관리자 계정 (admin@example.local)
 -- 운영 환경에서는 실행하지 않음
 DO $$
 DECLARE
-  bootstrap_id UUID := '00000000-0000-0000-0000-000000000001';
+  admin_id UUID := '00000000-0000-0000-0000-000000000001';
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = bootstrap_id) THEN
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE id = admin_id) THEN
     INSERT INTO auth.users (
       id, email, encrypted_password, email_confirmed_at, raw_user_meta_data,
       instance_id, aud, role, created_at, updated_at,
@@ -12,7 +12,7 @@ BEGIN
       email_change, email_change_token_current
     )
     VALUES (
-      bootstrap_id, 'admin@example.com',
+      admin_id, 'admin@example.local',
       crypt('password123', gen_salt('bf')), now(), '{}'::jsonb,
       '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
       now(), now(),
@@ -22,10 +22,10 @@ BEGIN
       provider_id, user_id, identity_data, provider, created_at, updated_at
     )
     VALUES (
-      'admin@example.com', bootstrap_id,
-      jsonb_build_object('sub', bootstrap_id::text, 'email', 'admin@example.com'),
+      'admin@example.local', admin_id,
+      jsonb_build_object('sub', admin_id::text, 'email', 'admin@example.local'),
       'email', now(), now()
     );
-    INSERT INTO profiles (id, display_name, approved, is_admin) VALUES (bootstrap_id, '관리자', true, true);
+    INSERT INTO profiles (id, display_name, approved, is_admin) VALUES (admin_id, '관리자', true, true);
   END IF;
 END $$;

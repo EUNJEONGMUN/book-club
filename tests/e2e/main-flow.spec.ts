@@ -5,7 +5,7 @@ const UNIQUE = Date.now();
 test('로그인 → 모임 등록 → 발제문 추가 → 참석 체크', async ({ page }) => {
   // 1. 부트스트랩 admin 계정으로 로그인
   await page.goto('/login');
-  await page.getByLabel('이메일').fill('admin@example.com');
+  await page.getByLabel('이메일').fill('admin@example.local');
   await page.getByLabel('비밀번호').fill('password123');
   await page.getByRole('button', { name: '로그인', exact: true }).click();
   await expect(page).toHaveURL('/');
