@@ -64,6 +64,17 @@ export async function getMeetingDetail(id: string): Promise<MeetingDetail | null
   return detail;
 }
 
+export async function getHostedMeetings(userId: string): Promise<Array<Meeting & { host: Profile }>> {
+  const supabase = await getSupabaseServer();
+  const { data, error } = await supabase
+    .from('meetings')
+    .select('*, host:profiles!meetings_host_id_fkey(*)')
+    .eq('host_id', userId)
+    .order('scheduled_at', { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as Array<Meeting & { host: Profile }>;
+}
+
 export async function getMyAttendance(meetingId: string, userId: string) {
   const supabase = await getSupabaseServer();
   const { data } = await supabase

@@ -7,16 +7,18 @@ import {
   getMemberHistory,
   type MemberHistoryItem,
 } from '@/lib/queries/members';
+import { getHostedMeetings } from '@/lib/queries/meetings';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MemberCard } from '@/components/member/MemberCard';
+import { SettingsTabs } from './settings-tabs';
 import { LogoutButton } from './logout-button';
 import { ApproveButton } from './approve-button';
 
 export default async function MorePage() {
   const me = await getCurrentProfile();
-  const [members, pending] = await Promise.all([
+  const [members, pending, hostedMeetings] = await Promise.all([
     getAllMembersWithStats(),
     me?.is_admin ? getPendingMembers() : Promise.resolve([]),
+    me ? getHostedMeetings(me.id) : Promise.resolve([]),
   ]);
 
   const meStat = members.find((m) => m.id === me?.id);
@@ -86,17 +88,15 @@ export default async function MorePage() {
         </section>
       )}
 
-      {/* 멤버 목록 */}
-      <section className="space-y-2">
-        <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wide px-1">
-          멤버 {members.length}명
-        </h2>
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm divide-y divide-stone-100 px-4">
-          {members.map((m) => (
-            <MemberCard key={m.id} member={m} history={getHistory(m.id)} />
-          ))}
-        </div>
-      </section>
+      {/* 멤버 목록 + 나의 발제 탭 */}
+      {me && (
+        <SettingsTabs
+          members={members}
+          myId={me.id}
+          getHistory={getHistory}
+          hostedMeetings={hostedMeetings}
+        />
+      )}
 
       <LogoutButton />
     </div>
