@@ -127,19 +127,32 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
 
       {/* PDF → 발제문 생성 */}
       {fileUrl && isPdf && candidates.length === 0 && (
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full border-stone-200 text-stone-600"
-          disabled={extracting}
-          onClick={handleExtract}
-        >
+        <div className="space-y-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full border-stone-200 text-stone-600"
+            disabled={extracting}
+            onClick={handleExtract}
+          >
+            {extracting ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />AI가 발제문을 추출하고 있어요...</>
+            ) : (
+              '📄 발제문 생성 (PDF에서 질문 추출)'
+            )}
+          </Button>
           {extracting ? (
-            <><Loader2 className="w-4 h-4 mr-2 animate-spin" />추출 중...</>
+            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
+              <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <p className="font-medium">PDF 분석 중 — 보통 30초~2분 정도 소요됩니다</p>
+                <p className="text-amber-600">페이지를 닫지 마시고 잠시만 기다려주세요.</p>
+              </div>
+            </div>
           ) : (
-            '📄 발제문 생성 (PDF에서 질문 추출)'
+            <p className="text-xs text-stone-400 px-1">AI가 PDF를 분석합니다 (30초~2분 소요)</p>
           )}
-        </Button>
+        </div>
       )}
 
       {/* 추출된 질문 후보 */}

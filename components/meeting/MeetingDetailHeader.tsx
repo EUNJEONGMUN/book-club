@@ -12,7 +12,8 @@ export function MeetingDetailHeader({
 }) {
   const date = new Date(meeting.scheduled_at);
   const diff = differenceInDays(date, new Date());
-  const dDay = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : `D+${-diff}`;
+  const isUpcoming = diff >= 0;
+  const dDay = diff > 0 ? `D-${diff}` : 'D-Day';
 
   return (
     <div className="space-y-3">
@@ -24,14 +25,18 @@ export function MeetingDetailHeader({
             <span className="text-3xl">📚</span>
           )}
         </div>
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0 space-y-0.5 relative">
+          {isHost && (
+            <div className="absolute top-0 right-0 z-10">
+              <MeetingHeaderMenu meetingId={meeting.id} />
+            </div>
+          )}
+          {isUpcoming && (
             <p className="text-xs font-bold text-blue-600">{dDay}</p>
-            {isHost && <MeetingHeaderMenu meetingId={meeting.id} />}
-          </div>
-          <h1 className="text-xl font-bold">{meeting.book_title}</h1>
+          )}
+          <h1 className={`text-xl font-bold leading-tight ${isHost ? 'pr-10' : ''}`}>{meeting.book_title}</h1>
           <p className="text-sm text-slate-600">{meeting.book_author}</p>
-          <p className="text-sm text-slate-700 mt-2">
+          <p className="text-sm text-slate-700 pt-1">
             {format(date, 'yyyy.MM.dd (EEE) HH:mm', { locale: ko })}
           </p>
           <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
