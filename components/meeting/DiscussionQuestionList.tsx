@@ -7,7 +7,7 @@ import ReactMarkdown from 'react-markdown';
 import { updateQuestion, deleteQuestion } from '@/lib/actions/questions';
 import type { DiscussionQuestion } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { MarkdownEditor, MarkdownModeTabs } from '@/components/meeting/MarkdownEditor';
 
 export function DiscussionQuestionList({
   meetingId,
@@ -48,6 +48,7 @@ function QuestionItem({
 }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(question.content);
+  const [mode, setMode] = useState<'text' | 'preview'>('text');
 
   async function save() {
     const r = await updateQuestion(question.id, meetingId, { content: text });
@@ -64,21 +65,30 @@ function QuestionItem({
   if (editing) {
     return (
       <div className="space-y-2">
-        <p className="text-xs text-stone-400 px-1">Markdown 지원: **굵게**, *기울임*, {'>'} 인용구</p>
-        <Textarea
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-stone-700">발제문 입력</p>
+          {mode === 'text' && (
+            <span className="text-xs text-stone-400">**굵게**, *기울임*, {'>'} 인용구</span>
+          )}
+        </div>
+        <MarkdownEditor
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          maxLength={1000}
+          onChange={setText}
+          mode={mode}
+          onRequestTextMode={() => setMode('text')}
           rows={4}
           className="bg-stone-50 border-stone-200"
         />
-        <div className="flex gap-2 justify-end">
-          <Button size="sm" variant="ghost" onClick={() => { setText(question.content); setEditing(false); }}>
-            취소
-          </Button>
-          <Button size="sm" className="bg-stone-800 hover:bg-stone-700 text-white" onClick={save}>
-            저장
-          </Button>
+        <div className="flex items-center justify-between">
+          <MarkdownModeTabs mode={mode} onChange={setMode} />
+          <div className="flex gap-2">
+            <Button size="sm" variant="ghost" onClick={() => { setText(question.content); setMode('text'); setEditing(false); }}>
+              취소
+            </Button>
+            <Button size="sm" className="bg-stone-800 hover:bg-stone-700 text-white" onClick={save}>
+              저장
+            </Button>
+          </div>
         </div>
       </div>
     );

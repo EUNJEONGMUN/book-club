@@ -19,6 +19,7 @@ type Props = {
 
 export function DiscussionFileUploader({ meetingId, currentFileUrl }: Props) {
   const [fileUrl, setFileUrl] = useState(currentFileUrl);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [candidates, setCandidates] = useState<string[]>([]);
@@ -27,6 +28,8 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl }: Props) {
 
   const isPdf = fileUrl?.toLowerCase().includes('.pdf') ||
     fileUrl?.match(/\.(pdf)(\?|$)/i) != null;
+  const fileName = displayName
+    ?? (fileUrl ? decodeURIComponent(fileUrl.split('/').pop() ?? '') || (isPdf ? 'PDF 파일' : '이미지 파일') : null);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -38,6 +41,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl }: Props) {
     setUploading(false);
     if (!r.ok) return toast.error(r.error);
     setFileUrl(r.url);
+    setDisplayName(r.fileName);
     setCandidates([]);
     toast.success('파일이 업로드되었습니다.');
     if (inputRef.current) inputRef.current.value = '';
@@ -48,6 +52,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl }: Props) {
     const r = await removeDiscussionFile(meetingId);
     if (!r.ok) return toast.error(r.error);
     setFileUrl(null);
+    setDisplayName(null);
     setCandidates([]);
   }
 
@@ -88,7 +93,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl }: Props) {
             rel="noopener noreferrer"
             className="flex-1 text-sm text-stone-700 underline underline-offset-2 truncate"
           >
-            {isPdf ? 'PDF 파일 열기' : '이미지 파일 열기'}
+            {fileName}
           </a>
           <button onClick={handleRemove} className="text-stone-400 hover:text-red-500 transition-colors">
             <Trash2 className="w-4 h-4" />

@@ -30,16 +30,21 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
             currentFileUrl={(meeting as any).discussion_file_url ?? null}
           />
         )}
-        {!isHost && (meeting as any).discussion_file_url && (
-          <a
-            href={(meeting as any).discussion_file_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 p-3 bg-stone-50 rounded-xl border border-stone-200 text-sm text-stone-700 hover:bg-stone-100 transition-colors"
-          >
-            📄 발제 파일 열기
-          </a>
-        )}
+        {!isHost && (meeting as any).discussion_file_url && (() => {
+          const url: string = (meeting as any).discussion_file_url;
+          const name = decodeURIComponent(url.split('/').pop() ?? '') || '발제 파일';
+          const isPdf = /\.pdf(\?|$)/i.test(url);
+          return (
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 p-3 bg-stone-50 rounded-xl border border-stone-200 text-sm text-stone-700 hover:bg-stone-100 transition-colors"
+            >
+              {isPdf ? '📄' : '🖼️'} {name}
+            </a>
+          );
+        })()}
       </section>
       <DiscussionQuestionList meetingId={meeting.id} questions={meeting.questions} isHost={isHost} />
       {isHost && (

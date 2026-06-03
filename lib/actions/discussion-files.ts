@@ -12,7 +12,8 @@ export async function uploadDiscussionFile(meetingId: string, formData: FormData
   if (file.size > maxSize) return { ok: false as const, error: '파일 크기는 20MB 이하여야 합니다.' };
 
   const ext = file.name.split('.').pop()?.toLowerCase();
-  const path = `${meetingId}/${Date.now()}.${ext}`;
+  const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_');
+  const path = `${meetingId}/${safeName}`;
 
   const supabase = await getSupabaseServer();
   const { error } = await supabase.storage
@@ -31,7 +32,7 @@ export async function uploadDiscussionFile(meetingId: string, formData: FormData
   if (updateError) return { ok: false as const, error: updateError.message };
 
   revalidatePath(`/meetings/${meetingId}`);
-  return { ok: true as const, url: publicUrl, isPdf: ext === 'pdf' };
+  return { ok: true as const, url: publicUrl, fileName: file.name, isPdf: ext === 'pdf' };
 }
 
 export async function removeDiscussionFile(meetingId: string) {
@@ -49,14 +50,9 @@ export async function extractQuestionsFromPdf(pdfUrl: string): Promise<
   { ok: true; questions: string[] } | { ok: false; error: string }
 > {
   try {
-    const res = await fetch(pdfUrl);
-    if (!res.ok) return { ok: false, error: 'PDF를 가져오지 못했습니다.' };
-
-    const buffer = Buffer.from(await res.arrayBuffer());
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const pdfModule = await import('pdf-parse') as any;
-    const pdfParse = pdfModule.default ?? pdfModule;
-    const data = await pdfParse(buffer);
+    const { PDFParse } = await import('pdf-parse');
+    const parser = new PDFParse({ url: pdfUrl });
+    const data = await parser.getText();
 
     const lines = data.text
       .split('\n')
