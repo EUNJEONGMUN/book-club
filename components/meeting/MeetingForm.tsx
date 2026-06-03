@@ -198,21 +198,21 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
         <input type="hidden" {...form.register('location_url')} />
       </Section>
 
-      <div className="space-y-2">
-        <Button
-          type="submit"
-          disabled={form.formState.isSubmitting}
-          className="w-full bg-stone-800 hover:bg-stone-700 text-white"
-        >
-          {form.formState.isSubmitting ? '저장 중...' : submitLabel}
-        </Button>
+      <div className={cancelHref ? 'flex gap-2' : ''}>
         {cancelHref && (
-          <Link href={cancelHref}>
+          <Link href={cancelHref} className="flex-1">
             <Button type="button" variant="outline" className="w-full border-stone-200 text-stone-600">
               취소
             </Button>
           </Link>
         )}
+        <Button
+          type="submit"
+          disabled={form.formState.isSubmitting}
+          className={`bg-stone-800 hover:bg-stone-700 text-white ${cancelHref ? 'flex-1' : 'w-full'}`}
+        >
+          {form.formState.isSubmitting ? '저장 중...' : submitLabel}
+        </Button>
       </div>
     </form>
   );
