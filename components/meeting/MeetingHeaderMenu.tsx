@@ -54,16 +54,16 @@ export function MeetingHeaderMenu({ meetingId }: { meetingId: string }) {
         >
           <MoreVertical className="w-5 h-5" />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" sideOffset={6} className="min-w-44">
-          <DropdownMenuItem onClick={() => router.push(`/meetings/${meetingId}/edit`)}>
+        <DropdownMenuContent align="end" sideOffset={6} className="min-w-44 p-1.5 space-y-0.5">
+          <DropdownMenuItem className="py-2.5 gap-2" onClick={() => router.push(`/meetings/${meetingId}/edit`)}>
             <Pencil className="w-4 h-4" />
             모임 정보 수정
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={handleShare}>
+          <DropdownMenuItem className="py-2.5 gap-2" onClick={handleShare}>
             <Share2 className="w-4 h-4" />
             공유
           </DropdownMenuItem>
-          <DropdownMenuItem variant="destructive" onClick={() => setConfirmOpen(true)}>
+          <DropdownMenuItem className="py-2.5 gap-2" variant="destructive" onClick={() => setConfirmOpen(true)}>
             <Trash2 className="w-4 h-4" />
             모임 삭제
           </DropdownMenuItem>

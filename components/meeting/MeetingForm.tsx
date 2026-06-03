@@ -142,7 +142,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
       {/* 일정 */}
       <Section icon={<CalendarDays className="w-4 h-4" />} title="일정">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-[1.5fr_1fr] gap-2">
           <FormField
             label="날짜"
             error={form.formState.isSubmitted && !scheduledDate ? '날짜를 선택해주세요' : undefined}

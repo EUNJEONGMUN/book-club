@@ -79,7 +79,7 @@ export function LocationSearch({ onSelect }: Props) {
           ) : results.length === 0 ? (
             <p className="py-6 text-center text-sm text-stone-400">검색 결과가 없습니다.</p>
           ) : (
-            <ul className="max-h-72 overflow-y-auto divide-y divide-stone-100">
+            <ul className="max-h-48 overflow-y-auto divide-y divide-stone-100">
               {results.map((place, i) => (
                 <li key={i}>
                   <button

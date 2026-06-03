@@ -89,7 +89,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
             <ImageIcon className="w-5 h-5 text-blue-500 shrink-0" />
           )}
           <a
-            href={fileUrl}
+            href={fileName ? `${fileUrl}?download=${encodeURIComponent(fileName)}` : fileUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 text-sm text-stone-700 underline underline-offset-2 truncate"

@@ -30,9 +30,10 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
           const storedName = meeting.discussion_file_name;
           const name = storedName || decodeURIComponent(url.split('/').pop() ?? '') || '발제 파일';
           const isPdf = /\.pdf(\?|$)/i.test(url);
+          const downloadUrl = storedName ? `${url}?download=${encodeURIComponent(storedName)}` : url;
           return (
             <a
-              href={url}
+              href={downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 p-3 bg-stone-50 rounded-xl border border-stone-200 text-sm text-stone-700 hover:bg-stone-100 transition-colors"
