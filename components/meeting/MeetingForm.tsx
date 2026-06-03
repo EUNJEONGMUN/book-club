@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -46,9 +47,10 @@ type Props = {
   ) => Promise<{ ok: true; data?: { id: string } } | { ok: false; error: string }>;
   submitLabel: string;
   redirectOnSuccess?: (id: string) => string;
+  cancelHref?: string;
 };
 
-export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSuccess }: Props) {
+export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSuccess, cancelHref }: Props) {
   const router = useRouter();
 
   const { date: initDate, time: initTime } = splitScheduledAt(defaultValues?.scheduled_at ?? '');
@@ -196,13 +198,22 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
         <input type="hidden" {...form.register('location_url')} />
       </Section>
 
-      <Button
-        type="submit"
-        disabled={form.formState.isSubmitting}
-        className="w-full bg-stone-800 hover:bg-stone-700 text-white"
-      >
-        {form.formState.isSubmitting ? '저장 중...' : submitLabel}
-      </Button>
+      <div className="space-y-2">
+        <Button
+          type="submit"
+          disabled={form.formState.isSubmitting}
+          className="w-full bg-stone-800 hover:bg-stone-700 text-white"
+        >
+          {form.formState.isSubmitting ? '저장 중...' : submitLabel}
+        </Button>
+        {cancelHref && (
+          <Link href={cancelHref}>
+            <Button type="button" variant="outline" className="w-full border-stone-200 text-stone-600">
+              취소
+            </Button>
+          </Link>
+        )}
+      </div>
     </form>
   );
 }

@@ -14,6 +14,7 @@ export function EditMeetingForm({ id, defaults }: { id: string; defaults: Meetin
       }}
       submitLabel="저장"
       redirectOnSuccess={() => `/meetings/${id}`}
+      cancelHref={`/meetings/${id}`}
     />
   );
 }
