@@ -192,13 +192,8 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
             className="bg-stone-50 border-stone-200"
           />
         </FormField>
-        <FormField label="지도 링크 (선택)" error={form.formState.errors.location_url?.message}>
-          <Input
-            {...form.register('location_url')}
-            placeholder="https://place.map.kakao.com/..."
-            className="bg-stone-50 border-stone-200"
-          />
-        </FormField>
+        {/* 지도 링크는 장소 검색으로 자동 입력 */}
+        <input type="hidden" {...form.register('location_url')} />
       </Section>
 
       <Button
