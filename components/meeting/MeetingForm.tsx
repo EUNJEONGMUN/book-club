@@ -54,7 +54,9 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
   const router = useRouter();
 
   const { date: initDate, time: initTime } = splitScheduledAt(defaultValues?.scheduled_at ?? '');
-  const [scheduledDate, setScheduledDate] = useState(initDate);
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const [scheduledDate, setScheduledDate] = useState(initDate || todayStr);
   const [scheduledTime, setScheduledTime] = useState(initTime || '');
 
   const form = useForm<MeetingFormRaw, unknown, MeetingFormInput>({
@@ -142,36 +144,33 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
       {/* 일정 */}
       <Section icon={<CalendarDays className="w-4 h-4" />} title="일정">
-        <div className="flex gap-3">
-          <div className="w-[150px] shrink-0">
-            <FormField
-              label="날짜"
-              error={form.formState.isSubmitted && !scheduledDate ? '날짜를 선택해주세요' : undefined}
-            >
-              <Input
-                type="date"
-                value={scheduledDate}
-                onChange={(e) => {
-                  setScheduledDate(e.target.value);
-                  updateScheduledAt(e.target.value, scheduledTime);
-                }}
-                className="h-10 min-h-10 bg-stone-50 border-stone-200 text-base [&::-webkit-calendar-picker-indicator]:opacity-100"
-              />
-            </FormField>
-          </div>
-          <div className="w-[110px] shrink-0">
-            <FormField
-              label="시간"
-              error={form.formState.isSubmitted && !scheduledTime ? '시간을 선택해주세요' : undefined}
-            >
-              <div className="relative">
+        <div className="flex items-start justify-between gap-3">
+          <FormField
+            label="날짜"
+            error={form.formState.isSubmitted && !scheduledDate ? '날짜를 선택해주세요' : undefined}
+          >
+            <input
+              type="date"
+              value={scheduledDate}
+              onChange={(e) => {
+                setScheduledDate(e.target.value);
+                updateScheduledAt(e.target.value, scheduledTime);
+              }}
+              className="block w-[160px] h-10 box-border rounded-md border border-stone-200 bg-stone-50 px-3 text-sm text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
+            />
+          </FormField>
+          <FormField
+            label="시간"
+            error={form.formState.isSubmitted && !scheduledTime ? '시간을 선택해주세요' : undefined}
+          >
+            <div className="relative">
               <select
                 value={scheduledTime}
                 onChange={(e) => {
                   setScheduledTime(e.target.value);
                   updateScheduledAt(scheduledDate, e.target.value);
                 }}
-                className="w-full h-10 min-h-10 box-border appearance-none rounded-md border border-stone-200 bg-stone-50 pl-3 pr-8 text-base text-center focus:outline-none focus:ring-2 focus:ring-stone-300"
+                className="block w-[120px] h-10 box-border appearance-none rounded-md border border-stone-200 bg-stone-50 pl-3 pr-8 text-sm text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
               >
                 <option value="" disabled>선택</option>
                 {TIME_OPTIONS.map((t) => (
@@ -179,9 +178,8 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
                 ))}
               </select>
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-              </div>
-            </FormField>
-          </div>
+            </div>
+          </FormField>
         </div>
       </Section>
 
