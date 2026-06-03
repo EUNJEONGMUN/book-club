@@ -11,7 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BookSearch } from '@/components/meeting/BookSearch';
+import { LocationSearch } from '@/components/meeting/LocationSearch';
 import type { KakaoBook } from '@/lib/actions/book-search';
+import type { KakaoPlace } from '@/lib/actions/location-search';
 import type { z } from 'zod';
 
 type MeetingFormRaw = z.input<typeof meetingFormSchema>;
@@ -176,6 +178,13 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
       {/* 장소 */}
       <Section icon={<MapPin className="w-4 h-4" />} title="장소">
+        <LocationSearch
+          onSelect={(place: KakaoPlace) => {
+            form.setValue('location_name', place.place_name, { shouldValidate: true });
+            form.setValue('location_url', place.place_url, { shouldValidate: true });
+            form.setValue('location_address', place.road_address_name || place.address_name, { shouldValidate: true });
+          }}
+        />
         <FormField label="장소 이름" error={form.formState.errors.location_name?.message}>
           <Input
             {...form.register('location_name')}
@@ -186,7 +195,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
         <FormField label="지도 링크 (선택)" error={form.formState.errors.location_url?.message}>
           <Input
             {...form.register('location_url')}
-            placeholder="https://maps.app.goo.gl/..."
+            placeholder="https://place.map.kakao.com/..."
             className="bg-stone-50 border-stone-200"
           />
         </FormField>
