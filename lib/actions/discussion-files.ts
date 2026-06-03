@@ -27,7 +27,7 @@ export async function uploadDiscussionFile(meetingId: string, formData: FormData
 
   const { error: updateError } = await supabase
     .from('meetings')
-    .update({ discussion_file_url: publicUrl })
+    .update({ discussion_file_url: publicUrl, discussion_file_name: file.name })
     .eq('id', meetingId);
   if (updateError) return { ok: false as const, error: updateError.message };
 
@@ -39,7 +39,7 @@ export async function removeDiscussionFile(meetingId: string) {
   const supabase = await getSupabaseServer();
   const { error } = await supabase
     .from('meetings')
-    .update({ discussion_file_url: null })
+    .update({ discussion_file_url: null, discussion_file_name: null })
     .eq('id', meetingId);
   if (error) return { ok: false as const, error: error.message };
   revalidatePath(`/meetings/${meetingId}`);

@@ -15,11 +15,12 @@ import {
 type Props = {
   meetingId: string;
   currentFileUrl: string | null;
+  currentFileName: string | null;
 };
 
-export function DiscussionFileUploader({ meetingId, currentFileUrl }: Props) {
+export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileName }: Props) {
   const [fileUrl, setFileUrl] = useState(currentFileUrl);
-  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(currentFileName);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [candidates, setCandidates] = useState<string[]>([]);
