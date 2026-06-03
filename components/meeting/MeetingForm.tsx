@@ -143,7 +143,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
       {/* 일정 */}
       <Section icon={<CalendarDays className="w-4 h-4" />} title="일정">
         <div className="flex gap-3">
-          <div className="flex-1 min-w-0">
+          <div className="w-[150px] shrink-0">
             <FormField
               label="날짜"
               error={form.formState.isSubmitted && !scheduledDate ? '날짜를 선택해주세요' : undefined}
@@ -155,7 +155,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
                   setScheduledDate(e.target.value);
                   updateScheduledAt(e.target.value, scheduledTime);
                 }}
-                className="h-10 bg-stone-50 border-stone-200"
+                className="h-10 min-h-10 bg-stone-50 border-stone-200 text-base [&::-webkit-calendar-picker-indicator]:opacity-100"
               />
             </FormField>
           </div>
@@ -171,7 +171,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
                   setScheduledTime(e.target.value);
                   updateScheduledAt(scheduledDate, e.target.value);
                 }}
-                className="w-full h-10 appearance-none rounded-md border border-stone-200 bg-stone-50 pl-3 pr-8 text-sm text-center focus:outline-none focus:ring-2 focus:ring-stone-300"
+                className="w-full h-10 min-h-10 box-border appearance-none rounded-md border border-stone-200 bg-stone-50 pl-3 pr-8 text-base text-center focus:outline-none focus:ring-2 focus:ring-stone-300"
               >
                 <option value="" disabled>선택</option>
                 {TIME_OPTIONS.map((t) => (
