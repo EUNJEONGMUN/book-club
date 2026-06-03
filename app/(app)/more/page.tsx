@@ -32,10 +32,12 @@ export default async function MorePage() {
       )
     : null;
 
-  function getHistory(memberId: string): MemberHistoryItem[] | undefined {
-    if (allHistories) return allHistories.get(memberId) ?? [];
-    if (memberId === me?.id) return myHistory;
-    return undefined;
+  // 직렬화 가능한 객체로 변환 (Client Component에 함수 전달 불가)
+  const histories: Record<string, MemberHistoryItem[]> = {};
+  if (allHistories) {
+    allHistories.forEach((v, k) => { histories[k] = v; });
+  } else if (me) {
+    histories[me.id] = myHistory;
   }
 
   return (
@@ -93,7 +95,7 @@ export default async function MorePage() {
         <SettingsTabs
           members={members}
           myId={me.id}
-          getHistory={getHistory}
+          histories={histories}
           hostedMeetings={hostedMeetings}
         />
       )}

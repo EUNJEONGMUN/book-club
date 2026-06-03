@@ -12,11 +12,12 @@ type HostedMeeting = Meeting & { host: Profile };
 type Props = {
   members: MemberStats[];
   myId: string;
-  getHistory: (id: string) => MemberHistoryItem[] | undefined;
+  histories: Record<string, MemberHistoryItem[]>;
   hostedMeetings: HostedMeeting[];
 };
 
-export function SettingsTabs({ members, myId, getHistory, hostedMeetings }: Props) {
+export function SettingsTabs({ members, myId, histories, hostedMeetings }: Props) {
+  const getHistory = (id: string) => histories[id];
   const [tab, setTab] = useState<'members' | 'hosted'>('members');
 
   // 본인 먼저, 나머지는 가나다 순
