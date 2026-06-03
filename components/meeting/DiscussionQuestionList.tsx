@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { updateQuestion, deleteQuestion } from '@/lib/actions/questions';
 import type { DiscussionQuestion } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,7 @@ export function DiscussionQuestionList({
       )}
       <ul className="space-y-2">
         {questions.map((q, i) => (
-          <li key={q.id} className="border rounded p-3 bg-white">
+          <li key={q.id} className="border rounded-xl p-3 bg-white">
             <QuestionItem index={i + 1} question={q} meetingId={meetingId} editable={isHost} />
           </li>
         ))}
@@ -63,19 +64,21 @@ function QuestionItem({
   if (editing) {
     return (
       <div className="space-y-2">
-        <Textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={1000} />
+        <p className="text-xs text-stone-400 px-1">Markdown 지원: **굵게**, *기울임*, {'>'} 인용구</p>
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={1000}
+          rows={4}
+          className="bg-stone-50 border-stone-200"
+        />
         <div className="flex gap-2 justify-end">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              setText(question.content);
-              setEditing(false);
-            }}
-          >
+          <Button size="sm" variant="ghost" onClick={() => { setText(question.content); setEditing(false); }}>
             취소
           </Button>
-          <Button size="sm" onClick={save}>저장</Button>
+          <Button size="sm" className="bg-stone-800 hover:bg-stone-700 text-white" onClick={save}>
+            저장
+          </Button>
         </div>
       </div>
     );
@@ -83,17 +86,19 @@ function QuestionItem({
 
   return (
     <div className="flex justify-between gap-3">
-      <p className="text-sm whitespace-pre-wrap">
-        <span className="font-semibold mr-1">Q{index}.</span>
-        {question.content}
-      </p>
+      <div className="flex-1 min-w-0">
+        <span className="text-sm font-semibold text-stone-500 mr-2">Q{index}.</span>
+        <div className="inline prose prose-sm prose-stone max-w-none text-sm [&>p]:inline [&>blockquote]:border-l-2 [&>blockquote]:border-stone-300 [&>blockquote]:pl-3 [&>blockquote]:text-stone-500 [&>blockquote]:italic [&>blockquote]:my-1">
+          <ReactMarkdown>{question.content}</ReactMarkdown>
+        </div>
+      </div>
       {editable && (
         <div className="flex gap-1 shrink-0">
           <Button size="icon" variant="ghost" onClick={() => setEditing(true)}>
             <Pencil className="w-4 h-4" />
           </Button>
           <Button size="icon" variant="ghost" onClick={remove}>
-            <Trash2 className="w-4 h-4 text-red-600" />
+            <Trash2 className="w-4 h-4 text-red-500" />
           </Button>
         </div>
       )}

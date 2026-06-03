@@ -38,13 +38,15 @@ export function DiscussionQuestionForm({
   }
 
   return (
-    <div className="space-y-2 border rounded p-3 bg-slate-50">
+    <div className="space-y-2 border rounded-xl p-3 bg-stone-50">
+      <p className="text-xs text-stone-400">Markdown 지원: **굵게**, *기울임*, {'>'} 인용구</p>
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="예: 주인공이 마지막에 한 선택에 동의하시나요?"
+        placeholder={'예: 주인공의 선택에 동의하시나요?\n\n> "그는 결국 떠났다"\n위 구절에서 느낀 감정은?'}
         maxLength={1000}
-        rows={3}
+        rows={4}
+        className="bg-white border-stone-200"
       />
       <div className="flex gap-2 justify-end">
         <Button

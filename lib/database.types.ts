@@ -111,6 +111,7 @@ export type Database = {
           book_cover_url: string | null
           book_title: string
           created_at: string
+          discussion_file_url: string | null
           host_id: string
           id: string
           location_address: string | null
@@ -124,6 +125,7 @@ export type Database = {
           book_cover_url?: string | null
           book_title: string
           created_at?: string
+          discussion_file_url?: string | null
           host_id: string
           id?: string
           location_address?: string | null
@@ -137,6 +139,7 @@ export type Database = {
           book_cover_url?: string | null
           book_title?: string
           created_at?: string
+          discussion_file_url?: string | null
           host_id?: string
           id?: string
           location_address?: string | null
