@@ -11,7 +11,10 @@ export default async function MeetingsPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">모임</h1>
         <Link href="/meetings/new">
-          <Button size="icon"><Plus className="w-4 h-4" /></Button>
+          <Button className="gap-1">
+            <Plus className="w-4 h-4" />
+            신규 생성
+          </Button>
         </Link>
       </div>
 
