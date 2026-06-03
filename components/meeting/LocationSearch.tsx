@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { MapPin, Search, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { searchPlaces, type KakaoPlace } from '@/lib/actions/location-search';
 
@@ -22,7 +23,12 @@ export function LocationSearch({ onSelect }: Props) {
     setOpen(true);
     const result = await searchPlaces(query);
     setLoading(false);
-    setResults(result.ok ? result.places : []);
+    if (!result.ok) {
+      toast.error(result.error);
+      setResults([]);
+    } else {
+      setResults(result.places);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
