@@ -28,8 +28,14 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
         {!isHost && meeting.discussion_file_url && (() => {
           const url = meeting.discussion_file_url;
           const storedName = meeting.discussion_file_name;
-          const name = storedName || decodeURIComponent(url.split('/').pop() ?? '') || '발제 파일';
           const isPdf = /\.pdf(\?|$)/i.test(url);
+          let fallback = '';
+          try {
+            fallback = decodeURIComponent(url.split('/').pop()?.split('?')[0] ?? '');
+          } catch {
+            fallback = url.split('/').pop()?.split('?')[0] ?? '';
+          }
+          const name = storedName || fallback || '발제 파일';
           const downloadUrl = storedName ? `${url}?download=${encodeURIComponent(storedName)}` : url;
           return (
             <a

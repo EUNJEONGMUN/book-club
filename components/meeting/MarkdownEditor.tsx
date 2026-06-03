@@ -114,7 +114,7 @@ export function MarkdownEditor({ value, onChange, mode, onRequestTextMode, place
       onKeyDown={handleKeyDown}
       onPaste={handlePaste}
       placeholder={placeholder}
-      maxLength={1000}
+      maxLength={5000}
       rows={rows}
       className={className}
       autoFocus

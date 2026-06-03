@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileText, ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CandidateQuestionsEditor } from '@/components/meeting/CandidateQuestionsEditor';
+import { CandidateQuestionsEditor, newCandidate, type Candidate } from '@/components/meeting/CandidateQuestionsEditor';
 import {
   uploadDiscussionFile,
   removeDiscussionFile,
@@ -23,14 +23,22 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
   const [displayName, setDisplayName] = useState<string | null>(currentFileName);
   const [uploading, setUploading] = useState(false);
   const [extracting, setExtracting] = useState(false);
-  const [candidates, setCandidates] = useState<string[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isPdf = fileUrl?.toLowerCase().includes('.pdf') ||
-    fileUrl?.match(/\.(pdf)(\?|$)/i) != null;
-  const fileName = displayName
-    ?? (fileUrl ? decodeURIComponent(fileUrl.split('/').pop() ?? '') || (isPdf ? 'PDF 파일' : '이미지 파일') : null);
+  const isPdf = fileUrl ? /\.pdf(\?|$)/i.test(fileUrl) : false;
+  const hasStoredName = displayName != null && displayName.length > 0;
+  function safeDecodeBasename(url: string): string {
+    const raw = url.split('/').pop()?.split('?')[0] ?? '';
+    try { return decodeURIComponent(raw); } catch { return raw; }
+  }
+  const fileName = hasStoredName
+    ? displayName!
+    : (fileUrl ? safeDecodeBasename(fileUrl) || (isPdf ? 'PDF 파일' : '이미지 파일') : null);
+  const linkHref = fileUrl
+    ? (hasStoredName ? `${fileUrl}?download=${encodeURIComponent(displayName!)}` : fileUrl)
+    : '#';
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -58,17 +66,20 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
   }
 
   async function handleExtract() {
-    if (!fileUrl) return;
+    if (!fileUrl || extracting) return;
     setExtracting(true);
-    const r = await extractQuestionsFromPdf(fileUrl);
+    const r = await extractQuestionsFromPdf(meetingId, fileUrl);
     setExtracting(false);
     if (!r.ok) return toast.error(r.error);
-    setCandidates(r.questions);
+    setCandidates(r.questions.map((content) => newCandidate(content)));
     toast.success(`${r.questions.length}개의 질문을 추출했습니다.`);
   }
 
   async function handleSaveCandidates() {
-    const filtered = candidates.filter((q) => q.trim().length > 0);
+    if (saving) return;
+    const filtered = candidates
+      .map((c) => c.content.trim())
+      .filter((content) => content.length > 0);
     if (filtered.length === 0) return;
     setSaving(true);
     const r = await addQuestionsInBulk(meetingId, filtered);
@@ -89,7 +100,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
             <ImageIcon className="w-5 h-5 text-blue-500 shrink-0" />
           )}
           <a
-            href={fileName ? `${fileUrl}?download=${encodeURIComponent(fileName)}` : fileUrl}
+            href={linkHref}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 text-sm text-stone-700 underline underline-offset-2 truncate"

@@ -5,15 +5,26 @@ import { ArrowDown, ArrowUp, Check, Loader2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { MarkdownEditor, MarkdownModeTabs } from '@/components/meeting/MarkdownEditor';
 
+export type Candidate = { id: string; content: string };
+
 type Props = {
-  candidates: string[];
-  onChange: (next: string[]) => void;
+  candidates: Candidate[];
+  onChange: (next: Candidate[]) => void;
   onSave: () => void;
   onCancel: () => void;
   saving: boolean;
 };
 
+export function newCandidate(content = ''): Candidate {
+  const id = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return { id, content };
+}
+
 export function CandidateQuestionsEditor({ candidates, onChange, onSave, onCancel, saving }: Props) {
+  const nonEmptyCount = candidates.filter((c) => c.content.trim().length > 0).length;
+
   return (
     <div className="space-y-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
       <div className="flex items-center justify-between">
@@ -23,15 +34,14 @@ export function CandidateQuestionsEditor({ candidates, onChange, onSave, onCance
       </div>
 
       <div className="space-y-2">
-        {candidates.map((q, i) => (
+        {candidates.map((c, i) => (
           <CandidateItem
-            key={i}
+            key={c.id}
             index={i}
             total={candidates.length}
-            value={q}
+            value={c.content}
             onChange={(next) => {
-              const updated = [...candidates];
-              updated[i] = next;
+              const updated = candidates.map((cur, j) => (j === i ? { ...cur, content: next } : cur));
               onChange(updated);
             }}
             onRemove={() => onChange(candidates.filter((_, j) => j !== i))}
@@ -56,7 +66,7 @@ export function CandidateQuestionsEditor({ candidates, onChange, onSave, onCance
         variant="outline"
         size="sm"
         className="w-full border-dashed border-amber-300 text-amber-700 hover:bg-amber-100"
-        onClick={() => onChange([...candidates, ''])}
+        onClick={() => onChange([...candidates, newCandidate()])}
       >
         <Plus className="w-4 h-4 mr-1" />
         질문 직접 추가
@@ -76,7 +86,7 @@ export function CandidateQuestionsEditor({ candidates, onChange, onSave, onCance
           type="button"
           size="sm"
           className="bg-amber-600 hover:bg-amber-700 text-white flex-1"
-          disabled={saving || candidates.filter((q) => q.trim().length > 0).length === 0}
+          disabled={saving || nonEmptyCount === 0}
           onClick={onSave}
         >
           {saving ? (
@@ -87,7 +97,7 @@ export function CandidateQuestionsEditor({ candidates, onChange, onSave, onCance
           ) : (
             <>
               <Check className="w-4 h-4 mr-1" />
-              {candidates.filter((q) => q.trim().length > 0).length}개 저장
+              {nonEmptyCount}개 저장
             </>
           )}
         </Button>

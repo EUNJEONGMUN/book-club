@@ -2,60 +2,147 @@
 
 import { revalidatePath } from 'next/cache';
 import { getSupabaseServer } from '@/lib/supabase/server';
-import { getSupabaseAdmin } from '@/lib/supabase/admin';
+
+const STORAGE_BUCKET = 'discussion-files';
+const MAX_PDF_BYTES = 20 * 1024 * 1024; // 20MB
+
+async function assertHost(meetingId: string) {
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: '로그인이 필요합니다.', supabase: null };
+
+  const { data: meeting, error } = await supabase
+    .from('meetings')
+    .select('host_id')
+    .eq('id', meetingId)
+    .maybeSingle();
+  if (error || !meeting) return { ok: false as const, error: '모임을 찾을 수 없습니다.', supabase: null };
+  if (meeting.host_id !== user.id) return { ok: false as const, error: '발제자만 사용할 수 있습니다.', supabase: null };
+
+  return { ok: true as const, supabase, user };
+}
+
+function publicUrlToPath(url: string): string | null {
+  const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  const tail = url.slice(idx + marker.length);
+  return tail.split('?')[0] || null;
+}
 
 export async function uploadDiscussionFile(meetingId: string, formData: FormData) {
+  const auth = await assertHost(meetingId);
+  if (!auth.ok) return { ok: false as const, error: auth.error };
+  const supabase = auth.supabase;
+
   const file = formData.get('file') as File | null;
   if (!file) return { ok: false as const, error: '파일이 없습니다.' };
 
-  const maxSize = 20 * 1024 * 1024;
-  if (file.size > maxSize) return { ok: false as const, error: '파일 크기는 20MB 이하여야 합니다.' };
+  if (file.size > MAX_PDF_BYTES) return { ok: false as const, error: '파일 크기는 20MB 이하여야 합니다.' };
 
   const ext = file.name.split('.').pop()?.toLowerCase();
-  const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_');
-  const path = `${meetingId}/${safeName}`;
+  const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_') || 'file';
+  // Unique path prevents Korean-name collisions and CDN cache reuse
+  const path = `${meetingId}/${Date.now()}-${safeName}`;
 
-  const supabase = await getSupabaseServer();
-  const { error } = await supabase.storage
-    .from('discussion-files')
-    .upload(path, file, { upsert: true });
-  if (error) return { ok: false as const, error: error.message };
+  const { error: uploadError } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(path, file, { upsert: false });
+  if (uploadError) return { ok: false as const, error: uploadError.message };
 
   const { data: { publicUrl } } = supabase.storage
-    .from('discussion-files')
+    .from(STORAGE_BUCKET)
     .getPublicUrl(path);
+
+  // Clean up previous file (if any) to avoid orphans
+  const { data: prev } = await supabase
+    .from('meetings')
+    .select('discussion_file_url')
+    .eq('id', meetingId)
+    .maybeSingle();
+  const prevPath = prev?.discussion_file_url ? publicUrlToPath(prev.discussion_file_url) : null;
+  if (prevPath && prevPath !== path) {
+    await supabase.storage.from(STORAGE_BUCKET).remove([prevPath]);
+  }
 
   const { error: updateError } = await supabase
     .from('meetings')
     .update({ discussion_file_url: publicUrl, discussion_file_name: file.name })
     .eq('id', meetingId);
-  if (updateError) return { ok: false as const, error: updateError.message };
+  if (updateError) {
+    // Roll back the new storage object on failed DB update
+    await supabase.storage.from(STORAGE_BUCKET).remove([path]);
+    return { ok: false as const, error: updateError.message };
+  }
 
   revalidatePath(`/meetings/${meetingId}`);
   return { ok: true as const, url: publicUrl, fileName: file.name, isPdf: ext === 'pdf' };
 }
 
 export async function removeDiscussionFile(meetingId: string) {
-  const supabase = await getSupabaseServer();
+  const auth = await assertHost(meetingId);
+  if (!auth.ok) return { ok: false as const, error: auth.error };
+  const supabase = auth.supabase;
+
+  const { data: row } = await supabase
+    .from('meetings')
+    .select('discussion_file_url')
+    .eq('id', meetingId)
+    .maybeSingle();
+  const path = row?.discussion_file_url ? publicUrlToPath(row.discussion_file_url) : null;
+
   const { error } = await supabase
     .from('meetings')
     .update({ discussion_file_url: null, discussion_file_name: null })
     .eq('id', meetingId);
   if (error) return { ok: false as const, error: error.message };
+
+  if (path) {
+    await supabase.storage.from(STORAGE_BUCKET).remove([path]);
+  }
+
   revalidatePath(`/meetings/${meetingId}`);
   return { ok: true as const };
 }
 
-export async function extractQuestionsFromPdf(pdfUrl: string): Promise<
+export async function extractQuestionsFromPdf(meetingId: string, pdfUrl: string): Promise<
   { ok: true; questions: string[] } | { ok: false; error: string }
 > {
+  const auth = await assertHost(meetingId);
+  if (!auth.ok) return { ok: false, error: auth.error };
+
+  // SSRF guard: URL must be inside our Supabase storage bucket for THIS meeting
+  const expectedPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${meetingId}/`;
+  if (!pdfUrl.startsWith(expectedPrefix)) {
+    return { ok: false, error: '잘못된 파일 경로입니다.' };
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return { ok: false, error: 'Gemini API 키가 설정되지 않았습니다.' };
 
   try {
-    const res = await fetch(pdfUrl);
-    if (!res.ok) return { ok: false, error: 'PDF를 가져오지 못했습니다.' };
-    const pdfBase64 = Buffer.from(await res.arrayBuffer()).toString('base64');
+    // Pre-check size via HEAD to avoid OOM on huge files
+    const head = await fetch(pdfUrl, { method: 'HEAD' });
+    if (!head.ok) return { ok: false, error: 'PDF를 가져오지 못했습니다.' };
+    const contentLength = Number(head.headers.get('content-length') ?? '0');
+    if (contentLength > MAX_PDF_BYTES) {
+      return { ok: false, error: 'PDF가 너무 큽니다 (20MB 초과).' };
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60_000); // 60s timeout
+    let pdfBase64: string;
+    try {
+      const res = await fetch(pdfUrl, { signal: controller.signal });
+      if (!res.ok) return { ok: false, error: 'PDF를 가져오지 못했습니다.' };
+      const buf = await res.arrayBuffer();
+      if (buf.byteLength > MAX_PDF_BYTES) {
+        return { ok: false, error: 'PDF가 너무 큽니다 (20MB 초과).' };
+      }
+      pdfBase64 = Buffer.from(buf).toString('base64');
+    } finally {
+      clearTimeout(timeout);
+    }
 
     const { GoogleGenAI, Type } = await import('@google/genai');
     const ai = new GoogleGenAI({ apiKey });
@@ -138,8 +225,14 @@ PDF에 나온 순서대로 questions 배열에 담아주세요.`;
     const text = response.text;
     if (!text) return { ok: false, error: 'AI 응답이 비어있습니다.' };
 
-    const parsed = JSON.parse(text) as { questions: string[] };
-    const questions = (parsed.questions ?? [])
+    let parsed: { questions?: string[] };
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return { ok: false, error: 'AI 응답을 해석하지 못했습니다.' };
+    }
+    const questions = (Array.isArray(parsed.questions) ? parsed.questions : [])
+      .filter((q): q is string => typeof q === 'string')
       .map((q) => q.trim())
       .filter((q) => q.length > 0);
 
@@ -148,13 +241,20 @@ PDF에 나온 순서대로 questions 배열에 담아주세요.`;
     }
     return { ok: true, questions };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return { ok: false, error: `발제문 추출 실패: ${msg}` };
+    if (e instanceof Error && e.name === 'AbortError') {
+      return { ok: false, error: 'PDF 분석이 시간 초과되었습니다.' };
+    }
+    return { ok: false, error: '발제문 추출에 실패했습니다.' };
   }
 }
 
 export async function addQuestionsInBulk(meetingId: string, contents: string[]) {
-  const supabase = await getSupabaseServer();
+  const auth = await assertHost(meetingId);
+  if (!auth.ok) return { ok: false as const, error: auth.error };
+  const supabase = auth.supabase;
+
+  const cleaned = contents.map((c) => c.trim()).filter((c) => c.length > 0);
+  if (cleaned.length === 0) return { ok: false as const, error: '저장할 질문이 없습니다.' };
 
   const { data: existing } = await supabase
     .from('discussion_questions')
@@ -165,7 +265,7 @@ export async function addQuestionsInBulk(meetingId: string, contents: string[]) 
     .maybeSingle();
 
   const startIdx = (existing?.order_idx ?? -1) + 1;
-  const rows = contents.map((content, i) => ({
+  const rows = cleaned.map((content, i) => ({
     meeting_id: meetingId,
     order_idx: startIdx + i,
     content,

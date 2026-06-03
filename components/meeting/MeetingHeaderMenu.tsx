@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { MoreVertical, Pencil, Share2, Trash2 } from 'lucide-react';
+import { Loader2, MoreVertical, Pencil, Share2, Trash2 } from 'lucide-react';
 import { deleteMeeting } from '@/lib/actions/meetings';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,20 +23,56 @@ import {
 export function MeetingHeaderMenu({ meetingId }: { meetingId: string }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   async function handleShare() {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    // 1) Native share sheet (best mobile UX, works in most in-app browsers)
+    if (typeof navigator !== 'undefined' && 'share' in navigator) {
+      try {
+        await navigator.share({ url });
+        return;
+      } catch (err) {
+        // user cancelled — treat AbortError as silent
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        // fall through to clipboard
+      }
+    }
+    // 2) Clipboard
     try {
-      const url = typeof window !== 'undefined' ? window.location.href : '';
-      await navigator.clipboard.writeText(url);
-      toast.success('링크가 복사되었습니다');
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        toast.success('링크가 복사되었습니다');
+        return;
+      }
     } catch {
-      toast.error('링크 복사에 실패했습니다');
+      // fall through
+    }
+    // 3) Last-resort prompt so user can manually copy
+    if (typeof window !== 'undefined') {
+      window.prompt('아래 링크를 복사하세요', url);
+    } else {
+      toast.error('링크 복사를 지원하지 않는 환경입니다');
     }
   }
 
   async function handleDelete() {
-    const result = await deleteMeeting(meetingId);
-    if (result && !result.ok) toast.error(result.error);
+    if (deleting) return;
+    setDeleting(true);
+    try {
+      const result = await deleteMeeting(meetingId);
+      if (result && !result.ok) {
+        toast.error(result.error);
+        setDeleting(false);
+      }
+      // success path throws NEXT_REDIRECT — keep button disabled until unmount
+    } catch (err) {
+      // NEXT_REDIRECT is rethrown so server-side navigation happens; for other errors:
+      setDeleting(false);
+      if (err instanceof Error && !err.message.includes('NEXT_REDIRECT')) {
+        toast.error('삭제에 실패했습니다');
+      }
+    }
   }
 
   return (
@@ -70,18 +106,25 @@ export function MeetingHeaderMenu({ meetingId }: { meetingId: string }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog open={confirmOpen} onOpenChange={(o) => !deleting && setConfirmOpen(o)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>모임을 삭제하시겠어요?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-slate-600">관련된 참석 정보와 발제문이 모두 삭제됩니다.</p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+            <Button variant="outline" disabled={deleting} onClick={() => setConfirmOpen(false)}>
               취소
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              삭제
+            <Button variant="destructive" disabled={deleting} onClick={handleDelete}>
+              {deleting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                  삭제 중...
+                </>
+              ) : (
+                '삭제'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
