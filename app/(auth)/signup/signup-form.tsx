@@ -34,7 +34,8 @@ export function SignupForm() {
       return;
     }
 
-    const profile = await createProfile(displayName);
+    // user.id를 직접 전달해 세션 쿠키 의존 없이 프로필 생성
+    const profile = await createProfile(displayName, data.user.id);
     setLoading(false);
     if (!profile.ok) return toast.error(profile.error);
 
