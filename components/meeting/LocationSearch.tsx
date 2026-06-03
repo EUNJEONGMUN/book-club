@@ -71,17 +71,17 @@ export function LocationSearch({ onSelect }: Props) {
 
       {open && (
         <div className="absolute z-10 mt-1 w-full bg-white rounded-xl border border-stone-200 shadow-lg overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-stone-100 bg-stone-50/50">
-            <span className="text-xs font-medium text-stone-500">
+          <div className="flex items-center justify-between px-3 py-1 border-b border-stone-100 bg-stone-50/50">
+            <span className="text-[11px] font-medium text-stone-500">
               {loading ? '검색 중...' : results.length > 0 ? `검색 결과 ${results.length}개` : '결과 없음'}
             </span>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="닫기"
-              className="p-1 text-stone-400 hover:text-stone-700 transition-colors"
+              className="p-0.5 text-stone-400 hover:text-stone-700 transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
           {loading ? (

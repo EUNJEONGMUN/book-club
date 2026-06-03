@@ -142,26 +142,29 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
       {/* 일정 */}
       <Section icon={<CalendarDays className="w-4 h-4" />} title="일정">
-        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-3">
-          <FormField
-            label="날짜"
-            error={form.formState.isSubmitted && !scheduledDate ? '날짜를 선택해주세요' : undefined}
-          >
-            <Input
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => {
-                setScheduledDate(e.target.value);
-                updateScheduledAt(e.target.value, scheduledTime);
-              }}
-              className="h-10 bg-stone-50 border-stone-200"
-            />
-          </FormField>
-          <FormField
-            label="시간"
-            error={form.formState.isSubmitted && !scheduledTime ? '시간을 선택해주세요' : undefined}
-          >
-            <div className="relative">
+        <div className="flex gap-3">
+          <div className="flex-1 min-w-0">
+            <FormField
+              label="날짜"
+              error={form.formState.isSubmitted && !scheduledDate ? '날짜를 선택해주세요' : undefined}
+            >
+              <Input
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => {
+                  setScheduledDate(e.target.value);
+                  updateScheduledAt(e.target.value, scheduledTime);
+                }}
+                className="h-10 bg-stone-50 border-stone-200"
+              />
+            </FormField>
+          </div>
+          <div className="w-[110px] shrink-0">
+            <FormField
+              label="시간"
+              error={form.formState.isSubmitted && !scheduledTime ? '시간을 선택해주세요' : undefined}
+            >
+              <div className="relative">
               <select
                 value={scheduledTime}
                 onChange={(e) => {
@@ -176,8 +179,9 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
                 ))}
               </select>
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-            </div>
-          </FormField>
+              </div>
+            </FormField>
+          </div>
         </div>
       </Section>
 
