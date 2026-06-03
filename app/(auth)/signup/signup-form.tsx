@@ -26,6 +26,14 @@ export function SignupForm() {
       return toast.error(error?.message ?? '가입 실패');
     }
 
+    // 이메일 인증이 필요한 경우 session이 null — 인증 후 /signup에서 이름 입력
+    if (!data.session) {
+      setLoading(false);
+      toast.success('가입 신청 완료! 이메일 인증 후 로그인해주세요.');
+      router.push('/login');
+      return;
+    }
+
     const profile = await createProfile(displayName);
     setLoading(false);
     if (!profile.ok) return toast.error(profile.error);

@@ -22,7 +22,7 @@ export default async function SignupPage() {
           <div className="text-center space-y-2">
             <div className="text-4xl">📖</div>
             <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">부글부글</h1>
-            <p className="text-sm text-stone-500">이름을 입력하면 가입이 완료돼요</p>
+            <p className="text-sm text-stone-500">이메일 인증 완료! 이름을 입력해주세요</p>
           </div>
           <CompleteProfileForm userEmail={user.email ?? ''} />
           <p className="text-sm text-center text-stone-500">
