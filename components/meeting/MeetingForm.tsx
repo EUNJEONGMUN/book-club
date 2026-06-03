@@ -156,7 +156,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
                 setScheduledDate(e.target.value);
                 updateScheduledAt(e.target.value, scheduledTime);
               }}
-              className="block w-[160px] h-10 box-border rounded-md border border-stone-200 bg-stone-50 px-3 py-0 text-sm leading-none text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300 [&::-webkit-datetime-edit]:py-0"
+              className="block w-[160px] h-10 box-border rounded-md border border-stone-200 bg-stone-50 px-3 py-0 text-sm leading-10 text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
             />
           </FormField>
           <FormField
