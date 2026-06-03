@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { BookOpen, CalendarDays, MapPin } from 'lucide-react';
+import { BookOpen, CalendarDays, ChevronDown, MapPin } from 'lucide-react';
 import { meetingFormSchema, type MeetingFormInput } from '@/lib/validation/meeting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -142,7 +142,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
       {/* 일정 */}
       <Section icon={<CalendarDays className="w-4 h-4" />} title="일정">
-        <div className="grid grid-cols-[1.5fr_1fr] gap-2">
+        <div className="grid grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] gap-3">
           <FormField
             label="날짜"
             error={form.formState.isSubmitted && !scheduledDate ? '날짜를 선택해주세요' : undefined}
@@ -161,19 +161,22 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
             label="시간"
             error={form.formState.isSubmitted && !scheduledTime ? '시간을 선택해주세요' : undefined}
           >
-            <select
-              value={scheduledTime}
-              onChange={(e) => {
-                setScheduledTime(e.target.value);
-                updateScheduledAt(scheduledDate, e.target.value);
-              }}
-              className="w-full h-10 rounded-md border border-stone-200 bg-stone-50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
-            >
-              <option value="" disabled>선택</option>
-              {TIME_OPTIONS.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={scheduledTime}
+                onChange={(e) => {
+                  setScheduledTime(e.target.value);
+                  updateScheduledAt(scheduledDate, e.target.value);
+                }}
+                className="w-full h-10 appearance-none rounded-md border border-stone-200 bg-stone-50 pl-3 pr-8 text-sm text-center focus:outline-none focus:ring-2 focus:ring-stone-300"
+              >
+                <option value="" disabled>선택</option>
+                {TIME_OPTIONS.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+            </div>
           </FormField>
         </div>
       </Section>
@@ -248,7 +251,7 @@ function FormField({
   children: React.ReactNode;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 min-w-0">
       <Label className="text-stone-700">{label}</Label>
       {children}
       {error && <p className="text-xs text-red-500">{error}</p>}
