@@ -1,10 +1,7 @@
 import { notFound } from 'next/navigation';
-import { getMeetingDetail, getMyAttendance } from '@/lib/queries/meetings';
+import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
-import { MeetingActions } from '@/components/meeting/MeetingActions';
-import { AttendanceToggle } from '@/components/meeting/AttendanceToggle';
-import { AttendanceSummary } from '@/components/meeting/AttendanceSummary';
 import { DiscussionQuestionList } from '@/components/meeting/DiscussionQuestionList';
 import { DiscussionQuestionForm } from '@/components/meeting/DiscussionQuestionForm';
 import { DiscussionFileUploader } from '@/components/meeting/DiscussionFileUploader';
@@ -15,24 +12,23 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
   if (!meeting) notFound();
   const me = await getCurrentProfile();
   const isHost = me?.id === meeting.host_id;
-  const myStatus = me ? await getMyAttendance(meeting.id, me.id) : null;
 
   return (
     <div className="space-y-6">
-      <MeetingDetailHeader meeting={meeting} />
-      <AttendanceToggle meetingId={meeting.id} initialStatus={myStatus} />
-      <AttendanceSummary attendances={meeting.attendances} />
+      <MeetingDetailHeader meeting={meeting} isHost={isHost} />
       <section className="space-y-3">
         <p className="text-sm font-medium">발제 자료</p>
         {isHost && (
           <DiscussionFileUploader
             meetingId={meeting.id}
-            currentFileUrl={(meeting as any).discussion_file_url ?? null}
+            currentFileUrl={meeting.discussion_file_url ?? null}
+            currentFileName={meeting.discussion_file_name ?? null}
           />
         )}
-        {!isHost && (meeting as any).discussion_file_url && (() => {
-          const url: string = (meeting as any).discussion_file_url;
-          const name = decodeURIComponent(url.split('/').pop() ?? '') || '발제 파일';
+        {!isHost && meeting.discussion_file_url && (() => {
+          const url = meeting.discussion_file_url;
+          const storedName = meeting.discussion_file_name;
+          const name = storedName || decodeURIComponent(url.split('/').pop() ?? '') || '발제 파일';
           const isPdf = /\.pdf(\?|$)/i.test(url);
           return (
             <a
@@ -50,7 +46,6 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
       {isHost && (
         <DiscussionQuestionForm meetingId={meeting.id} questionsCount={meeting.questions.length} />
       )}
-      {isHost && <MeetingActions meetingId={meeting.id} />}
     </div>
   );
 }

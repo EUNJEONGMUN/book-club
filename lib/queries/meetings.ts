@@ -1,11 +1,17 @@
 import { getSupabaseServer } from '@/lib/supabase/server';
 import type { Meeting, Profile, DiscussionQuestion, Attendance } from '@/lib/types';
 
-export async function getNextMeeting(): Promise<(Meeting & { host: Profile; questions_count: number }) | null> {
+export type NextMeeting = Meeting & {
+  host: Profile;
+  questions_count: number;
+  attendances: Array<Attendance & { profile: Profile }>;
+};
+
+export async function getNextMeeting(): Promise<NextMeeting | null> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
-    .select('*, host:profiles!meetings_host_id_fkey(*), discussion_questions(count)')
+    .select('*, host:profiles!meetings_host_id_fkey(*), discussion_questions(count), attendances(*, profile:profiles(*))')
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true })
     .limit(1)
@@ -14,7 +20,7 @@ export async function getNextMeeting(): Promise<(Meeting & { host: Profile; ques
   if (!data) return null;
   // discussion_questions is returned as [{ count: N }] — extract
   const questions_count = (data as any).discussion_questions?.[0]?.count ?? 0;
-  return { ...(data as any), questions_count } as Meeting & { host: Profile; questions_count: number };
+  return { ...(data as any), questions_count } as NextMeeting;
 }
 
 export async function getUpcomingMeetings(): Promise<Array<Meeting & { host: Profile }>> {

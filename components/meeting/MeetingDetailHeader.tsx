@@ -1,8 +1,15 @@
 import { format, differenceInDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { MeetingHeaderMenu } from './MeetingHeaderMenu';
 import type { Meeting, Profile } from '@/lib/types';
 
-export function MeetingDetailHeader({ meeting }: { meeting: Meeting & { host: Profile } }) {
+export function MeetingDetailHeader({
+  meeting,
+  isHost,
+}: {
+  meeting: Meeting & { host: Profile };
+  isHost: boolean;
+}) {
   const date = new Date(meeting.scheduled_at);
   const diff = differenceInDays(date, new Date());
   const dDay = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : `D+${-diff}`;
@@ -17,8 +24,11 @@ export function MeetingDetailHeader({ meeting }: { meeting: Meeting & { host: Pr
             <span className="text-3xl">📚</span>
           )}
         </div>
-        <div className="flex-1 space-y-1">
-          <p className="text-xs font-bold text-blue-600">{dDay}</p>
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-start justify-between gap-2">
+            <p className="text-xs font-bold text-blue-600">{dDay}</p>
+            {isHost && <MeetingHeaderMenu meetingId={meeting.id} />}
+          </div>
           <h1 className="text-xl font-bold">{meeting.book_title}</h1>
           <p className="text-sm text-slate-600">{meeting.book_author}</p>
           <p className="text-sm text-slate-700 mt-2">

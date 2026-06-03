@@ -4,10 +4,15 @@ import { ko } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AttendanceToggle } from './AttendanceToggle';
-import type { Meeting, Profile, AttendanceStatus } from '@/lib/types';
+import { AttendanceSummary } from './AttendanceSummary';
+import type { Meeting, Profile, Attendance, AttendanceStatus } from '@/lib/types';
 
 type Props = {
-  meeting: Meeting & { host: Profile; questions_count: number };
+  meeting: Meeting & {
+    host: Profile;
+    questions_count: number;
+    attendances: Array<Attendance & { profile: Profile }>;
+  };
   myStatus: AttendanceStatus | null;
 };
 
@@ -40,6 +45,8 @@ export function NextMeetingCard({ meeting, myStatus }: Props) {
         </div>
 
         <AttendanceToggle meetingId={meeting.id} initialStatus={myStatus} />
+
+        <AttendanceSummary attendances={meeting.attendances} />
 
         <Link href={`/meetings/${meeting.id}`}>
           <Button variant="outline" className="w-full">
