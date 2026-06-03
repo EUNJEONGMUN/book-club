@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Pencil, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { updateQuestion, deleteQuestion } from '@/lib/actions/questions';
 import type { DiscussionQuestion } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { MarkdownEditor, MarkdownModeTabs } from '@/components/meeting/MarkdownEditor';
+import { MarkdownEditor, MarkdownModeTabs, PREVIEW_PROSE } from '@/components/meeting/MarkdownEditor';
 
 export function DiscussionQuestionList({
   meetingId,
@@ -98,8 +99,8 @@ function QuestionItem({
     <div className="flex justify-between gap-3">
       <div className="flex-1 min-w-0">
         <span className="text-sm font-semibold text-stone-500 mr-2">Q{index}.</span>
-        <div className="inline prose prose-sm prose-stone max-w-none text-sm [&>p]:inline [&>blockquote]:border-l-2 [&>blockquote]:border-stone-300 [&>blockquote]:pl-3 [&>blockquote]:text-stone-500 [&>blockquote]:italic [&>blockquote]:my-1">
-          <ReactMarkdown>{question.content}</ReactMarkdown>
+        <div className={`inline ${PREVIEW_PROSE} [&>p]:inline`}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{question.content}</ReactMarkdown>
         </div>
       </div>
       {editable && (
