@@ -2,9 +2,9 @@
 
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { FileText, ImageIcon, Loader2, Trash2, X, Check } from 'lucide-react';
+import { FileText, ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { CandidateQuestionsEditor } from '@/components/meeting/CandidateQuestionsEditor';
 import {
   uploadDiscussionFile,
   removeDiscussionFile,
@@ -143,53 +143,13 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl }: Props) {
 
       {/* 추출된 질문 후보 */}
       {candidates.length > 0 && (
-        <div className="space-y-2 p-3 bg-amber-50 rounded-xl border border-amber-200">
-          <p className="text-xs font-semibold text-amber-700">추출된 질문 — 수정 후 저장하세요</p>
-          {candidates.map((q, i) => (
-            <div key={i} className="flex gap-2">
-              <Textarea
-                value={q}
-                rows={2}
-                onChange={(e) => {
-                  const updated = [...candidates];
-                  updated[i] = e.target.value;
-                  setCandidates(updated);
-                }}
-                className="flex-1 text-sm bg-white border-amber-200 resize-none"
-              />
-              <button
-                onClick={() => setCandidates(candidates.filter((_, j) => j !== i))}
-                className="text-stone-400 hover:text-red-500 transition-colors mt-1"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-amber-200 text-amber-700"
-              onClick={() => setCandidates([])}
-            >
-              취소
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              className="bg-amber-600 hover:bg-amber-700 text-white flex-1"
-              disabled={saving}
-              onClick={handleSaveCandidates}
-            >
-              {saving ? (
-                <><Loader2 className="w-4 h-4 mr-1 animate-spin" />저장 중...</>
-              ) : (
-                <><Check className="w-4 h-4 mr-1" />{candidates.length}개 질문 저장</>
-              )}
-            </Button>
-          </div>
-        </div>
+        <CandidateQuestionsEditor
+          candidates={candidates}
+          onChange={setCandidates}
+          onSave={handleSaveCandidates}
+          onCancel={() => setCandidates([])}
+          saving={saving}
+        />
       )}
     </div>
   );
