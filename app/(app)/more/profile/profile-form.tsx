@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { updateProfile } from '@/lib/actions/profile';
@@ -37,7 +38,14 @@ export function ProfileForm({
         <Label htmlFor="name">이름</Label>
         <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} />
       </div>
-      <Button type="submit" disabled={loading} className="w-full">저장</Button>
+      <div className="flex gap-2">
+        <Link href="/more" className="flex-1">
+          <Button type="button" variant="outline" className="w-full">취소</Button>
+        </Link>
+        <Button type="submit" disabled={loading} className="flex-1 bg-stone-800 hover:bg-stone-700 text-white">
+          저장
+        </Button>
+      </div>
     </form>
   );
 }
