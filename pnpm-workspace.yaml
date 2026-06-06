@@ -1,5 +1,6 @@
 allowBuilds:
   '@google/genai': false
+  '@sentry/cli': true
   msw: false
   protobufjs: false
   sharp: true
