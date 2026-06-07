@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
+import { sanitizeNext } from '@/lib/auth/safe-next';
 import { createProfile } from '@/lib/actions/profile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,8 @@ import { Label } from '@/components/ui/label';
 
 export function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = sanitizeNext(searchParams.get('next'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -30,7 +33,7 @@ export function SignupForm() {
     if (!data.session) {
       setLoading(false);
       toast.success('가입 신청 완료! 이메일 인증 후 로그인해주세요.');
-      router.push('/login');
+      router.push(next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login');
       return;
     }
 
@@ -40,7 +43,7 @@ export function SignupForm() {
     if (!profile.ok) return toast.error(profile.error);
 
     toast.success('가입 완료!');
-    router.push('/');
+    router.push(next);
     router.refresh();
   }
 

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
+import { sanitizeNext } from '@/lib/auth/safe-next';
 import { createProfile } from '@/lib/actions/profile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,8 @@ import { Label } from '@/components/ui/label';
 
 export function CompleteProfileForm({ userEmail }: { userEmail: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = sanitizeNext(searchParams.get('next'));
   const supabase = getSupabaseBrowser();
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,7 +25,7 @@ export function CompleteProfileForm({ userEmail }: { userEmail: string }) {
     setLoading(false);
     if (!profile.ok) return toast.error(profile.error);
     toast.success('가입 완료!');
-    router.push('/');
+    router.push(next);
     router.refresh();
   }
 
