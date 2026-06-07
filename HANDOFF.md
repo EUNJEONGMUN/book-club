@@ -18,7 +18,7 @@
 모든 기능 + 보안 가드 + 모바일 UX 최적화 + 운영 관찰 도구 통합까지 main에 push 되어 Vercel 배포 완료.
 
 ### 학습 트랙 (현재 위치)
-**단계 1, 2 완료 + 관찰 도구 사용법(Sentry) 깊게 학습 완료.** 다음은 Vercel Analytics / Speed Insights 사용법 + 단계 3.
+**단계 1, 2 완료 + 관찰 도구 사용법(Sentry) 깊게 학습 완료 + 운영 테스트 시범 12개 시나리오 + 발견 5건 PR 머지 완료.** 다음은 단계 3 (Server Action 단위 테스트).
 
 #### 단계 1에서 깐 것
 - **Sentry** (`@sentry/nextjs` v10.56.0)
@@ -60,6 +60,31 @@
 **관련 커밋**:
 - `377c8e6` docs(operations): add operations runbook for daily/weekly monitoring (#3) — **OPERATIONS.md** 신규 문서
 
+#### 운영 테스트 시범 (이번 세션, 2026-06-07)
+
+OPERATIONS.md의 매일/매주 루틴 전에, **OPERATIONS.md가 만든 도구가 실제로 동작하는지 검증**하기 위해 12개 시나리오를 직접 PC + 모바일에서 실행. **이 과정 자체가 운영 안정성 학습의 핵심**이 됨 — 단순 테스트 통과가 아니라, 발견사항을 묶음 PR로 처리하는 흐름까지 한 사이클 완성.
+
+**시나리오 (T1~T12, 12/12 통과)**: PC 로그인 → 모임 생성 (책 검색, 날짜/시간, 장소) → 제출 → PDF 업로드 → Gemini 추출 → 검수 저장 → 수정 → 공유 → 참석 토글 → 모바일 핵심 흐름 → 정리
+
+**발견 사항 처리**:
+| # | 처리 | PR |
+|---|------|----|
+| #1 (날짜/시간 input 간격, cosmetic) | 머지 | PR #7 |
+| #2 (검색 헤더 바, cosmetic) | 머지 | PR #7 |
+| #3, #4 (Gemini 페이지번호/순서 보존) | 즉시 머지 | PR #5 (`1710e30`) |
+| #5 (공유 링크 `?next=` 보존, UX 회귀) | 머지 | PR #7 |
+| #6 (모임 상세 Attendance 복원, UX) | **기각** — IA 결정(RSVP 홈 카드 한 곳) 유지 | - |
+| #7 (Sentry catch 관찰성 구멍, 긴급) | 즉시 단독 머지 | PR #6 (`4efceb0`) |
+| #8 (백그라운드 추출 결과 휘발, UX 회귀) | **유보** — 디자인 옵션 결정 필요 | - |
+| #9 (Gemini 503 시 catch-all 메시지) | 진단 완료 → #10 으로 fix | - |
+| #10 (Gemini 503 전용 안내 메시지) | 머지 | PR #7 |
+
+**핵심 학습 순간**: 발견 #7 fix (catch에 `Sentry.captureException` 한 줄 추가)가 5분 후 발견 #9 진단을 가능하게 함. catch swallow → unknown → fix → 같은 사고 stack trace + breadcrumb 확보 → Gemini 503 transient임 확정. 운영 관찰성의 가치가 실시간으로 증명된 사례.
+
+**관련 머지 commit**:
+- `4efceb0` fix(discussion): capture extract failures in Sentry + console (PR #6) — 발견 #7 긴급 단독 fix
+- `<PR #7 squash sha>` fix: post-ops-test bundle — UX polish, auth ?next= preservation, 503 retry copy — 발견 #1/#2/#5/#10 + Suspense bailout 후속 fix
+
 **OPERATIONS.md 내용**:
 - 즉시/PR직후 30분/매일 5분/매주 15분/매월 30분 체크리스트
 - 알람 메일 도착 시 대응 runbook (New issue vs Regression)
@@ -88,6 +113,10 @@
 - **두 시나리오로 룰셋 검증**: (1) main에 직접 push 시도 → 거절 확인. (2) PR → CI → squash merge → 정상 흐름. 룰셋 셋업 후 이 두 가지로 검증하는 패턴이 강력함
 - **"많은 정보 vs 봐야 할 것" 압축**: 사용자가 "정보가 너무 많네요. 제가 주로 봐야할 것들만 알려주세요"라고 명시. → Sentry 이슈 페이지의 ~10개 섹션을 **4단계 recipe**로 압축한 게 결정적. 처음 학습할 땐 도구의 모든 기능 나열 대신 "이 순서로만 보세요" 패턴이 훨씬 유효
 - **알람 채널 검증의 표준 절차**: (a) Alert list에서 룰 등록 확인 → (b) 룰 상세에서 저장된 조건 확인 → (c) Send Test Notification으로 실제 채널 검증. 마지막 (c)가 "운영팀의 oncall 콜 테스트"에 해당. 셋업 후 즉시 검증하는 습관 권장
+- **TaskCreate 12개 시나리오로 시범 진행**: T1~T12 각각 한 줄 description으로 만든 후 in_progress/completed 토글. 시범 중 끊겨도 재개 가능 + 발견 사항을 누적 PR 목록으로 관리. 다른 학습자에게 권장 패턴
+- **Atomic commit per 발견 + squash merge**: 한 PR 안에서 발견별로 commit 분리 (#1, #2, #10, #5 각 commit). 작업 중 진행 추적 명확 + 머지 시 squash로 어차피 합쳐짐. 학습자 입장에서 PR 구성 단계 보이기 좋음
+- **Rebase로 commit 제거 후 영향 검증 절차**: 발견 #6 commit을 `git rebase --onto <parent> <commit> <branch>`로 깔끔 제거. 후속 검증 4단계: (a) `git diff main HEAD -- <원래 파일>` 빈 출력 확인 (b) working tree clean (c) 각 commit이 자기 파일만 건드림 확인 (d) `git range-diff`로 rebase된 commit이 원본과 동일한지 확인. 이 절차로 push 전 안전 보장
+- **발견 #7 → #9 진단 사례**: 운영 관찰성의 가치가 같은 세션 안에서 한 사이클로 증명됨. catch에 `Sentry.captureException` + `console.error` 한 줄 추가하는 fix가 그 후 같은 에러의 stack trace + breadcrumb 확보로 직결. Spring 환경의 "catch 안 비우기" 원칙이 Next.js / Sentry 환경에서도 그대로 적용됨을 학습
 
 ## What Didn't Work (Don't Repeat)
 
@@ -104,34 +133,38 @@
 ### CI/CD 시행착오
 - **Status check 이름 mismatch (display name vs job ID)**: 워크플로의 `jobs.verify.name: Typecheck & Unit Tests`가 PR에 표시되는 check 이름이고, GitHub branch protection의 required status check도 그 display name을 매치해야 함. 처음에 job ID `verify`를 등록했더니 영원히 "Expected — Waiting for status to be reported"로 머무름. **Rule의 required check 이름은 PR Checks 섹션에 실제로 보이는 이름과 정확히 같아야 함**. 입문자가 거의 다 한 번씩 밟는 함정
 - **HANDOFF.md outdated 가능성**: 이전 HANDOFF에서 "단계 3에서 vitest 깔자"라고 적었는데 사실 **vitest와 playwright는 이미 셋업되어 있었음** (validation 단위 테스트 3개, e2e 1개). 다음 세션은 단계 3을 "vitest 도입" 대신 **"Server Action 테스트로 확장"**으로 봐야 함
+- **CI에 `pnpm build` 없음 → prerender 에러 Vercel preview에서야 잡힘**: 이번 세션 PR #7에서 `useSearchParams`를 client에서 추가했는데 `pnpm tsc --noEmit` + vitest는 통과. Vercel preview deploy가 처음으로 `useSearchParams() should be wrapped in a suspense boundary` 에러 잡음 → 추가 commit으로 Suspense 감싸기 fix. 교훈: **typecheck ≠ build**. dynamic API (useSearchParams, cookies, headers) 추가 시 PR 전 로컬 `pnpm build` 1회 권장. CI workflow에 `pnpm build` 추가 검토 가치 있음 (메모리 `feedback_local_build_before_pr`로 저장)
+- **server action catch가 exception 통째로 삼킴 → 운영 진단 불가**: 단계 1 셋업 단계에 들어가 있던 `extractQuestionsFromPdf`의 catch가 `'발제문 추출에 실패했습니다.'`만 반환하고 `e`를 버려서, 실제 Gemini 503 발생 시 Sentry/Vercel logs 둘 다 비어있어 진단 1시간 지체. `console.error(e) + Sentry.captureException(e)` 두 줄 추가가 5분 후 같은 사고에서 stack trace 확보 → 즉시 원인 확정. 다음 세션에서 `lib/actions/**` 다른 catch들도 같은 패턴인지 grep 1회 권장 (메모리 `feedback_no_catch_swallow`로 저장)
 
 ## Next Steps
 
 ### 즉시 (다음 세션 시작 시)
-다음 순서 권장:
 
-**A. Vercel Analytics 사용법 (10분)**
-- 이번 세션은 Sentry만 깊게. Analytics는 셋업 시점에 한 번 봤지만 사용법 학습 안 함
-- 다룰 것: pageview 차트 / Pages·Routes·Hostnames 카드 / Referrers / 위험 신호
-- "어디서 사용자가 빠지나" 추적 패턴
+**A. 단계 3 진행 (Server Action 단위 테스트로 확장) ← 주력**
 
-**B. Vercel Speed Insights 사용법 (15분)**
-- Web Vitals (LCP / INP / CLS / FCP / FID / TTFB) 각각 의미와 임계값
-- Real Experience Score 산정 방식
-- Routes 탭에서 페이지별 점수 보기
-- 떨어졌을 때 어디서 단서를 찾는지
-
-**C. 운영 일과 첫 시범**
-- OPERATIONS.md의 "매일 5분 루틴"을 실제로 한 번 같이 돌려보기
-- Sentry → Analytics → Speed Insights 순회 실습
-
-**D. 단계 3 진행 (Server Action 단위 테스트로 확장)**
 이미 셋업된 vitest 위에 테스트 확장. 백엔드 강점 활용 영역.
 - 1번 타깃: `lib/actions/discussion-files.ts` — `assertHost(meetingId)` 가드 + SSRF 검증
 - 2번 타깃: `lib/actions/meetings.ts` (또는 유사한 모임 CRUD action) — RLS 통과/실패 케이스
 - 3번 타깃: `lib/queries/meetings.ts`의 `getNextMeeting` — attendances join
 - 테스트 위치 컨벤션: `tests/lib/actions/...` 패턴 (기존 `tests/lib/validation/*.test.ts`와 동일 구조)
 - Supabase mocking 전략: 로컬 Supabase 도커 컨테이너에 시드 데이터 → 통합 테스트 형태 권장. 백엔드 출신에게 친숙한 패턴이고, mocking 함정도 피함
+
+**B. 발견 #8 처리 (백그라운드 추출 결과 휘발, UX 회귀)**
+
+이번 세션에서 발견되었지만 디자인 옵션 결정 필요해서 유보. 옵션:
+- (a) `beforeunload` 가드로 사용자에게 경고
+- (b) candidates를 DB에 임시 저장 → 재진입 시 복원 (schema 변경 필요)
+- (c) 추출 중 navigation 차단 (UX 손상)
+
+세션 시작 시 옵션 결정 → fix → PR. 단계 3 작업 사이의 짧은 휴식 같은 작업으로 적합.
+
+**C. CI 워크플로에 `pnpm build` 추가 검토**
+
+이번 세션에서 `useSearchParams` Suspense bailout이 Vercel preview에서야 잡힘. CI 워크플로(`.github/workflows/ci.yml`)에 `pnpm build` 단계 추가하면 다음 PR부터 같은 패턴 미리 차단. 단점: CI 소요 시간 증가 (현재 30초 → 1-2분 예상). 가치 판단 후 적용.
+
+**D. Vercel Analytics / Speed Insights 사용법 (보충, 선택)**
+
+지난 세션에 셋업했지만 사용법 학습 안 함. 단계 3 진행 중 짬짬이 5~10분씩 다뤄도 OK. OPERATIONS.md의 "매일 5분 루틴"으로 실습.
 
 ### 단계 4 이후 (다음 단계들)
 - **단계 4 (React/Next 멘탈 모델)**: RSC vs Client, `'use client'` 점검, Next.js 캐시 계층 (`revalidatePath`/`revalidateTag`)
@@ -189,6 +222,8 @@
 ## 메모리 (자동 참조됨)
 
 - `feedback_interactive_cli`: 인터랙티브 CLI는 `!` 접두사로 못 돌림. 사용자 본인 터미널에 안내
+- `feedback_local_build_before_pr`: PR 전 `pnpm build` 1회. tsc/CI는 prerender 에러 못 잡음
+- `feedback_no_catch_swallow`: server action catch는 반드시 `console.error` + `Sentry.captureException`. exception 통째로 삼키지 말 것
 
 ## 환경
 
