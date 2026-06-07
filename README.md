@@ -229,8 +229,10 @@ pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 | `GEMINI_API_KEY` | Gemini 발제문 추출 | server only |
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID` | Google OAuth | server only |
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Google OAuth | server only |
+| `SENTRY_AUTH_TOKEN` | Source map 업로드 (Vercel 빌드 전용) | server only |
 
 Vercel 콘솔에서는 Production / Preview / Development 환경에 모두 동일하게 설정.
+`SENTRY_AUTH_TOKEN` 은 로컬에 두지 않고 (`.env.sentry-build-plugin` 은 wizard 생성 시 자동으로 gitignored) Vercel 환경변수로만 관리.
 
 ---
 
