@@ -6,8 +6,8 @@
 
 전체 로드맵 (단계별, 각 ~1주):
 1. ✅ **관찰 도구 셋업** (Sentry + Vercel Analytics + Speed Insights) — **완료**
-2. **CI/CD 안전망** (GitHub Actions + main 브랜치 보호) ← 다음
-3. **Server Action 단위 테스트** (Vitest, 백엔드 강점 활용)
+2. ✅ **CI/CD 안전망** (GitHub Actions + main 브랜치 보호) — **완료**
+3. **Server Action 단위 테스트** (Vitest 확장, 백엔드 강점 활용) ← 다음
 4. **React/Next 멘탈 모델 정리** (RSC vs Client, 'use client' 점검, Next 튜토리얼)
 5. **E2E 핵심 흐름 확장** (Playwright 1개 → 5개 시나리오)
 6. **DB 최적화** (`EXPLAIN ANALYZE`, 인덱스, RLS 회귀 점검)
