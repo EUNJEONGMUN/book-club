@@ -26,15 +26,13 @@ export function MeetingDetailHeader({
           )}
         </div>
         <div className="flex-1 min-w-0 space-y-0.5 relative">
-          {isHost && (
-            <div className="absolute top-0 right-0 z-10">
-              <MeetingHeaderMenu meetingId={meeting.id} />
-            </div>
-          )}
+          <div className="absolute top-0 right-0 z-10">
+            <MeetingHeaderMenu meetingId={meeting.id} isHost={isHost} />
+          </div>
           {isUpcoming && (
             <p className="text-xs font-bold text-blue-600">{dDay}</p>
           )}
-          <h1 className={`text-xl font-bold leading-tight ${isHost ? 'pr-10' : ''}`}>{meeting.book_title}</h1>
+          <h1 className="text-xl font-bold leading-tight pr-10">{meeting.book_title}</h1>
           <p className="text-sm text-slate-600">{meeting.book_author}</p>
           <p className="text-sm text-slate-700 pt-1">
             {format(date, 'yyyy.MM.dd (EEE) HH:mm', { locale: ko })}
