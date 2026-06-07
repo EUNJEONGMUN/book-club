@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer } from '@/lib/supabase/server';
 
 const STORAGE_BUCKET = 'discussion-files';
@@ -262,6 +263,8 @@ PDF에 나온 순서대로 questions 배열에 담아주세요. 각 항목 안�
     }
     return { ok: true, questions };
   } catch (e) {
+    console.error('[extractQuestionsFromPdf]', e);
+    Sentry.captureException(e, { tags: { action: 'extractQuestionsFromPdf' } });
     if (e instanceof Error && e.name === 'AbortError') {
       return { ok: false, error: 'PDF 분석이 시간 초과되었습니다.' };
     }
