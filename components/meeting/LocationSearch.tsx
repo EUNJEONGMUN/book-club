@@ -71,7 +71,7 @@ export function LocationSearch({ onSelect }: Props) {
 
       {open && (
         <div className="absolute z-10 mt-1 w-full bg-white rounded-xl border border-stone-200 shadow-lg overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-1 border-b border-stone-100 bg-stone-50/50">
+          <div className="flex items-center justify-between px-3 py-0.5 border-b border-stone-100 bg-stone-50/50">
             <span className="text-[11px] font-medium text-stone-500">
               {loading ? '검색 중...' : results.length > 0 ? `검색 결과 ${results.length}개` : '결과 없음'}
             </span>
