@@ -18,7 +18,7 @@
 모든 기능 + 보안 가드 + 모바일 UX 최적화 + 운영 관찰 도구 통합까지 main에 push 되어 Vercel 배포 완료.
 
 ### 학습 트랙 (현재 위치)
-**단계 1 완전 종료 → 단계 2 시작 직전.**
+**단계 1, 2 완료 + 관찰 도구 사용법(Sentry) 깊게 학습 완료.** 다음은 Vercel Analytics / Speed Insights 사용법 + 단계 3.
 
 #### 단계 1에서 깐 것
 - **Sentry** (`@sentry/nextjs` v10.56.0)
@@ -47,6 +47,26 @@
 - `b379388` ci: add GitHub Actions workflow for typecheck and unit tests
 - `d9df123` docs(handoff): mark phase 2 (CI/CD) complete (#1) — **첫 PR squash merge**
 
+#### 단계 1/2 사이 — 관찰 도구 사용법 학습 (이번 세션 후반)
+**셋업이 아니라 사용법** 익히기. 깔아둔 도구가 무용지물이 되지 않도록.
+
+**Sentry 깊게 다룬 것**:
+- Issues 탭 컬럼 의미 (Users / Events / Age / Trend) + 우선순위 판단 룰
+- 이슈 상세 페이지의 **디버깅 4단계 recipe**: Users·Events → Tags 3개(env/release/transaction) → Stack Trace 강조줄 → Breadcrumbs
+- 다른 섹션(Highlights / Trace Preview / HTTP Request / Contexts / Activity)은 99% 무시 가능. 1% 까다로운 케이스의 백업
+- Alert 시스템: 기본 "high priority issues" 알람 외에 **Regression alert** (production only) 직접 셋업 + 테스트 메일 수신으로 채널 검증
+- 테스트 에러 4개 Resolve 처리 → 깨끗한 상태
+
+**관련 커밋**:
+- `377c8e6` docs(operations): add operations runbook for daily/weekly monitoring (#3) — **OPERATIONS.md** 신규 문서
+
+**OPERATIONS.md 내용**:
+- 즉시/PR직후 30분/매일 5분/매주 15분/매월 30분 체크리스트
+- 알람 메일 도착 시 대응 runbook (New issue vs Regression)
+- 이슈 디버깅 4단계 recipe
+- 위험 신호 패턴 (빨간 신호 / 노란 신호)
+- 빠른 링크 모음
+
 #### Sentry 프로젝트 정보 (최신)
 - Org slug: `eunjeongmun`
 - Project slug: `book-club` (rename 완료)
@@ -62,10 +82,12 @@
 - **`curl` + `grep`으로 운영 HTML 직접 검사**: Network 탭에서 안 잡힐 때 `curl -sL [url] | grep -i analytics`로 컴포넌트가 RSC payload에 들어갔는지 1초만에 확인 가능
 
 ### 협업 흐름
-- **Spring/Logback 비유**: 거의 모든 새 개념에 비유 anchor 제공 → 학습 속도 크게 향상 (Sentry=Logback+APM, DSN=appender 주소, Source map=stack trace 복원, Web Vitals=APM p75 응답시간, GitHub Actions=Jenkins+Gerrit)
+- **Spring/Logback 비유**: 거의 모든 새 개념에 비유 anchor 제공 → 학습 속도 크게 향상 (Sentry=Logback+APM, DSN=appender 주소, Source map=stack trace 복원, Web Vitals=APM p75 응답시간, GitHub Actions=Jenkins+Gerrit, Alert=oncall PagerDuty)
 - **수동 push 분리**: 사용자가 commit은 위임하지만 push는 직접 — 운영 반영 직전 검토 시간 확보 (사용자가 명시적으로 그렇게 요청함)
-- **TaskCreate로 다단계 작업 추적**: Sentry 5단계 + Analytics 4단계 + CI/CD 4단계를 task로 분해 → 진행 상황 시각화
+- **TaskCreate로 다단계 작업 추적**: Sentry 5단계 + Analytics 4단계 + CI/CD 4단계 + Sentry 사용법 5단계를 task로 분해 → 진행 상황 시각화
 - **두 시나리오로 룰셋 검증**: (1) main에 직접 push 시도 → 거절 확인. (2) PR → CI → squash merge → 정상 흐름. 룰셋 셋업 후 이 두 가지로 검증하는 패턴이 강력함
+- **"많은 정보 vs 봐야 할 것" 압축**: 사용자가 "정보가 너무 많네요. 제가 주로 봐야할 것들만 알려주세요"라고 명시. → Sentry 이슈 페이지의 ~10개 섹션을 **4단계 recipe**로 압축한 게 결정적. 처음 학습할 땐 도구의 모든 기능 나열 대신 "이 순서로만 보세요" 패턴이 훨씬 유효
+- **알람 채널 검증의 표준 절차**: (a) Alert list에서 룰 등록 확인 → (b) 룰 상세에서 저장된 조건 확인 → (c) Send Test Notification으로 실제 채널 검증. 마지막 (c)가 "운영팀의 oncall 콜 테스트"에 해당. 셋업 후 즉시 검증하는 습관 권장
 
 ## What Didn't Work (Don't Repeat)
 
@@ -86,24 +108,30 @@
 ## Next Steps
 
 ### 즉시 (다음 세션 시작 시)
-다음 중 하나 선택:
+다음 순서 권장:
 
-**A. 단계 3 진행 (Server Action 단위 테스트로 확장) — 추천**
+**A. Vercel Analytics 사용법 (10분)**
+- 이번 세션은 Sentry만 깊게. Analytics는 셋업 시점에 한 번 봤지만 사용법 학습 안 함
+- 다룰 것: pageview 차트 / Pages·Routes·Hostnames 카드 / Referrers / 위험 신호
+- "어디서 사용자가 빠지나" 추적 패턴
+
+**B. Vercel Speed Insights 사용법 (15분)**
+- Web Vitals (LCP / INP / CLS / FCP / FID / TTFB) 각각 의미와 임계값
+- Real Experience Score 산정 방식
+- Routes 탭에서 페이지별 점수 보기
+- 떨어졌을 때 어디서 단서를 찾는지
+
+**C. 운영 일과 첫 시범**
+- OPERATIONS.md의 "매일 5분 루틴"을 실제로 한 번 같이 돌려보기
+- Sentry → Analytics → Speed Insights 순회 실습
+
+**D. 단계 3 진행 (Server Action 단위 테스트로 확장)**
 이미 셋업된 vitest 위에 테스트 확장. 백엔드 강점 활용 영역.
 - 1번 타깃: `lib/actions/discussion-files.ts` — `assertHost(meetingId)` 가드 + SSRF 검증
 - 2번 타깃: `lib/actions/meetings.ts` (또는 유사한 모임 CRUD action) — RLS 통과/실패 케이스
 - 3번 타깃: `lib/queries/meetings.ts`의 `getNextMeeting` — attendances join
 - 테스트 위치 컨벤션: `tests/lib/actions/...` 패턴 (기존 `tests/lib/validation/*.test.ts`와 동일 구조)
 - Supabase mocking 전략: 로컬 Supabase 도커 컨테이너에 시드 데이터 → 통합 테스트 형태 권장. 백엔드 출신에게 친숙한 패턴이고, mocking 함정도 피함
-
-**B. 운영 모니터링 일과 만들기**
-- 매일 5분 루틴: Sentry Issues → Vercel Analytics → Speed Insights 순회
-- Sentry 대시보드에서 Alert rule 설정 (특정 에러 빈도/타입 threshold)
-- 이메일 알림 채널 확인
-
-**C. PR 워크플로 정착 연습**
-- 단계 2에서 룰셋만 깔았지만 실제 작업 시 익숙해지는 시간 필요
-- 다음 변경부터는 자연스럽게 feature branch → PR → 자동 CI → squash merge
 
 ### 단계 4 이후 (다음 단계들)
 - **단계 4 (React/Next 멘탈 모델)**: RSC vs Client, `'use client'` 점검, Next.js 캐시 계층 (`revalidatePath`/`revalidateTag`)
@@ -131,7 +159,8 @@
 ## 핵심 파일/문서
 
 ### 기존
-- `README.md` — Gemini·Kakao·IA·보안 가드 반영. `SENTRY_AUTH_TOKEN` 추가 명시 필요
+- `README.md` — Gemini·Kakao·IA·보안 가드 + `SENTRY_AUTH_TOKEN` 명시 완료
+- `OPERATIONS.md` — **운영 일과 runbook (이번 세션 신규)**. 매일/주간/월간 체크리스트 + 알람 대응
 - `.env.example` — 환경변수 템플릿
 - `.omc/specs/deep-interview-meeting-detail-ia.md` — IA 리팩터링 결정 기록
 - `lib/actions/discussion-files.ts` — 보안 가드 참고
