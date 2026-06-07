@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getSupabaseServer } from '@/lib/supabase/server';
@@ -24,7 +25,9 @@ export default async function SignupPage() {
             <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">부글부글</h1>
             <p className="text-sm text-stone-500">이메일 인증 완료! 이름을 입력해주세요</p>
           </div>
-          <CompleteProfileForm userEmail={user.email ?? ''} />
+          <Suspense fallback={null}>
+            <CompleteProfileForm userEmail={user.email ?? ''} />
+          </Suspense>
           <p className="text-sm text-center text-stone-500">
             이미 계정이 있나요?{' '}
             <Link href="/login" className="text-stone-800 font-medium underline underline-offset-4">
@@ -44,7 +47,9 @@ export default async function SignupPage() {
           <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">부글부글</h1>
           <p className="text-sm text-stone-500">함께 책 읽는 사람들</p>
         </div>
-        <SignupForm />
+        <Suspense fallback={null}>
+          <SignupForm />
+        </Suspense>
         <p className="text-sm text-center text-stone-500">
           이미 계정이 있나요?{' '}
           <Link href="/login" className="text-stone-800 font-medium underline underline-offset-4">
