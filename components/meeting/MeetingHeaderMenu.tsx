@@ -20,7 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-export function MeetingHeaderMenu({ meetingId }: { meetingId: string }) {
+export function MeetingHeaderMenu({ meetingId, isHost }: { meetingId: string; isHost: boolean }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -91,18 +91,22 @@ export function MeetingHeaderMenu({ meetingId }: { meetingId: string }) {
           <MoreVertical className="w-5 h-5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={6} className="min-w-44 p-1.5 space-y-0.5">
-          <DropdownMenuItem className="py-2.5 gap-2" onClick={() => router.push(`/meetings/${meetingId}/edit`)}>
-            <Pencil className="w-4 h-4" />
-            모임 정보 수정
-          </DropdownMenuItem>
+          {isHost && (
+            <DropdownMenuItem className="py-2.5 gap-2" onClick={() => router.push(`/meetings/${meetingId}/edit`)}>
+              <Pencil className="w-4 h-4" />
+              모임 정보 수정
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem className="py-2.5 gap-2" onClick={handleShare}>
             <Share2 className="w-4 h-4" />
             공유
           </DropdownMenuItem>
-          <DropdownMenuItem className="py-2.5 gap-2" variant="destructive" onClick={() => setConfirmOpen(true)}>
-            <Trash2 className="w-4 h-4" />
-            모임 삭제
-          </DropdownMenuItem>
+          {isHost && (
+            <DropdownMenuItem className="py-2.5 gap-2" variant="destructive" onClick={() => setConfirmOpen(true)}>
+              <Trash2 className="w-4 h-4" />
+              모임 삭제
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
