@@ -28,6 +28,8 @@ export async function updateSession(req: NextRequest) {
   if (!user && !isPublic) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
+    url.search = '';
+    url.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search);
     return NextResponse.redirect(url);
   }
 
@@ -44,8 +46,10 @@ export async function updateSession(req: NextRequest) {
       .maybeSingle();
     if (!profile) {
       const url = req.nextUrl.clone();
+      const originalNext = req.nextUrl.pathname + req.nextUrl.search;
       url.pathname = '/signup';
       url.search = '';
+      if (originalNext !== '/') url.searchParams.set('next', originalNext);
       return NextResponse.redirect(url);
     }
     // 가입 승인 대기 중인 사용자 → /pending
