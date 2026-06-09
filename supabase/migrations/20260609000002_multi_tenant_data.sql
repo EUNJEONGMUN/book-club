@@ -4,16 +4,16 @@
 -- 1. default '부글부글' 그룹 INSERT. EUNJEONGMUN이 admin
 --    auth.users.email 기준으로 찾아서 portable (local에 같은 email 없으면 0 row insert)
 INSERT INTO clubs (name, created_by)
-SELECT '부글부글', id FROM auth.users WHERE email = 'scone@ignite.co.kr'
+SELECT '부글부글', id FROM auth.users WHERE email = 'munej26@gmail.com'
 ON CONFLICT DO NOTHING;
 
 -- 2. 기존 approved 사용자 모두 default 그룹의 멤버로
---    scone@ignite.co.kr은 admin, 나머지는 member
+--    munej26@gmail.com은 admin, 나머지는 member
 INSERT INTO club_members (club_id, user_id, role)
 SELECT
   (SELECT id FROM clubs WHERE name = '부글부글' LIMIT 1),
   p.id,
-  CASE WHEN u.email = 'scone@ignite.co.kr' THEN 'admin'::club_member_role
+  CASE WHEN u.email = 'munej26@gmail.com' THEN 'admin'::club_member_role
        ELSE 'member'::club_member_role END
 FROM profiles p
 JOIN auth.users u ON u.id = p.id
