@@ -77,3 +77,27 @@ AS $$
       AND role = 'admin'
   );
 $$;
+
+-- RLS: clubs
+ALTER TABLE clubs ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: 자신이 active member(admin/member)인 그룹만
+CREATE POLICY clubs_select_member ON clubs
+  FOR SELECT TO authenticated
+  USING (is_club_member(id));
+
+-- INSERT: 인증된 사용자 누구나. created_by는 자기 자신이어야 함
+CREATE POLICY clubs_insert_self ON clubs
+  FOR INSERT TO authenticated
+  WITH CHECK (created_by = auth.uid());
+
+-- UPDATE: admin만 (이름/설명 수정)
+CREATE POLICY clubs_update_admin ON clubs
+  FOR UPDATE TO authenticated
+  USING (is_club_admin(id))
+  WITH CHECK (is_club_admin(id));
+
+-- DELETE: admin만
+CREATE POLICY clubs_delete_admin ON clubs
+  FOR DELETE TO authenticated
+  USING (is_club_admin(id));
