@@ -333,3 +333,31 @@ COMMIT;
 - Vercel/Supabase 환경변수 변경
 - Sentry alert 룰 변경
 - 디자인 시스템 변경
+
+## PR 1 Deployment Notes (2026-06-10)
+
+PR 1 (`feat/multi-tenant-schema`) production deploy 후 발견 사항. 다음 phase 작업 시 참고.
+
+### 1. EUNJEONGMUN 실제 production 이메일
+
+spec/plan 초안은 `scone@ignite.co.kr` (회사 이메일)을 가정했지만, 실제 Supabase auth에 등록된 본인 계정은 **`munej26@gmail.com`** (Google OAuth 가입). 데이터 마이그레이션이 production에서 0 rows로 실행됨 — 부글부글 club + 멤버 backfill 모두 실패.
+
+**Production fix**: SQL Editor에서 정확한 이메일(`munej26@gmail.com`)로 수동 INSERT/UPDATE 실행. 결과: 부글부글 club 1개, admin 1명(본인), member 3명(프레쳴/스콘/시나몬), meetings 10개 모두 club_id 채워짐.
+
+**Migration file fix (follow-up commit)**: `supabase/migrations/20260609000002_multi_tenant_data.sql`의 이메일을 `munej26@gmail.com`으로 정정. 단발성 backfill이라 production에 재적용 영향은 없으나 reference + 향후 환경 정확성을 위함.
+
+### 2. `supabase db reset` 순서로 인한 local default club 미생성
+
+`supabase db reset`은 **migrations → seed** 순서로 실행. seed.sql의 사용자가 마이그레이션 시점엔 아직 없어서 `auth.users` lookup이 0 rows. 결과: 로컬에선 부글부글 club 자동 생성 안 됨.
+
+**대안 (필요 시)**:
+- 로컬 환경에서 부글부글 club이 필요하면 `supabase db reset` 후 `supabase/migrations/20260609000002_multi_tenant_data.sql`을 psql로 한 번 더 수동 실행
+- 또는 PR 2+에서 seed.sql에 default club + 멤버를 직접 INSERT하도록 추가 (마이그레이션이 아닌 seed에 시드 데이터로)
+
+### 3. Production 사용자 이메일 (참고)
+
+- `munej26@gmail.com` — 문은정 (본인, admin)
+- `graphpaper07@gmail.com` — 프레쳴 (member)
+- `beagentleman7@gmail.com` — 스콘 (member)
+- `happy@naver.com` — 시나몬 (member)
+- `munej26@naver.com` — auth.users에는 있으나 profile 미생성 (signup 도중 이탈 추정)
