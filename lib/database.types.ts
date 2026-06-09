@@ -73,6 +73,122 @@ export type Database = {
           },
         ]
       }
+      club_invites: {
+        Row: {
+          club_id: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_invites_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_invites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_members: {
+        Row: {
+          club_id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["club_member_role"]
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          joined_at?: string
+          role: Database["public"]["Enums"]["club_member_role"]
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["club_member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubs: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clubs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       discussion_questions: {
         Row: {
           content: string
@@ -110,6 +226,7 @@ export type Database = {
           book_author: string
           book_cover_url: string | null
           book_title: string
+          club_id: string | null
           created_at: string
           discussion_file_name: string | null
           discussion_file_url: string | null
@@ -125,6 +242,7 @@ export type Database = {
           book_author: string
           book_cover_url?: string | null
           book_title: string
+          club_id?: string | null
           created_at?: string
           discussion_file_name?: string | null
           discussion_file_url?: string | null
@@ -140,6 +258,7 @@ export type Database = {
           book_author?: string
           book_cover_url?: string | null
           book_title?: string
+          club_id?: string | null
           created_at?: string
           discussion_file_name?: string | null
           discussion_file_url?: string | null
@@ -152,6 +271,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "meetings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "meetings_host_id_fkey"
             columns: ["host_id"]
@@ -193,10 +319,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_club_admin: { Args: { target_club_id: string }; Returns: boolean }
+      is_club_member: { Args: { target_club_id: string }; Returns: boolean }
     }
     Enums: {
       attendance_status: "attending" | "not_attending" | "undecided"
+      club_member_role: "admin" | "member" | "pending"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -328,6 +456,7 @@ export const Constants = {
   public: {
     Enums: {
       attendance_status: ["attending", "not_attending", "undecided"],
+      club_member_role: ["admin", "member", "pending"],
     },
   },
 } as const
