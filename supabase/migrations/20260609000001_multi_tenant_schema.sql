@@ -44,3 +44,8 @@ CREATE TABLE club_invites (
 -- partial index: active invite lookups
 CREATE INDEX club_invites_active_by_club_idx
   ON club_invites(club_id) WHERE revoked_at IS NULL;
+
+-- meetings에 club_id 추가 (PR 1에서는 nullable; 데이터 backfill 후 NOT NULL은 PR 5 cleanup에서)
+-- ON DELETE CASCADE: 그룹 삭제 시 그 그룹의 모든 모임도 함께 삭제
+ALTER TABLE meetings ADD COLUMN club_id UUID REFERENCES clubs(id) ON DELETE CASCADE;
+CREATE INDEX meetings_club_id_idx ON meetings(club_id);
