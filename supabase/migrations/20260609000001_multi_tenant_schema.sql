@@ -125,3 +125,28 @@ CREATE POLICY club_members_update_admin ON club_members
 CREATE POLICY club_members_delete_self_or_admin ON club_members
   FOR DELETE TO authenticated
   USING (user_id = auth.uid() OR is_club_admin(club_id));
+
+-- RLS: club_invites
+ALTER TABLE club_invites ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: 그 그룹의 admin만 (초대링크 관리 페이지)
+CREATE POLICY club_invites_select_admin ON club_invites
+  FOR SELECT TO authenticated
+  USING (is_club_admin(club_id));
+
+-- INSERT: 그 그룹의 admin만 (발급/재발급)
+CREATE POLICY club_invites_insert_admin ON club_invites
+  FOR INSERT TO authenticated
+  WITH CHECK (is_club_admin(club_id) AND created_by = auth.uid());
+
+-- UPDATE: 그 그룹의 admin만 (revoked_at 세팅)
+CREATE POLICY club_invites_update_admin ON club_invites
+  FOR UPDATE TO authenticated
+  USING (is_club_admin(club_id))
+  WITH CHECK (is_club_admin(club_id));
+
+-- DELETE 정책 없음 — 초대 row는 revoked_at으로 soft-delete만 (이력 보존)
+
+-- 비고: 가입 신청 흐름에서 비멤버가 token으로 club_id를 알아내야 하는데,
+-- 이 SELECT 정책으로는 비멤버가 못 봄. 그래서 server action에서
+-- SECURITY DEFINER 함수로 token만으로 club 조회하는 경로를 PR 3에서 추가.
