@@ -101,3 +101,27 @@ CREATE POLICY clubs_update_admin ON clubs
 CREATE POLICY clubs_delete_admin ON clubs
   FOR DELETE TO authenticated
   USING (is_club_admin(id));
+
+-- RLS: club_members
+ALTER TABLE club_members ENABLE ROW LEVEL SECURITY;
+
+-- SELECT: 자신이 active member인 그룹의 모든 member row (pending 포함, admin이 신청자 보려면 필요)
+CREATE POLICY club_members_select_member ON club_members
+  FOR SELECT TO authenticated
+  USING (is_club_member(club_id));
+
+-- INSERT: RLS로는 금지. 모든 INSERT는 server action(SECURITY DEFINER 함수)에서만
+--   - 그룹 만들기: admin row INSERT (server action에서 트랜잭션으로)
+--   - 가입 신청: pending row INSERT (server action이 token 검증 후 우회)
+-- 정책을 아예 만들지 않으면 RLS 활성화된 테이블은 service role만 INSERT 가능
+
+-- UPDATE: admin만 그 그룹의 row 변경 (pending → member 승인, admin↔member 이양)
+CREATE POLICY club_members_update_admin ON club_members
+  FOR UPDATE TO authenticated
+  USING (is_club_admin(club_id))
+  WITH CHECK (is_club_admin(club_id));
+
+-- DELETE: 본인 row 삭제 (탈퇴) OR admin이 다른 멤버 삭제
+CREATE POLICY club_members_delete_self_or_admin ON club_members
+  FOR DELETE TO authenticated
+  USING (user_id = auth.uid() OR is_club_admin(club_id));
