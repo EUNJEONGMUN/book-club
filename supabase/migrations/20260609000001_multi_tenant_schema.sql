@@ -28,3 +28,19 @@ CREATE TABLE club_members (
 );
 
 CREATE INDEX club_members_user_idx ON club_members(user_id);
+
+-- 초대링크. 재발급 이력 보존을 위해 row는 여러 개 가능
+-- active invite는 revoked_at IS NULL AND expires_at > now()로 정의 (앱 코드에서 한 그룹당 1개 유지)
+CREATE TABLE club_invites (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  club_id UUID NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  created_by UUID NOT NULL REFERENCES profiles(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL DEFAULT (now() + INTERVAL '30 days'),
+  revoked_at TIMESTAMPTZ
+);
+
+-- partial index: active invite lookups
+CREATE INDEX club_invites_active_by_club_idx
+  ON club_invites(club_id) WHERE revoked_at IS NULL;
