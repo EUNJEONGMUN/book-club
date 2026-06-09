@@ -49,3 +49,31 @@ CREATE INDEX club_invites_active_by_club_idx
 -- ON DELETE CASCADE: 그룹 삭제 시 그 그룹의 모든 모임도 함께 삭제
 ALTER TABLE meetings ADD COLUMN club_id UUID REFERENCES clubs(id) ON DELETE CASCADE;
 CREATE INDEX meetings_club_id_idx ON meetings(club_id);
+
+-- Helper: 현재 사용자가 특정 club의 active member(admin 또는 member)인가?
+CREATE OR REPLACE FUNCTION is_club_member(target_club_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM club_members
+    WHERE club_id = target_club_id
+      AND user_id = auth.uid()
+      AND role IN ('admin', 'member')
+  );
+$$;
+
+-- Helper: 현재 사용자가 특정 club의 admin인가?
+CREATE OR REPLACE FUNCTION is_club_admin(target_club_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM club_members
+    WHERE club_id = target_club_id
+      AND user_id = auth.uid()
+      AND role = 'admin'
+  );
+$$;
