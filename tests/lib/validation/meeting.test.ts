@@ -3,6 +3,7 @@ import { meetingFormSchema } from '@/lib/validation/meeting';
 
 describe('meetingFormSchema', () => {
   const valid = {
+    club_id: '12345678-1234-4567-89ab-cdef01234567',
     book_title: '미움받을 용기',
     book_author: '기시미 이치로',
     scheduled_at: '2026-06-15T19:00',
