@@ -18,6 +18,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ id
       <EditMeetingForm
         id={id}
         defaults={{
+          club_id: meeting.club_id ?? '',
           book_title: meeting.book_title,
           book_author: meeting.book_author,
           book_cover_url: meeting.book_cover_url ?? '',

@@ -3,6 +3,7 @@ import { z } from 'zod';
 const optionalUrl = z.union([z.url('올바른 URL 형식이 아닙니다'), z.literal('')]);
 
 export const meetingFormSchema = z.object({
+  club_id: z.string().uuid('잘못된 그룹 id'),
   book_title: z.string().trim().min(1, '책 제목을 입력해주세요').max(200),
   book_author: z.string().trim().min(1, '저자를 입력해주세요').max(100),
   book_cover_url: optionalUrl,
