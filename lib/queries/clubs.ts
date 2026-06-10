@@ -1,5 +1,5 @@
 import { getSupabaseServer } from '@/lib/supabase/server';
-import type { Club, Meeting, Profile, Attendance } from '@/lib/types';
+import type { Club, ClubInvite, Meeting, Profile, Attendance } from '@/lib/types';
 
 export type MyClub = Club & {
   role: 'admin' | 'member';
@@ -79,4 +79,45 @@ export async function getPastMeetingsInClub(clubId: string): Promise<Array<Meeti
     .order('scheduled_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Array<Meeting & { host: Profile }>;
+}
+
+/** Returns the currently active invite for the club, or null. RLS restricts this to club admins. */
+export async function getActiveInvite(clubId: string): Promise<ClubInvite | null> {
+  const supabase = await getSupabaseServer();
+  const { data, error } = await supabase
+    .from('club_invites')
+    .select('*')
+    .eq('club_id', clubId)
+    .is('revoked_at', null)
+    .gte('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+export type PendingApplicant = {
+  user_id: string;
+  display_name: string;
+  joined_at: string; // application time (joined_at in club_members)
+};
+
+/** Returns pending applicants for the club. RLS restricts to active members of the club. */
+export async function getPendingApplicants(clubId: string): Promise<PendingApplicant[]> {
+  const supabase = await getSupabaseServer();
+  const { data, error } = await supabase
+    .from('club_members')
+    .select('user_id, joined_at, profile:profiles(display_name)')
+    .eq('club_id', clubId)
+    .eq('role', 'pending')
+    .order('joined_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? [])
+    .filter((row: any) => row.profile != null)
+    .map((row: any) => ({
+      user_id: row.user_id,
+      display_name: row.profile.display_name,
+      joined_at: row.joined_at,
+    }));
 }
