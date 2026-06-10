@@ -18,6 +18,7 @@ export async function createMeeting(input: unknown): Promise<ActionResult<{ id: 
   const { data, error } = await supabase
     .from('meetings')
     .insert({
+      club_id: parsed.data.club_id,
       host_id: user.id,
       book_title: parsed.data.book_title,
       book_author: parsed.data.book_author,

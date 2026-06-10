@@ -319,6 +319,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_club: { Args: { club_name: string }; Returns: string }
       is_club_admin: { Args: { target_club_id: string }; Returns: boolean }
       is_club_member: { Args: { target_club_id: string }; Returns: boolean }
     }

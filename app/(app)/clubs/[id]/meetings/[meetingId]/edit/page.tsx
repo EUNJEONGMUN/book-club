@@ -2,13 +2,14 @@ import { notFound, redirect } from 'next/navigation';
 import { format } from 'date-fns';
 import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
-import { EditMeetingForm } from './edit-form';
+import { EditMeetingForm } from '@/app/(app)/meetings/[id]/edit/edit-form';
 
-export default async function EditMeetingPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const [meeting, me] = await Promise.all([getMeetingDetail(id), getCurrentProfile()]);
+export default async function EditMeetingPage({ params }: { params: Promise<{ id: string; meetingId: string }> }) {
+  const { id: clubId, meetingId } = await params;
+  const [meeting, me] = await Promise.all([getMeetingDetail(meetingId), getCurrentProfile()]);
   if (!meeting) notFound();
-  if (me?.id !== meeting.host_id) redirect(`/meetings/${id}`);
+  if (meeting.club_id !== clubId) notFound();
+  if (me?.id !== meeting.host_id) redirect(`/clubs/${clubId}/meetings/${meetingId}`);
 
   const localDate = format(new Date(meeting.scheduled_at), "yyyy-MM-dd'T'HH:mm");
 
@@ -16,7 +17,7 @@ export default async function EditMeetingPage({ params }: { params: Promise<{ id
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">모임 수정</h1>
       <EditMeetingForm
-        id={id}
+        id={meetingId}
         defaults={{
           club_id: meeting.club_id ?? '',
           book_title: meeting.book_title,
