@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, List } from 'lucide-react';
+import { ChevronDown, List, Settings } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +13,11 @@ import type { MyClub } from '@/lib/queries/clubs';
 
 export function ClubSwitcher({
   currentClub,
+  currentRole,
   allClubs,
 }: {
   currentClub: { id: string; name: string };
+  currentRole: 'admin' | 'member';
   allClubs: MyClub[];
 }) {
   const others = allClubs.filter((c) => c.id !== currentClub.id);
@@ -30,21 +32,32 @@ export function ClubSwitcher({
         {others.length > 0 && (
           <>
             {others.map((c) => (
-              <DropdownMenuItem key={c.id}>
-                <Link href={`/clubs/${c.id}`} className="cursor-pointer w-full">
+              <Link key={c.id} href={`/clubs/${c.id}`}>
+                <DropdownMenuItem className="cursor-pointer">
                   {c.name}
-                </Link>
-              </DropdownMenuItem>
+                </DropdownMenuItem>
+              </Link>
             ))}
             <DropdownMenuSeparator />
           </>
         )}
-        <DropdownMenuItem>
-          <Link href="/clubs" className="cursor-pointer flex items-center gap-2 w-full">
+        {currentRole === 'admin' && (
+          <>
+            <Link href={`/clubs/${currentClub.id}/settings`}>
+              <DropdownMenuItem className="cursor-pointer gap-2">
+                <Settings className="w-4 h-4" />
+                그룹 설정
+              </DropdownMenuItem>
+            </Link>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <Link href="/clubs">
+          <DropdownMenuItem className="cursor-pointer gap-2">
             <List className="w-4 h-4" />
             그룹 목록
-          </Link>
-        </DropdownMenuItem>
+          </DropdownMenuItem>
+        </Link>
       </DropdownMenuContent>
     </DropdownMenu>
   );

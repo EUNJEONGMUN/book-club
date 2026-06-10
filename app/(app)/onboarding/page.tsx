@@ -2,18 +2,32 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Plus, Key } from 'lucide-react';
+import { Plus, Key, Loader2 } from 'lucide-react';
+import { applyToClub } from '@/lib/actions/club-members';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const [code, setCode] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleCodeSubmit(e: React.FormEvent) {
+  async function handleCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
-    toast.info('초대코드 가입은 곧 활성화됩니다. 잠시만 기다려주세요.');
+    if (submitting) return;
+    setSubmitting(true);
+    const result = await applyToClub(code);
+    if (!result.ok) {
+      setSubmitting(false);
+      toast.error(result.error);
+      return;
+    }
+    toast.success(`${result.clubName}에 가입 신청을 보냈어요. 관리자 승인을 기다려주세요.`);
+    router.push('/clubs');
+    router.refresh();
   }
 
   return (
@@ -53,10 +67,10 @@ export default function OnboardingPage() {
             <Button
               type="submit"
               variant="outline"
-              disabled={code.trim().length === 0}
+              disabled={submitting || code.trim().length === 0}
               className="w-full gap-2"
             >
-              <Key className="w-4 h-4" />
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
               초대코드로 가입
             </Button>
           </form>

@@ -319,9 +319,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_to_club: { Args: { invite_token: string }; Returns: Json }
       create_club: { Args: { club_name: string }; Returns: string }
       is_club_admin: { Args: { target_club_id: string }; Returns: boolean }
       is_club_member: { Args: { target_club_id: string }; Returns: boolean }
+      rotate_invite: { Args: { target_club_id: string }; Returns: string }
+      validate_invite_token: { Args: { invite_token: string }; Returns: Json }
     }
     Enums: {
       attendance_status: "attending" | "not_attending" | "undecided"
