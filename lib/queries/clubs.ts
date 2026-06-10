@@ -8,9 +8,13 @@ export type MyClub = Club & {
 /** Returns clubs where the current user is an active member (admin or member). pending excluded. */
 export async function getMyClubs(): Promise<MyClub[]> {
   const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
   const { data, error } = await supabase
     .from('club_members')
     .select('role, club:clubs(*)')
+    .eq('user_id', user.id)
     .in('role', ['admin', 'member'])
     .order('joined_at', { ascending: true });
   if (error) throw error;
