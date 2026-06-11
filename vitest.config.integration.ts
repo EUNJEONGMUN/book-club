@@ -9,8 +9,8 @@ export default defineConfig({
     include: ['tests/integration/**/*.test.ts'],
     globals: true,
     testTimeout: 10_000,
-    pool: 'forks',
-    poolOptions: { forks: { singleFork: true } },
+    // 로컬 supabase DB를 공유하므로 직렬 실행 (race 방지)
+    fileParallelism: false,
   },
   resolve: { alias: { '@': path.resolve(__dirname, '.') } },
 });
