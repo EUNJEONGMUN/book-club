@@ -41,17 +41,13 @@ export function ClubSwitcher({
             <DropdownMenuSeparator />
           </>
         )}
-        {currentRole === 'admin' && (
-          <>
-            <Link href={`/clubs/${currentClub.id}/settings`}>
-              <DropdownMenuItem className="cursor-pointer gap-2">
-                <Settings className="w-4 h-4" />
-                그룹 설정
-              </DropdownMenuItem>
-            </Link>
-            <DropdownMenuSeparator />
-          </>
-        )}
+        <Link href={`/clubs/${currentClub.id}/settings`}>
+          <DropdownMenuItem className="cursor-pointer gap-2">
+            <Settings className="w-4 h-4" />
+            그룹 설정
+          </DropdownMenuItem>
+        </Link>
+        <DropdownMenuSeparator />
         <Link href="/clubs">
           <DropdownMenuItem className="cursor-pointer gap-2">
             <List className="w-4 h-4" />

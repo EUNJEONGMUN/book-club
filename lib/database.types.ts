@@ -324,6 +324,10 @@ export type Database = {
       is_club_admin: { Args: { target_club_id: string }; Returns: boolean }
       is_club_member: { Args: { target_club_id: string }; Returns: boolean }
       rotate_invite: { Args: { target_club_id: string }; Returns: string }
+      transfer_admin: {
+        Args: { new_admin_user_id: string; target_club_id: string }
+        Returns: undefined
+      }
       validate_invite_token: { Args: { invite_token: string }; Returns: Json }
     }
     Enums: {
