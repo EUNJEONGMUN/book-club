@@ -27,6 +27,6 @@ BEGIN
       jsonb_build_object('sub', admin_id::text, 'email', 'admin@example.local'),
       'email', now(), now()
     );
-    INSERT INTO profiles (id, display_name, approved, is_admin) VALUES (admin_id, '관리자', true, true);
+    INSERT INTO profiles (id, display_name, is_admin) VALUES (admin_id, '관리자', true);
   END IF;
 END $$;
