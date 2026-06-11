@@ -8,6 +8,7 @@
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.config.integration.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
@@ -48,6 +49,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.2",
+    "dotenv": "^17.4.2",
     "jsdom": "^29.1.1",
     "playwright": "^1.60.0",
     "supabase": "^2.102.0",
