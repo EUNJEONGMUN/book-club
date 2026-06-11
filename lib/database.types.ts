@@ -226,7 +226,7 @@ export type Database = {
           book_author: string
           book_cover_url: string | null
           book_title: string
-          club_id: string | null
+          club_id: string
           created_at: string
           discussion_file_name: string | null
           discussion_file_url: string | null
@@ -242,7 +242,7 @@ export type Database = {
           book_author: string
           book_cover_url?: string | null
           book_title: string
-          club_id?: string | null
+          club_id: string
           created_at?: string
           discussion_file_name?: string | null
           discussion_file_url?: string | null
@@ -258,7 +258,7 @@ export type Database = {
           book_author?: string
           book_cover_url?: string | null
           book_title?: string
-          club_id?: string | null
+          club_id?: string
           created_at?: string
           discussion_file_name?: string | null
           discussion_file_url?: string | null
@@ -289,7 +289,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          approved: boolean
           avatar_url: string | null
           display_name: string
           id: string
@@ -297,7 +296,6 @@ export type Database = {
           joined_at: string
         }
         Insert: {
-          approved?: boolean
           avatar_url?: string | null
           display_name: string
           id: string
@@ -305,7 +303,6 @@ export type Database = {
           joined_at?: string
         }
         Update: {
-          approved?: boolean
           avatar_url?: string | null
           display_name?: string
           id?: string
