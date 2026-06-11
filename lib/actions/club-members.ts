@@ -89,3 +89,94 @@ export async function rejectMember(clubId: string, userId: string): Promise<
   revalidatePath(`/clubs/${clubId}/settings`);
   return { ok: true };
 }
+
+export async function transferAdmin(
+  clubId: string,
+  newAdminUserId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await getSupabaseServer();
+  const { error } = await supabase.rpc('transfer_admin', {
+    target_club_id: clubId,
+    new_admin_user_id: newAdminUserId,
+  });
+
+  if (error) {
+    console.error('[transferAdmin]', error);
+    Sentry.captureException(error, { tags: { action: 'transferAdmin' } });
+    if (error.message?.includes('Not authenticated')) {
+      return { ok: false, error: '로그인이 필요합니다.' };
+    }
+    if (error.message?.includes('Not admin')) {
+      return { ok: false, error: '그룹 관리자만 이양할 수 있어요.' };
+    }
+    if (error.message?.includes('Cannot transfer admin to yourself')) {
+      return { ok: false, error: '본인에게는 이양할 수 없어요.' };
+    }
+    if (error.message?.includes('Target user is not in this club')) {
+      return { ok: false, error: '대상이 이 그룹의 멤버가 아닙니다.' };
+    }
+    if (error.message?.includes('Target user is still pending approval')) {
+      return { ok: false, error: '승인 대기 중인 사용자에게는 이양할 수 없어요.' };
+    }
+    return { ok: false, error: '관리자 이양에 실패했어요.' };
+  }
+
+  revalidatePath(`/clubs/${clubId}/settings`);
+  return { ok: true };
+}
+
+export async function leaveClub(clubId: string): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { ok: false, error: '로그인이 필요합니다.' };
+  }
+
+  // Guard: admins must transfer or delete first.
+  const { data: row } = await supabase
+    .from('club_members')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (row?.role === 'admin') {
+    return {
+      ok: false,
+      error: '관리자는 탈퇴할 수 없어요. 다른 멤버에게 이양하거나 그룹을 삭제해주세요.',
+    };
+  }
+
+  const { error } = await supabase
+    .from('club_members')
+    .delete()
+    .eq('club_id', clubId)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('[leaveClub]', error);
+    Sentry.captureException(error, { tags: { action: 'leaveClub' } });
+    return { ok: false, error: '그룹 탈퇴에 실패했어요.' };
+  }
+
+  revalidatePath('/clubs');
+  return { ok: true };
+}
+
+export async function deleteClub(clubId: string): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  const supabase = await getSupabaseServer();
+  const { error } = await supabase.from('clubs').delete().eq('id', clubId);
+
+  if (error) {
+    console.error('[deleteClub]', error);
+    Sentry.captureException(error, { tags: { action: 'deleteClub' } });
+    return { ok: false, error: '그룹 삭제에 실패했어요.' };
+  }
+
+  revalidatePath('/clubs');
+  return { ok: true };
+}
