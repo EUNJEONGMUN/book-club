@@ -121,3 +121,30 @@ export async function getPendingApplicants(clubId: string): Promise<PendingAppli
       joined_at: row.joined_at,
     }));
 }
+
+export type ClubActiveMember = {
+  user_id: string;
+  display_name: string;
+  role: 'admin' | 'member';
+  joined_at: string;
+};
+
+/** Returns admin + member rows for the club. Pending excluded. RLS restricts to active members of the club. */
+export async function getClubActiveMembers(clubId: string): Promise<ClubActiveMember[]> {
+  const supabase = await getSupabaseServer();
+  const { data, error } = await supabase
+    .from('club_members')
+    .select('user_id, role, joined_at, profile:profiles(display_name)')
+    .eq('club_id', clubId)
+    .in('role', ['admin', 'member'])
+    .order('joined_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? [])
+    .filter((row: any) => row.profile != null)
+    .map((row: any) => ({
+      user_id: row.user_id,
+      display_name: row.profile.display_name,
+      role: row.role as 'admin' | 'member',
+      joined_at: row.joined_at,
+    }));
+}
