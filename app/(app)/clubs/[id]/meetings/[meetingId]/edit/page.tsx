@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { format } from 'date-fns';
 import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
-import { EditMeetingForm } from '@/app/(app)/meetings/[id]/edit/edit-form';
+import { EditMeetingForm } from './edit-form';
 
 export default async function EditMeetingPage({ params }: { params: Promise<{ id: string; meetingId: string }> }) {
   const { id: clubId, meetingId } = await params;
