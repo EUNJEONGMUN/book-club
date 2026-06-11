@@ -48,7 +48,7 @@ export function NextMeetingCard({ meeting, myStatus }: Props) {
 
         <AttendanceSummary attendances={meeting.attendances} />
 
-        <Link href={meeting.club_id ? `/clubs/${meeting.club_id}/meetings/${meeting.id}` : `/meetings/${meeting.id}`}>
+        <Link href={`/clubs/${meeting.club_id}/meetings/${meeting.id}`}>
           <Button variant="outline" className="w-full">
             상세 정보 →
           </Button>

@@ -23,7 +23,7 @@ export async function updateSession(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const path = req.nextUrl.pathname;
-  const isPublic = path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/auth') || path.startsWith('/pending');
+  const isPublic = path.startsWith('/login') || path.startsWith('/signup') || path.startsWith('/auth');
 
   if (!user && !isPublic) {
     const url = req.nextUrl.clone();
@@ -34,14 +34,10 @@ export async function updateSession(req: NextRequest) {
   }
 
   // 인증됐지만 profile 없는 경우 (예: 구글 OAuth 첫 로그인) → /signup 으로 이동
-  // signOut()을 호출하지 않는 이유: 구글 OAuth 세션을 유지해야 /signup에서
-  // CompleteProfileForm이 사용자 이메일을 읽고 프로필을 생성할 수 있기 때문.
-  // 이 세션은 profile이 없으면 모든 비공개 경로에서 이 조건에 걸려 /signup으로만
-  // 리다이렉트되므로, 보호 경로에는 접근 불가.
   if (user && !isPublic) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('id, approved')
+      .select('id')
       .eq('id', user.id)
       .maybeSingle();
     if (!profile) {
@@ -50,13 +46,6 @@ export async function updateSession(req: NextRequest) {
       url.pathname = '/signup';
       url.search = '';
       if (originalNext !== '/') url.searchParams.set('next', originalNext);
-      return NextResponse.redirect(url);
-    }
-    // 가입 승인 대기 중인 사용자 → /pending
-    if (!profile.approved) {
-      const url = req.nextUrl.clone();
-      url.pathname = '/pending';
-      url.search = '';
       return NextResponse.redirect(url);
     }
   }

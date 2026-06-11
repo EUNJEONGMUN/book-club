@@ -7,10 +7,7 @@ import type { Meeting, Profile } from '@/lib/types';
 export function MeetingCard({ meeting }: { meeting: Meeting & { host: Profile } }) {
   const date = new Date(meeting.scheduled_at);
   return (
-    <Link
-      href={meeting.club_id ? `/clubs/${meeting.club_id}/meetings/${meeting.id}` : `/meetings/${meeting.id}`}
-      className="block"
-    >
+    <Link href={`/clubs/${meeting.club_id}/meetings/${meeting.id}`} className="block">
       <Card className="hover:bg-slate-50 transition">
         <CardContent className="p-4 flex gap-3">
           <div className="w-16 h-20 bg-slate-200 rounded shrink-0 flex items-center justify-center overflow-hidden">
