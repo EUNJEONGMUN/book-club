@@ -13,11 +13,9 @@ import type { MyClub } from '@/lib/queries/clubs';
 
 export function ClubSwitcher({
   currentClub,
-  currentRole,
   allClubs,
 }: {
   currentClub: { id: string; name: string };
-  currentRole: 'admin' | 'member';
   allClubs: MyClub[];
 }) {
   const others = allClubs.filter((c) => c.id !== currentClub.id);
