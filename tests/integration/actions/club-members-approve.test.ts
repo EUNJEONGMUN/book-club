@@ -33,7 +33,7 @@ describe('approveMember (RLS-enforced)', () => {
     expect(await fetchRole(club.id, pending.id)).toBe('member');
   });
 
-  it('B. 일반 member 호출 시 ok=true지만 DB role 불변 (RLS가 조용히 차단)', async () => {
+  it('B. 일반 member 호출은 거절 + DB role 불변', async () => {
     const adminUser = await seedUser();
     const member = await seedUser();
     const pending = await seedUser();
@@ -44,11 +44,12 @@ describe('approveMember (RLS-enforced)', () => {
     await signInAs(member.email, member.password);
     const result = await approveMember(club.id, pending.id);
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('권한이 없거나 이미 처리된 신청입니다.');
     expect(await fetchRole(club.id, pending.id)).toBe('pending');
   });
 
-  it('C. 비-멤버 호출 시 ok=true지만 DB role 불변', async () => {
+  it('C. 비-멤버 호출은 거절 + DB role 불변', async () => {
     const adminUser = await seedUser();
     const pending = await seedUser();
     const outsider = await seedUser();
@@ -58,11 +59,12 @@ describe('approveMember (RLS-enforced)', () => {
     await signInAs(outsider.email, outsider.password);
     const result = await approveMember(club.id, pending.id);
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('권한이 없거나 이미 처리된 신청입니다.');
     expect(await fetchRole(club.id, pending.id)).toBe('pending');
   });
 
-  it('D. 다른 클럽 admin 호출 시 ok=true지만 DB role 불변 (cross-club 격리)', async () => {
+  it('D. 다른 클럽 admin 호출은 거절 (cross-club 격리)', async () => {
     const admin1 = await seedUser();
     const pending = await seedUser();
     const admin2 = await seedUser();
@@ -73,7 +75,8 @@ describe('approveMember (RLS-enforced)', () => {
     await signInAs(admin2.email, admin2.password);
     const result = await approveMember(clubA.id, pending.id);
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('권한이 없거나 이미 처리된 신청입니다.');
     expect(await fetchRole(clubA.id, pending.id)).toBe('pending');
     // (clubB는 사용 안 했지만 다른 클럽 admin이라는 컨텍스트 셋업용)
   });

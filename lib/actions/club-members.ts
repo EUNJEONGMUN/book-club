@@ -46,7 +46,20 @@ export async function applyToClub(token: string): Promise<
     return { ok: false, error: '가입 신청에 실패했습니다.' };
   }
 
-  const result = data as { club_id: string; club_name: string };
+  const result = data as {
+    status: 'applied' | 'already_member' | 'already_pending';
+    club_id: string;
+    club_name: string;
+  };
+  if (result.status === 'already_member') {
+    return { ok: false, error: '이미 가입된 그룹입니다.' };
+  }
+  if (result.status === 'already_pending') {
+    return {
+      ok: false,
+      error: '이미 신청한 그룹입니다. admin 승인을 기다려주세요.',
+    };
+  }
   return { ok: true, clubId: result.club_id, clubName: result.club_name };
 }
 
@@ -54,17 +67,22 @@ export async function approveMember(clubId: string, userId: string): Promise<
   { ok: true } | { ok: false; error: string }
 > {
   const supabase = await getSupabaseServer();
-  const { error } = await supabase
+  // .select()로 변경된 row를 받아야 RLS가 조용히 0 rows로 차단했는지 알 수 있음
+  const { data, error } = await supabase
     .from('club_members')
     .update({ role: 'member' })
     .eq('club_id', clubId)
     .eq('user_id', userId)
-    .eq('role', 'pending');
+    .eq('role', 'pending')
+    .select('user_id');
 
   if (error) {
     console.error('[approveMember]', error);
     Sentry.captureException(error, { tags: { action: 'approveMember' } });
     return { ok: false, error: '승인에 실패했습니다.' };
+  }
+  if (!data || data.length === 0) {
+    return { ok: false, error: '권한이 없거나 이미 처리된 신청입니다.' };
   }
   revalidatePath(`/clubs/${clubId}/settings`);
   return { ok: true };
