@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getClubById, getMyClubs } from '@/lib/queries/clubs';
 import { ClubSwitcher } from '@/components/club/ClubSwitcher';
-import { BottomNav } from '@/components/layout/BottomNav';
 
 export default async function ClubLayout({
   params,
@@ -25,7 +24,6 @@ export default async function ClubLayout({
         </div>
       </header>
       <div className="space-y-6 pt-4">{children}</div>
-      <BottomNav />
     </>
   );
 }

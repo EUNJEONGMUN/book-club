@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Copy, RefreshCw, Loader2, Key } from 'lucide-react';
 import { format } from 'date-fns';
@@ -10,6 +9,8 @@ import { rotateInvite } from '@/lib/actions/club-invites';
 import { Button } from '@/components/ui/button';
 import type { ClubInvite } from '@/lib/types';
 
+const INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30일 (rotate_invite SQL과 일치)
+
 export function InviteLinkPanel({
   clubId,
   initialInvite,
@@ -17,7 +18,6 @@ export function InviteLinkPanel({
   clubId: string;
   initialInvite: ClubInvite | null;
 }) {
-  const router = useRouter();
   const [invite, setInvite] = useState(initialInvite);
   const [rotating, setRotating] = useState(false);
 
@@ -36,7 +36,17 @@ export function InviteLinkPanel({
       return;
     }
     toast.success(invite ? '새 초대링크를 발급했어요.' : '초대링크를 만들었어요.');
-    router.refresh(); // refetch invite from server
+    // local state 즉시 반영 — router.refresh()로는 client useState가 안 갱신됨
+    const now = Date.now();
+    setInvite({
+      id: '',
+      club_id: clubId,
+      token: result.token,
+      created_by: '',
+      created_at: new Date(now).toISOString(),
+      expires_at: new Date(now + INVITE_TTL_MS).toISOString(),
+      revoked_at: null,
+    });
   }
 
   async function handleCopy() {
