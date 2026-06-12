@@ -47,7 +47,7 @@ export default async function ClubHomePage({
       )}
 
       {myStats && (
-        <Link href={`/clubs/${clubId}/members/${myStats.user_id}`} className="block">
+        <Link href={`/clubs/${clubId}/members`} className="block">
           <Card className="hover:bg-stone-50 transition-colors">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="flex-1 min-w-0">
