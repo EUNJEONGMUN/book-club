@@ -1,6 +1,25 @@
 import { notFound } from 'next/navigation';
 import { getClubById, getClubMembersWithStats } from '@/lib/queries/clubs';
+import { getSupabaseServer } from '@/lib/supabase/server';
 import { MemberCard } from '@/components/club/MemberCard';
+
+async function getCurrentRole(clubId: string): Promise<{
+  role: 'admin' | 'member' | null;
+  userId: string | null;
+}> {
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { role: null, userId: null };
+  const { data } = await supabase
+    .from('club_members')
+    .select('role')
+    .eq('club_id', clubId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  const role = data?.role;
+  if (role === 'admin' || role === 'member') return { role, userId: user.id };
+  return { role: null, userId: user.id };
+}
 
 export default async function ClubMembersPage({
   params,
@@ -11,7 +30,13 @@ export default async function ClubMembersPage({
   const club = await getClubById(clubId);
   if (!club) notFound();
 
-  const members = await getClubMembersWithStats(clubId);
+  const [members, { role, userId: viewerId }] = await Promise.all([
+    getClubMembersWithStats(clubId),
+    getCurrentRole(clubId),
+  ]);
+
+  const canSeeDetail = (memberId: string) =>
+    role === 'admin' || (role === 'member' && viewerId === memberId);
 
   return (
     <div className="space-y-4">
@@ -27,7 +52,12 @@ export default async function ClubMembersPage({
         <ul className="space-y-3">
           {members.map((m) => (
             <li key={m.user_id}>
-              <MemberCard member={m} />
+              <MemberCard
+                member={m}
+                detailHref={
+                  canSeeDetail(m.user_id) ? `/clubs/${clubId}/members/${m.user_id}` : undefined
+                }
+              />
             </li>
           ))}
         </ul>
