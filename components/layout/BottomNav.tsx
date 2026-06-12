@@ -5,10 +5,10 @@ import { usePathname, useParams } from 'next/navigation';
 import { Home, Calendar, Users, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function BottomNav() {
+export function BottomNav({ fallbackClubId }: { fallbackClubId?: string }) {
   const pathname = usePathname();
   const params = useParams<{ id?: string }>();
-  const clubId = params?.id;
+  const clubId = params?.id ?? fallbackClubId;
 
   // Inside a group layout, params.id is always present.
   const tabs = clubId
