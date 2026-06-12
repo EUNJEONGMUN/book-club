@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChevronDown, List, Settings } from 'lucide-react';
+import { ChevronDown, List } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,29 +26,23 @@ export function ClubSwitcher({
         <span className="truncate max-w-[200px]">{currentClub.name}</span>
         <ChevronDown className="w-4 h-4 shrink-0" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" sideOffset={6} className="min-w-56">
+      {/* 그룹 간 이동 전용 — 모바일 친화 터치 타깃 (각 항목 min-h-11 ≈ 44px) */}
+      <DropdownMenuContent align="start" sideOffset={6} className="min-w-56 p-1.5">
         {others.length > 0 && (
           <>
             {others.map((c) => (
-              <Link key={c.id} href={`/clubs/${c.id}`}>
-                <DropdownMenuItem className="cursor-pointer">
-                  {c.name}
+              <Link key={c.id} href={`/clubs/${c.id}`} className="block">
+                <DropdownMenuItem className="cursor-pointer min-h-11 px-3 text-sm">
+                  <span className="truncate">{c.name}</span>
                 </DropdownMenuItem>
               </Link>
             ))}
             <DropdownMenuSeparator />
           </>
         )}
-        <Link href={`/clubs/${currentClub.id}/settings`}>
-          <DropdownMenuItem className="cursor-pointer gap-2">
-            <Settings className="w-4 h-4" />
-            그룹 설정
-          </DropdownMenuItem>
-        </Link>
-        <DropdownMenuSeparator />
-        <Link href="/clubs">
-          <DropdownMenuItem className="cursor-pointer gap-2">
-            <List className="w-4 h-4" />
+        <Link href="/clubs" className="block">
+          <DropdownMenuItem className="cursor-pointer min-h-11 px-3 text-sm gap-2">
+            <List className="w-4 h-4 shrink-0" />
             그룹 목록
           </DropdownMenuItem>
         </Link>

@@ -2,12 +2,10 @@ import { notFound } from 'next/navigation';
 import {
   getClubById,
   getActiveInvite,
-  getPendingApplicants,
   getClubActiveMembers,
 } from '@/lib/queries/clubs';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { InviteLinkPanel } from '@/components/club/InviteLinkPanel';
-import { PendingApplicantsList } from '@/components/club/PendingApplicantsList';
 import { ClubInfoPanel } from '@/components/club/ClubInfoPanel';
 import { ClubInfoReadOnly } from '@/components/club/ClubInfoReadOnly';
 import { AdminTransferSection } from '@/components/club/AdminTransferSection';
@@ -44,9 +42,8 @@ export default async function ClubSettingsPage({
   if (!club) notFound();
 
   if (role === 'admin') {
-    const [invite, applicants, members] = await Promise.all([
+    const [invite, members] = await Promise.all([
       getActiveInvite(clubId),
-      getPendingApplicants(clubId),
       getClubActiveMembers(clubId),
     ]);
 
@@ -58,7 +55,6 @@ export default async function ClubSettingsPage({
         </div>
         <ClubInfoPanel club={club} />
         <InviteLinkPanel clubId={clubId} initialInvite={invite} />
-        <PendingApplicantsList clubId={clubId} initialApplicants={applicants} />
         <AdminTransferSection clubId={clubId} activeMembers={members} currentUserId={userId} />
         <DangerZoneSection clubId={clubId} clubName={club.name} isAdmin={true} />
       </div>
