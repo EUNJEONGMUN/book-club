@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useParams } from 'next/navigation';
-import { Home, Calendar, Menu } from 'lucide-react';
+import { Home, Calendar, Users, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function BottomNav() {
@@ -24,6 +24,12 @@ export function BottomNav() {
           label: '모임',
           icon: Calendar,
           match: (p: string) => p.startsWith(`/clubs/${clubId}/meetings`),
+        },
+        {
+          href: `/clubs/${clubId}/members`,
+          label: '멤버',
+          icon: Users,
+          match: (p: string) => p.startsWith(`/clubs/${clubId}/members`),
         },
         {
           href: '/more',
