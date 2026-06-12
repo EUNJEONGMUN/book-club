@@ -1,8 +1,10 @@
 import Link from 'next/link';
-import { getNextMeetingInClub } from '@/lib/queries/clubs';
+import { ChevronRight } from 'lucide-react';
+import { getNextMeetingInClub, getMyStatsInClub } from '@/lib/queries/clubs';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { NextMeetingCard } from '@/components/meeting/NextMeetingCard';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { getSupabaseServer } from '@/lib/supabase/server';
 
 async function getMyAttendance(meetingId: string, userId: string) {
@@ -22,7 +24,11 @@ export default async function ClubHomePage({
   params: Promise<{ id: string }>;
 }) {
   const { id: clubId } = await params;
-  const [next, me] = await Promise.all([getNextMeetingInClub(clubId), getCurrentProfile()]);
+  const [next, me, myStats] = await Promise.all([
+    getNextMeetingInClub(clubId),
+    getCurrentProfile(),
+    getMyStatsInClub(clubId),
+  ]);
   const myStatus = next && me ? await getMyAttendance(next.id, me.id) : null;
 
   return (
@@ -38,6 +44,22 @@ export default async function ClubHomePage({
             <Button>첫 모임 만들기</Button>
           </Link>
         </div>
+      )}
+
+      {myStats && (
+        <Link href={`/clubs/${clubId}/members/${myStats.user_id}`} className="block">
+          <Card className="hover:bg-stone-50 transition-colors">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-stone-800">내 이력</p>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  발제 {myStats.hosted_count}회 · 참석 {myStats.attended_count}회
+                </p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
+            </CardContent>
+          </Card>
+        </Link>
       )}
     </div>
   );
