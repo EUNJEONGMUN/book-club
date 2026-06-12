@@ -22,18 +22,22 @@ export async function updateClub(input: {
   }
 
   const supabase = await getSupabaseServer();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('clubs')
     .update({
       name: parsed.data.name,
       description: parsed.data.description ?? null,
     })
-    .eq('id', parsed.data.clubId);
+    .eq('id', parsed.data.clubId)
+    .select('id');
 
   if (error) {
     console.error('[updateClub]', error);
     Sentry.captureException(error, { tags: { action: 'updateClub' } });
     return { ok: false, error: '그룹 정보를 저장하지 못했습니다.' };
+  }
+  if (!data || data.length === 0) {
+    return { ok: false, error: '그룹 관리자만 정보를 수정할 수 있어요.' };
   }
 
   revalidatePath(`/clubs/${parsed.data.clubId}`);

@@ -41,7 +41,7 @@ export async function updateMeeting(id: string, input: unknown): Promise<ActionR
   const parsed = meetingFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
   const supabase = await getSupabaseServer();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('meetings')
     .update({
       book_title: parsed.data.book_title,
@@ -52,8 +52,12 @@ export async function updateMeeting(id: string, input: unknown): Promise<ActionR
       location_url: parsed.data.location_url || null,
       location_address: parsed.data.location_address || null,
     })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id');
   if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: '발제자만 모임을 수정할 수 있어요.' };
+  }
   revalidatePath(`/meetings/${id}`);
   revalidatePath('/meetings');
   revalidatePath('/');
