@@ -92,17 +92,21 @@ export async function rejectMember(clubId: string, userId: string): Promise<
   { ok: true } | { ok: false; error: string }
 > {
   const supabase = await getSupabaseServer();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('club_members')
     .delete()
     .eq('club_id', clubId)
     .eq('user_id', userId)
-    .eq('role', 'pending');
+    .eq('role', 'pending')
+    .select('user_id');
 
   if (error) {
     console.error('[rejectMember]', error);
     Sentry.captureException(error, { tags: { action: 'rejectMember' } });
     return { ok: false, error: '거절에 실패했습니다.' };
+  }
+  if (!data || data.length === 0) {
+    return { ok: false, error: '권한이 없거나 이미 처리된 신청입니다.' };
   }
   revalidatePath(`/clubs/${clubId}/settings`);
   return { ok: true };
@@ -187,12 +191,19 @@ export async function deleteClub(clubId: string): Promise<
   { ok: true } | { ok: false; error: string }
 > {
   const supabase = await getSupabaseServer();
-  const { error } = await supabase.from('clubs').delete().eq('id', clubId);
+  const { data, error } = await supabase
+    .from('clubs')
+    .delete()
+    .eq('id', clubId)
+    .select('id');
 
   if (error) {
     console.error('[deleteClub]', error);
     Sentry.captureException(error, { tags: { action: 'deleteClub' } });
     return { ok: false, error: '그룹 삭제에 실패했어요.' };
+  }
+  if (!data || data.length === 0) {
+    return { ok: false, error: '그룹 관리자만 삭제할 수 있어요.' };
   }
 
   revalidatePath('/clubs');
