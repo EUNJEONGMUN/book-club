@@ -1,7 +1,7 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { revalidateMeetingPaths } from './_revalidate-meeting';
 import { questionFormSchema } from '@/lib/validation/question';
 
 export async function addQuestion(meetingId: string, input: unknown) {
@@ -24,7 +24,7 @@ export async function addQuestion(meetingId: string, input: unknown) {
     content: parsed.data.content,
   });
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath(`/meetings/${meetingId}`);
+  await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
 }
 
@@ -37,7 +37,7 @@ export async function updateQuestion(id: string, meetingId: string, input: unkno
     .update({ content: parsed.data.content })
     .eq('id', id);
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath(`/meetings/${meetingId}`);
+  await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
 }
 
@@ -45,7 +45,7 @@ export async function deleteQuestion(id: string, meetingId: string) {
   const supabase = await getSupabaseServer();
   const { error } = await supabase.from('discussion_questions').delete().eq('id', id);
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath(`/meetings/${meetingId}`);
+  await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
 }
 
@@ -56,6 +56,6 @@ export async function reorderQuestion(id: string, meetingId: string, newOrderIdx
     .update({ order_idx: newOrderIdx })
     .eq('id', id);
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath(`/meetings/${meetingId}`);
+  await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
 }

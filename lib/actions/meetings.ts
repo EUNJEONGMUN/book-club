@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { meetingFormSchema } from '@/lib/validation/meeting';
+import { revalidateMeetingPaths } from './_revalidate-meeting';
 
 type ActionResult<T = void> = { ok: true; data?: T } | { ok: false; error: string };
 
@@ -32,8 +33,8 @@ export async function createMeeting(input: unknown): Promise<ActionResult<{ id: 
     .single();
 
   if (error) return { ok: false, error: error.message };
-  revalidatePath('/');
-  revalidatePath('/meetings');
+  revalidatePath(`/clubs/${parsed.data.club_id}`);
+  revalidatePath(`/clubs/${parsed.data.club_id}/meetings`);
   return { ok: true, data: { id: data.id } };
 }
 
@@ -58,9 +59,7 @@ export async function updateMeeting(id: string, input: unknown): Promise<ActionR
   if (!data || data.length === 0) {
     return { ok: false, error: '발제자만 모임을 수정할 수 있어요.' };
   }
-  revalidatePath(`/meetings/${id}`);
-  revalidatePath('/meetings');
-  revalidatePath('/');
+  await revalidateMeetingPaths(id);
   return { ok: true };
 }
 
