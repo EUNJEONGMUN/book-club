@@ -64,11 +64,11 @@ export async function updateMeeting(id: string, input: unknown): Promise<ActionR
   return { ok: true };
 }
 
-export async function deleteMeeting(id: string): Promise<ActionResult> {
+export async function deleteMeeting(id: string, clubId: string): Promise<ActionResult> {
   const supabase = await getSupabaseServer();
   const { error } = await supabase.from('meetings').delete().eq('id', id);
   if (error) return { ok: false, error: error.message };
-  revalidatePath('/meetings');
-  revalidatePath('/');
-  redirect('/meetings');
+  revalidatePath(`/clubs/${clubId}/meetings`);
+  revalidatePath(`/clubs/${clubId}`);
+  redirect(`/clubs/${clubId}/meetings`);
 }

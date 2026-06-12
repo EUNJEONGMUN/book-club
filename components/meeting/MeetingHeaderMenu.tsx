@@ -20,7 +20,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-export function MeetingHeaderMenu({ meetingId, isHost }: { meetingId: string; isHost: boolean }) {
+export function MeetingHeaderMenu({
+  meetingId,
+  clubId,
+  isHost,
+}: {
+  meetingId: string;
+  clubId: string;
+  isHost: boolean;
+}) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -60,7 +68,7 @@ export function MeetingHeaderMenu({ meetingId, isHost }: { meetingId: string; is
     if (deleting) return;
     setDeleting(true);
     try {
-      const result = await deleteMeeting(meetingId);
+      const result = await deleteMeeting(meetingId, clubId);
       if (result && !result.ok) {
         toast.error(result.error);
         setDeleting(false);
@@ -92,7 +100,10 @@ export function MeetingHeaderMenu({ meetingId, isHost }: { meetingId: string; is
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={6} className="min-w-44 p-1.5 space-y-0.5">
           {isHost && (
-            <DropdownMenuItem className="py-2.5 gap-2" onClick={() => router.push(`/meetings/${meetingId}/edit`)}>
+            <DropdownMenuItem
+              className="py-2.5 gap-2"
+              onClick={() => router.push(`/clubs/${clubId}/meetings/${meetingId}/edit`)}
+            >
               <Pencil className="w-4 h-4" />
               모임 정보 수정
             </DropdownMenuItem>

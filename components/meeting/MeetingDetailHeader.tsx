@@ -27,7 +27,7 @@ export function MeetingDetailHeader({
         </div>
         <div className="flex-1 min-w-0 space-y-0.5 relative">
           <div className="absolute top-0 right-0 z-10">
-            <MeetingHeaderMenu meetingId={meeting.id} isHost={isHost} />
+            <MeetingHeaderMenu meetingId={meeting.id} clubId={meeting.club_id} isHost={isHost} />
           </div>
           {isUpcoming && (
             <p className="text-xs font-bold text-blue-600">{dDay}</p>
