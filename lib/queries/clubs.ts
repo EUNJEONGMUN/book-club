@@ -28,6 +28,40 @@ export async function getMyPendingClubs(): Promise<PendingClub[]> {
     .map((row: any) => ({ ...row.club, applied_at: row.joined_at }));
 }
 
+/**
+ * Returns pending applicant counts keyed by club_id, for clubs the current user is admin of.
+ * Used by /more to render "가입 신청자 (N명)" buttons.
+ * Non-admin clubs are not included in the map.
+ */
+export async function getPendingCountsForMyAdminClubs(): Promise<Record<string, number>> {
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return {};
+
+  const { data: adminMemberships } = await supabase
+    .from('club_members')
+    .select('club_id')
+    .eq('user_id', user.id)
+    .eq('role', 'admin');
+  const adminClubIds = (adminMemberships ?? []).map((m) => m.club_id);
+  if (adminClubIds.length === 0) return {};
+
+  const { data: pendingRows } = await supabase
+    .from('club_members')
+    .select('club_id')
+    .in('club_id', adminClubIds)
+    .eq('role', 'pending');
+
+  const counts: Record<string, number> = {};
+  adminClubIds.forEach((id) => {
+    counts[id] = 0;
+  });
+  (pendingRows ?? []).forEach((row) => {
+    counts[row.club_id] = (counts[row.club_id] ?? 0) + 1;
+  });
+  return counts;
+}
+
 /** Returns clubs where the current user is an active member (admin or member). pending excluded. */
 export async function getMyClubs(): Promise<MyClub[]> {
   const supabase = await getSupabaseServer();
