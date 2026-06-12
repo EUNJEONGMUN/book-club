@@ -297,37 +297,3 @@ export async function getMemberHistoryInClub(
   );
 }
 
-export type MyStatsInClub = {
-  user_id: string;
-  hosted_count: number;
-  attended_count: number;
-};
-
-/**
- * Returns the current viewer's hosted + attended counts within this club.
- * Returns null if not signed in or not a member of the club (RLS gives [] for both).
- */
-export async function getMyStatsInClub(clubId: string): Promise<MyStatsInClub | null> {
-  const supabase = await getSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const [{ data: hosted }, { data: attended }] = await Promise.all([
-    supabase
-      .from('meetings')
-      .select('id')
-      .eq('club_id', clubId)
-      .eq('host_id', user.id),
-    supabase
-      .from('attendances')
-      .select('meeting:meetings!inner(club_id)')
-      .eq('user_id', user.id)
-      .eq('status', 'attending'),
-  ]);
-
-  return {
-    user_id: user.id,
-    hosted_count: (hosted ?? []).length,
-    attended_count: (attended ?? []).filter((a: any) => a.meeting?.club_id === clubId).length,
-  };
-}

@@ -75,7 +75,11 @@ export default async function ClubMembersPage({
           <ul className="divide-y divide-stone-100">
             {sortedMembers.map((m) => (
               <li key={m.user_id}>
-                <MemberCard member={m} history={historyMap.get(m.user_id)} />
+                <MemberCard
+                  member={m}
+                  history={historyMap.get(m.user_id)}
+                  defaultExpanded={m.user_id === viewerId}
+                />
               </li>
             ))}
           </ul>
