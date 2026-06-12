@@ -210,3 +210,66 @@ export async function getClubMembersWithStats(clubId: string): Promise<ClubMembe
     }))
     .sort((a, b) => a.display_name.localeCompare(b.display_name, 'ko'));
 }
+
+export type MemberHistoryItem = {
+  meeting_id: string;
+  book_title: string;
+  book_cover_url: string | null;
+  scheduled_at: string;
+  is_host: boolean;
+};
+
+/**
+ * Returns meeting history for one member within one club.
+ * Items where the member was host take precedence over attendance-only.
+ * Sorted by scheduled_at desc.
+ * RLS restricts to active members of the club — non-members get [].
+ */
+export async function getMemberHistoryInClub(
+  clubId: string,
+  userId: string
+): Promise<MemberHistoryItem[]> {
+  const supabase = await getSupabaseServer();
+
+  const [{ data: hosted }, { data: attended }] = await Promise.all([
+    supabase
+      .from('meetings')
+      .select('id, book_title, book_cover_url, scheduled_at')
+      .eq('club_id', clubId)
+      .eq('host_id', userId),
+    supabase
+      .from('attendances')
+      .select('meeting_id, meeting:meetings!inner(book_title, book_cover_url, scheduled_at, club_id)')
+      .eq('user_id', userId)
+      .eq('status', 'attending'),
+  ]);
+
+  const map = new Map<string, MemberHistoryItem>();
+
+  (hosted ?? []).forEach((m) => {
+    map.set(m.id, {
+      meeting_id: m.id,
+      book_title: m.book_title,
+      book_cover_url: m.book_cover_url ?? null,
+      scheduled_at: m.scheduled_at,
+      is_host: true,
+    });
+  });
+
+  (attended ?? []).forEach((a: any) => {
+    if (map.has(a.meeting_id)) return; // 발제 우선 보존
+    const m = a.meeting as { book_title: string; book_cover_url: string | null; scheduled_at: string; club_id: string } | null;
+    if (!m || m.club_id !== clubId) return; // 다른 클럽 모임 제외
+    map.set(a.meeting_id, {
+      meeting_id: a.meeting_id,
+      book_title: m.book_title,
+      book_cover_url: m.book_cover_url ?? null,
+      scheduled_at: m.scheduled_at,
+      is_host: false,
+    });
+  });
+
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime()
+  );
+}
