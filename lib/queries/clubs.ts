@@ -148,3 +148,65 @@ export async function getClubActiveMembers(clubId: string): Promise<ClubActiveMe
       joined_at: row.joined_at,
     }));
 }
+
+export type ClubMemberWithStats = {
+  user_id: string;
+  display_name: string;
+  avatar_url: string | null;
+  role: 'admin' | 'member';
+  attended_count: number;
+  hosted_count: number;
+};
+
+/**
+ * Returns active members (admin + member) of the club with per-member
+ * attended + hosted counts scoped to this club. Pending excluded.
+ * RLS restricts to active members of the club — non-members get [].
+ */
+export async function getClubMembersWithStats(clubId: string): Promise<ClubMemberWithStats[]> {
+  const supabase = await getSupabaseServer();
+
+  const { data: memberRows, error: memberErr } = await supabase
+    .from('club_members')
+    .select('user_id, role, profile:profiles(display_name, avatar_url)')
+    .eq('club_id', clubId)
+    .in('role', ['admin', 'member']);
+  if (memberErr) throw memberErr;
+  const members = (memberRows ?? []).filter((r: any) => r.profile != null);
+
+  if (members.length === 0) return [];
+
+  const { data: meetings, error: meetingsErr } = await supabase
+    .from('meetings')
+    .select('id, host_id')
+    .eq('club_id', clubId);
+  if (meetingsErr) throw meetingsErr;
+  const meetingIds = (meetings ?? []).map((m) => m.id);
+
+  let attendances: Array<{ user_id: string }> = [];
+  if (meetingIds.length > 0) {
+    const { data, error: attErr } = await supabase
+      .from('attendances')
+      .select('user_id')
+      .in('meeting_id', meetingIds)
+      .eq('status', 'attending');
+    if (attErr) throw attErr;
+    attendances = data ?? [];
+  }
+
+  const attendedMap = new Map<string, number>();
+  attendances.forEach((a) => attendedMap.set(a.user_id, (attendedMap.get(a.user_id) ?? 0) + 1));
+  const hostedMap = new Map<string, number>();
+  (meetings ?? []).forEach((m) => hostedMap.set(m.host_id, (hostedMap.get(m.host_id) ?? 0) + 1));
+
+  return members
+    .map((row: any) => ({
+      user_id: row.user_id,
+      display_name: row.profile.display_name,
+      avatar_url: row.profile.avatar_url ?? null,
+      role: row.role as 'admin' | 'member',
+      attended_count: attendedMap.get(row.user_id) ?? 0,
+      hosted_count: hostedMap.get(row.user_id) ?? 0,
+    }))
+    .sort((a, b) => a.display_name.localeCompare(b.display_name, 'ko'));
+}
