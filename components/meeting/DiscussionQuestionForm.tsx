@@ -6,13 +6,7 @@ import { addQuestion } from '@/lib/actions/questions';
 import { Button } from '@/components/ui/button';
 import { MarkdownEditor, MarkdownModeTabs } from '@/components/meeting/MarkdownEditor';
 
-export function DiscussionQuestionForm({
-  meetingId,
-  questionsCount,
-}: {
-  meetingId: string;
-  questionsCount: number;
-}) {
+export function DiscussionQuestionForm({ meetingId }: { meetingId: string }) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [mode, setMode] = useState<'text' | 'preview'>('text');
@@ -38,9 +32,6 @@ export function DiscussionQuestionForm({
     return (
       <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>
         + 질문 추가
-        {questionsCount < 5 && (
-          <span className="text-xs text-slate-500 ml-2">(5~10개 권장)</span>
-        )}
       </Button>
     );
   }

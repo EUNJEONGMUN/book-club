@@ -52,7 +52,7 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
       </section>
       <DiscussionQuestionList meetingId={meeting.id} questions={meeting.questions} isHost={isHost} />
       {isHost && (
-        <DiscussionQuestionForm meetingId={meeting.id} questionsCount={meeting.questions.length} />
+        <DiscussionQuestionForm meetingId={meeting.id} />
       )}
     </div>
   );
