@@ -109,24 +109,31 @@ vercel.json                    리전 icn1 고정
 
 ---
 
-## DB 스키마 (Supabase)
+## DB 스키마 (Supabase, multi-tenant)
 
 ```
 auth.users  (Supabase 내장)
    │ 1:1
    ▼
-profiles                meetings                    discussion_questions
+profiles                clubs                       club_invites
 ─ id (=auth.users)      ─ id                        ─ id
-─ display_name          ─ host_id  ─ FK profiles    ─ meeting_id  ─ FK meetings
-─ avatar_url            ─ book_title, book_author   ─ order_idx (정렬)
-─ approved              ─ book_cover_url            ─ content (마크다운)
-─ is_admin              ─ scheduled_at
-                        ─ location_name/url/address
-                        ─ discussion_file_url        attendances
-                        ─ discussion_file_name       ─ meeting_id  ─ FK meetings
-                                                     ─ user_id     ─ FK profiles
-                                                     ─ status (enum: attending/not_attending/undecided)
-                                                     UNIQUE(meeting_id, user_id)
+─ display_name          ─ name, description         ─ club_id  ─ FK clubs
+─ avatar_url            ─ created_by ─ FK profiles  ─ token (unique)
+                                                    ─ created_by, expires_at, revoked_at
+club_members (composite PK: club_id+user_id)
+─ club_id    ─ FK clubs
+─ user_id    ─ FK profiles
+─ role       enum: admin / member / pending
+─ joined_at
+
+meetings                    discussion_questions      attendances
+─ id                        ─ id                       ─ meeting_id  ─ FK meetings
+─ club_id  ─ FK clubs       ─ meeting_id  ─ FK meetings ─ user_id     ─ FK profiles
+─ host_id  ─ FK profiles    ─ order_idx, content       ─ status (attending/not_attending/undecided)
+─ book_title, book_author                              UNIQUE(meeting_id, user_id)
+─ book_cover_url, scheduled_at
+─ location_name/url/address
+─ discussion_file_url, discussion_file_name
 ```
 
 ### Storage 버킷
@@ -138,9 +145,11 @@ profiles                meetings                    discussion_questions
 | `discussion-files` | 발제 PDF/이미지 | 20MB | ✅ |
 
 ### RLS 정책 요약
-- 모든 테이블 `authenticated` 만 접근
-- 조회는 자유, 생성·수정·삭제는 본인/호스트만 (DB RLS + Server Action 레벨 `assertHost` 이중 가드)
-- 관리자 승인(`approved` 변경)은 service role 통해 RLS 우회
+- 모든 테이블 `authenticated` 만 접근. 권한 강제는 RLS + 일부 SECURITY DEFINER 함수 조합
+- `clubs`/`club_members`/`club_invites`: `is_club_member(club_id)` / `is_club_admin(club_id)` 헬퍼로 스코핑 (자세한 정책은 `supabase/migrations/20260609000001_multi_tenant_schema.sql` 및 `20260611000003_phase_a_cleanup.sql`)
+- `meetings`/`attendances`/`discussion_questions`: 클럽 멤버만 조회. 작성·수정·삭제는 host (RLS) + Server Action 레벨 `assertHost` 이중 가드
+- 가입 신청은 `apply_to_club(token)` SECURITY DEFINER 함수가 token 검증 후 `club_members(role='pending')` row 생성 (RLS 우회)
+- 관리자 승인은 server action `approveMember`가 RLS만 의지 (admin이 아니면 update 0 rows로 차단, action에서 row count 체크해 false로 응답)
 - 발제 파일 업로드 액션은 호출자 검증 후에만 storage 객체 생성·삭제
 
 ---
@@ -149,14 +158,24 @@ profiles                meetings                    discussion_questions
 
 ```
 가입 (이메일 or Google)
-  └→ profiles 생성 (approved=false)
-     └→ middleware가 /pending 으로 리다이렉트
-        └→ 관리자가 설정 탭에서 승인
-           └→ 모든 페이지 접근 가능
-              ├→ 모임 작성/수정/삭제 : host_id 일치자만
-              ├→ 발제문 업로드/추출/일괄 저장 : 서버에서 assertHost 검증
-              └→ 일반 멤버 : 조회 + 참석 토글 + 자기 프로필 수정
+  └→ profiles 생성 (display_name 등 입력)
+     └→ 두 가지 경로
+        │
+        ├→ A. 초대링크로 들어옴 (/join?token=...)
+        │      └→ apply_to_club(token) → club_members(role='pending')
+        │         └→ /clubs 에 "승인 대기 중" 섹션으로 표시
+        │            └→ admin 승인 → role='member' → 클럽 진입
+        │
+        └→ B. 새 그룹 만들기 (/clubs/new)
+               └→ create_club() → clubs row + club_members(role='admin')
+                  └→ /clubs/[id] 클럽 홈 진입
 ```
+
+권한 가드:
+- 모임 작성/수정/삭제: `host_id = auth.uid()` (RLS) + Server Action 가드
+- 발제문 업로드/추출/일괄 저장: 서버에서 `assertHost(meetingId)` 1차 가드
+- 일반 멤버: 클럽 내 조회 + 참석 토글 + 자기 프로필 수정
+- 관리자: 위 + 가입 신청 승인/거절, 초대링크 발급/revoke, 그룹 정보 수정/삭제, 다른 admin에게 이양
 
 `assertHost(meetingId)`는 `lib/actions/discussion-files.ts`에 정의된 헬퍼로, 모든 변형 Server Action 첫 줄에서 호출되어 미인증/타인의 모임을 차단한다. SSRF 방지를 위해 Gemini 호출은 PDF URL이 **해당 모임의 Supabase storage 경로**로 시작하는지도 검증한다.
 
