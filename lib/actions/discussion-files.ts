@@ -1,8 +1,8 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { revalidateMeetingPaths } from './_revalidate-meeting';
 
 const STORAGE_BUCKET = 'discussion-files';
 const MAX_PDF_BYTES = 20 * 1024 * 1024; // 20MB
@@ -76,7 +76,7 @@ export async function uploadDiscussionFile(meetingId: string, formData: FormData
     return { ok: false as const, error: updateError.message };
   }
 
-  revalidatePath(`/meetings/${meetingId}`);
+  await revalidateMeetingPaths(meetingId);
   return { ok: true as const, url: publicUrl, fileName: file.name, isPdf: ext === 'pdf' };
 }
 
@@ -102,7 +102,7 @@ export async function removeDiscussionFile(meetingId: string) {
     await supabase.storage.from(STORAGE_BUCKET).remove([path]);
   }
 
-  revalidatePath(`/meetings/${meetingId}`);
+  await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
 }
 
@@ -301,6 +301,6 @@ export async function addQuestionsInBulk(meetingId: string, contents: string[]) 
 
   const { error } = await supabase.from('discussion_questions').insert(rows);
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath(`/meetings/${meetingId}`);
+  await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
 }

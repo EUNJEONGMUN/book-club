@@ -4,7 +4,16 @@ import { MeetingForm } from '@/components/meeting/MeetingForm';
 import { updateMeeting } from '@/lib/actions/meetings';
 import type { MeetingFormInput } from '@/lib/validation/meeting';
 
-export function EditMeetingForm({ id, defaults }: { id: string; defaults: MeetingFormInput }) {
+export function EditMeetingForm({
+  id,
+  clubId,
+  defaults,
+}: {
+  id: string;
+  clubId: string;
+  defaults: MeetingFormInput;
+}) {
+  const detailHref = `/clubs/${clubId}/meetings/${id}`;
   return (
     <MeetingForm
       defaultValues={defaults}
@@ -13,8 +22,8 @@ export function EditMeetingForm({ id, defaults }: { id: string; defaults: Meetin
         return r.ok ? { ok: true } : { ok: false, error: r.error };
       }}
       submitLabel="저장"
-      redirectOnSuccess={() => `/meetings/${id}`}
-      cancelHref={`/meetings/${id}`}
+      redirectOnSuccess={() => detailHref}
+      cancelHref={detailHref}
     />
   );
 }

@@ -1,7 +1,7 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { revalidateMeetingPaths } from './_revalidate-meeting';
 import type { AttendanceStatus } from '@/lib/types';
 
 const VALID: AttendanceStatus[] = ['attending', 'not_attending', 'undecided'];
@@ -17,7 +17,6 @@ export async function setAttendance(meetingId: string, status: AttendanceStatus)
     .upsert({ meeting_id: meetingId, user_id: user.id, status }, { onConflict: 'meeting_id,user_id' });
 
   if (error) return { ok: false as const, error: error.message };
-  revalidatePath('/');
-  revalidatePath(`/meetings/${meetingId}`);
+  await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
 }
