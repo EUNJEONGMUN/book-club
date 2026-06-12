@@ -74,7 +74,7 @@ describe('applyToClub', () => {
     expect(rows).toHaveLength(0);
   });
 
-  it('D. 이미 member인 사용자 신청 → ok=true (현재 동작) + DB 중복 row 없음', async () => {
+  it('D. 이미 member인 사용자 신청 → ok=false 이미 가입됨 + DB 중복 row 없음', async () => {
     const adminUser = await seedUser();
     const alreadyMember = await seedUser();
     const club = await seedClub('A', adminUser.id);
@@ -84,12 +84,31 @@ describe('applyToClub', () => {
     await signInAs(alreadyMember.email, alreadyMember.password);
     const result = await applyToClub(token);
 
-    // action이 SQL 함수의 status 필드를 무시하고 club_id, club_name만 읽음
-    expect(result.ok).toBe(true);
-    if (result.ok) expect(result.clubId).toBe(club.id);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe('이미 가입된 그룹입니다.');
 
     const rows = await fetchMemberRows(club.id, alreadyMember.id);
     expect(rows).toHaveLength(1);              // 중복 row 없음
     expect(rows[0].role).toBe('member');        // 기존 role 보존
+  });
+
+  it('E. 이미 pending인 사용자 재신청 → ok=false 이미 신청됨 + DB 중복 row 없음', async () => {
+    const adminUser = await seedUser();
+    const alreadyPending = await seedUser();
+    const club = await seedClub('A', adminUser.id);
+    await seedMember(club.id, alreadyPending.id, 'pending');
+    const token = await seedInvite(club.id, adminUser.email, adminUser.password);
+
+    await signInAs(alreadyPending.email, alreadyPending.password);
+    const result = await applyToClub(token);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toBe('이미 신청한 그룹입니다. admin 승인을 기다려주세요.');
+    }
+
+    const rows = await fetchMemberRows(club.id, alreadyPending.id);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].role).toBe('pending');
   });
 });
