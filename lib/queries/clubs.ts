@@ -5,6 +5,29 @@ export type MyClub = Club & {
   role: 'admin' | 'member';
 };
 
+export type PendingClub = Club & {
+  applied_at: string;
+};
+
+/** Returns clubs where the current user applied but hasn't been approved yet. */
+export async function getMyPendingClubs(): Promise<PendingClub[]> {
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from('club_members')
+    .select('joined_at, club:clubs(*)')
+    .eq('user_id', user.id)
+    .eq('role', 'pending')
+    .order('joined_at', { ascending: false });
+  if (error) throw error;
+
+  return (data ?? [])
+    .filter((row: any) => row.club != null)
+    .map((row: any) => ({ ...row.club, applied_at: row.joined_at }));
+}
+
 /** Returns clubs where the current user is an active member (admin or member). pending excluded. */
 export async function getMyClubs(): Promise<MyClub[]> {
   const supabase = await getSupabaseServer();

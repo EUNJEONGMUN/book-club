@@ -38,6 +38,14 @@ export default async function ClubMembersPage({
   const canSeeDetail = (memberId: string) =>
     role === 'admin' || (role === 'member' && viewerId === memberId);
 
+  // 본인 카드 최상단, 나머지는 기존 가나다순 유지
+  const sortedMembers = viewerId
+    ? [
+        ...members.filter((m) => m.user_id === viewerId),
+        ...members.filter((m) => m.user_id !== viewerId),
+      ]
+    : members;
+
   return (
     <div className="space-y-4">
       <div>
@@ -50,7 +58,7 @@ export default async function ClubMembersPage({
         </p>
       ) : (
         <ul className="space-y-3">
-          {members.map((m) => (
+          {sortedMembers.map((m) => (
             <li key={m.user_id}>
               <MemberCard
                 member={m}
