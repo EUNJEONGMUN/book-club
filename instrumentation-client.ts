@@ -4,6 +4,19 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+// Next.js의 server action 요청(fetch POST)이 사용자측 네트워크 일순 끊김 등으로
+// 실패하면 fetchServerAction 안에서 "TypeError: Load failed" / "Failed to fetch"가
+// unhandled promise rejection으로 올라옴. 우리 코드 버그가 아니라 사용자 환경 문제라
+// Sentry에 쌓이면 진짜 버그가 묻힘 → 여기서 drop.
+const NETWORK_FETCH_PATTERN = /Load failed|Failed to fetch|NetworkError/i;
+const SERVER_ACTION_STACK_PATTERN = /fetchServerAction|server-action-reducer/;
+
+function isServerActionNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (!NETWORK_FETCH_PATTERN.test(err.message)) return false;
+  return SERVER_ACTION_STACK_PATTERN.test(err.stack ?? '');
+}
+
 Sentry.init({
   dsn: "https://fce608438305676ee890456c8c911d6d@o4511517199368192.ingest.us.sentry.io/4511517223026688",
 
@@ -26,6 +39,11 @@ Sentry.init({
   // Enable sending user PII (Personally Identifiable Information)
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
+
+  beforeSend(event, hint) {
+    if (isServerActionNetworkError(hint?.originalException)) return null;
+    return event;
+  },
 });
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
