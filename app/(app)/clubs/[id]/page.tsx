@@ -35,7 +35,7 @@ export default async function ClubHomePage({
           <p className="text-3xl">📚</p>
           <p className="text-slate-600">아직 예정된 모임이 없어요</p>
           <Link href={`/clubs/${clubId}/meetings/new`}>
-            <Button>첫 모임 만들기</Button>
+            <Button>모임 만들기</Button>
           </Link>
         </div>
       )}
