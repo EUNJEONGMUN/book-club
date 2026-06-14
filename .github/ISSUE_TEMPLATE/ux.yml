@@ -1,0 +1,32 @@
+name: 🎨 UX 피드백
+description: 동작은 맞지만 사용하기 불편하거나 어색한 경우
+title: "ux: "
+labels: ["ux"]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: 어느 화면인가요?
+      description: URL 또는 화면 이름
+      placeholder: "예: 멤버 탭 / 그룹 설정 / 모임 상세"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 어떤 점이 불편한가요?
+      placeholder: |
+        예: 그룹 바꾸려고 위에 있는 그룹 이름 누르는데 너무 작아서
+        손가락으로 누르기 힘들어요. 모바일에서 더 그래요.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 어떻게 됐으면 좋을까요? (선택)
+      description: 떠오르는 안이 있으면 적어주세요. 없으면 비워두세요
+      placeholder: "버튼이 좀 더 컸으면 / 한 번에 보이면 좋겠어요"
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 스크린샷 (있으면)

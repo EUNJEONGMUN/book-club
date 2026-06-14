@@ -1,0 +1,47 @@
+name: 🐛 버그 신고
+description: 동작이 잘못되거나 에러가 나는 경우
+title: "fix: "
+labels: ["bug"]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: 어디서 일어났나요?
+      description: URL 또는 화면 이름 (예 — 모임 상세 / 멤버 탭 / /clubs/abc/settings)
+      placeholder: "예: 모임 상세에서 발제문 추출 누를 때"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 뭘 했더니 그렇게 됐나요?
+      description: 같은 문제 재현할 수 있게 순서대로 적어주세요
+      placeholder: |
+        1. 부글부글 그룹에 들어가서
+        2. 모임 만들기 누름
+        3. 책 검색에서 "데미안" 검색
+        4. 첫 번째 결과 선택 → 등록 누름
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제로 뭐가 일어났나요?
+      placeholder: "에러 메시지가 떴어요 / 화면이 안 바뀌어요 / 빈 페이지가 떴어요"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 뭐가 일어났으면 좋겠나요?
+      placeholder: "모임이 등록되고 모임 상세 페이지로 이동"
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 스크린샷 (있으면)
+      description: 이미지를 여기에 끌어놓으면 자동 업로드돼요
+  - type: input
+    id: device
+    attributes:
+      label: 디바이스/브라우저
+      placeholder: "예: iPhone 15 Safari / Mac Chrome"

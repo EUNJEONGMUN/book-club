@@ -1,0 +1,27 @@
+name: ✨ 기능 제안
+description: 새 기능 / 개선 아이디어
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: feature
+    attributes:
+      label: 어떤 기능이 있으면 좋겠나요?
+      placeholder: "예: 모임 끝나고 한줄평 남기는 기능"
+    validations:
+      required: true
+  - type: textarea
+    id: use_case
+    attributes:
+      label: 어떤 상황에서 쓰고 싶나요?
+      description: 왜 필요한지 알면 우선순위 판단에 도움돼요
+      placeholder: |
+        예: 모임 끝나고 다른 멤버들이 어떤 책을 추천하는지 보고 싶은데
+        지금은 단톡방에 흩어져 있어요.
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: 지금은 어떻게 하고 있나요? (선택)
+      placeholder: "단톡방에 손으로 옮겨 적어요 / 안 하고 그냥 잊어버려요"
