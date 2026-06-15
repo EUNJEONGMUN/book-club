@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation';
 import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
+import { getMeetingReviews } from '@/lib/queries/reviews';
 import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
 import { DiscussionQuestionList } from '@/components/meeting/DiscussionQuestionList';
 import { DiscussionQuestionForm } from '@/components/meeting/DiscussionQuestionForm';
 import { DiscussionFileUploader } from '@/components/meeting/DiscussionFileUploader';
+import { MeetingReviews } from '@/components/meeting/MeetingReviews';
 
 export default async function MeetingDetailPage({ params }: { params: Promise<{ id: string; meetingId: string }> }) {
   const { id: clubId, meetingId } = await params;
@@ -13,6 +15,8 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
   if (meeting.club_id !== clubId) notFound();
   const me = await getCurrentProfile();
   const isHost = me?.id === meeting.host_id;
+  const reviews = await getMeetingReviews(meeting.id);
+  const isPastMeeting = new Date(meeting.scheduled_at) <= new Date();
 
   return (
     <div className="space-y-6">
@@ -54,6 +58,12 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
       {isHost && (
         <DiscussionQuestionForm meetingId={meeting.id} />
       )}
+      <MeetingReviews
+        meetingId={meeting.id}
+        initialOwn={reviews.own}
+        others={reviews.others}
+        isPastMeeting={isPastMeeting}
+      />
     </div>
   );
 }
