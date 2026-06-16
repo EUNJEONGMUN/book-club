@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { notifyAdminsOnApply } from '@/lib/notifications/admin-apply';
 
 export async function applyToClub(token: string): Promise<
   { ok: true; clubId: string; clubName: string } | { ok: false; error: string }
@@ -60,6 +61,27 @@ export async function applyToClub(token: string): Promise<
       error: '이미 신청한 그룹입니다. admin 승인을 기다려주세요.',
     };
   }
+
+  // 신규 신청 — admin들에게 이메일 알림 (fire-and-forget, 실패해도 응답엔 영향 X)
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name')
+      .eq('id', user.id)
+      .maybeSingle();
+    const applicantName = profile?.display_name ?? '익명';
+    // 비동기 fire-and-forget — 호출자는 기다리지 않음
+    notifyAdminsOnApply({
+      clubId: result.club_id,
+      clubName: result.club_name,
+      applicantDisplayName: applicantName,
+    }).catch((e) => {
+      console.error('[applyToClub:notify]', e);
+      Sentry.captureException(e, { tags: { notification: 'admin-apply-fail' } });
+    });
+  }
+
   return { ok: true, clubId: result.club_id, clubName: result.club_name };
 }
 
