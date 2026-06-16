@@ -5,6 +5,7 @@ import { getMeetingReviews } from '@/lib/queries/reviews';
 import { getClubActiveMembers } from '@/lib/queries/clubs';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
+import { ShareMeetingButton } from '@/components/meeting/ShareMeetingButton';
 import { DiscussionQuestionList } from '@/components/meeting/DiscussionQuestionList';
 import { DiscussionQuestionForm } from '@/components/meeting/DiscussionQuestionForm';
 import { DiscussionFileUploader } from '@/components/meeting/DiscussionFileUploader';
@@ -49,6 +50,7 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-6">
       <MeetingDetailHeader meeting={meeting} isHost={isHost} />
+      <ShareMeetingButton />
       <section className="space-y-3">
         <p className="text-sm font-medium">발제 자료</p>
         {isHost && (
