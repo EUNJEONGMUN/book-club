@@ -46,7 +46,7 @@ export function NextMeetingCard({ meeting, myStatus }: Props) {
 
         <AttendanceToggle meetingId={meeting.id} initialStatus={myStatus} />
 
-        <AttendanceSummary attendances={meeting.attendances} />
+        <AttendanceSummary meetingId={meeting.id} attendances={meeting.attendances} />
 
         <Link href={`/clubs/${meeting.club_id}/meetings/${meeting.id}`}>
           <Button variant="outline" className="w-full">
