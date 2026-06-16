@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Loader2, MoreVertical, Pencil, Share2, Trash2 } from 'lucide-react';
 import { deleteMeeting } from '@/lib/actions/meetings';
+import { shareMeetingLink } from '@/lib/share-meeting';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -35,33 +36,7 @@ export function MeetingHeaderMenu({
 
   async function handleShare() {
     const url = typeof window !== 'undefined' ? window.location.href : '';
-    // 1) Native share sheet (best mobile UX, works in most in-app browsers)
-    if (typeof navigator !== 'undefined' && 'share' in navigator) {
-      try {
-        await navigator.share({ url });
-        return;
-      } catch (err) {
-        // user cancelled — treat AbortError as silent
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        // fall through to clipboard
-      }
-    }
-    // 2) Clipboard
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-        toast.success('링크가 복사되었습니다');
-        return;
-      }
-    } catch {
-      // fall through
-    }
-    // 3) Last-resort prompt so user can manually copy
-    if (typeof window !== 'undefined') {
-      window.prompt('아래 링크를 복사하세요', url);
-    } else {
-      toast.error('링크 복사를 지원하지 않는 환경입니다');
-    }
+    await shareMeetingLink(url);
   }
 
   async function handleDelete() {
