@@ -21,8 +21,9 @@ export function JoinButton({ token }: { token: string }) {
       return;
     }
     toast.success('가입 신청을 보냈어요. 관리자 승인을 기다려주세요.');
-    setSubmitting(false); // navigation latency 동안 spinner 유지되지 않게
-    router.push('/clubs');
+    setSubmitting(false);
+    // router.refresh()만 — /join 페이지의 validate_invite_token이 다시 돌면서
+    // status='already_pending' 분기로 "신청 완료" 패널 (+ 내 그룹으로 버튼) 자동 노출.
     router.refresh();
   }
 
