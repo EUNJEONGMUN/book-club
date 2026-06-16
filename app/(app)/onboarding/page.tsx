@@ -26,6 +26,7 @@ export default function OnboardingPage() {
       return;
     }
     toast.success(`${result.clubName}에 가입 신청을 보냈어요. 관리자 승인을 기다려주세요.`);
+    setSubmitting(false);
     router.push('/clubs');
     router.refresh();
   }
