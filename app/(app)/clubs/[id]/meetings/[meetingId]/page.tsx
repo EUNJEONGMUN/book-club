@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getMeetingDetail, getMyAttendance } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { getMeetingReviews } from '@/lib/queries/reviews';
+import { getClubActiveMembers } from '@/lib/queries/clubs';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
 import { DiscussionQuestionList } from '@/components/meeting/DiscussionQuestionList';
@@ -38,8 +39,12 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
   const isPastMeeting = new Date(meeting.scheduled_at) <= new Date();
   const myStatus = me ? await getMyAttendance(meeting.id, me.id) : null;
 
-  // 지난 모임이면 host/admin만 정정 가능 (멤버 옆 inline 버튼)
+  // 지난 모임이면 host/admin만 정정 가능 (수정 모드)
   const canEditAttendance = isPastMeeting && (isHost || isAdmin);
+  // 수정 모드 추가하기 picker용 — host/admin 정정 권한자만 필요
+  const clubMembers = canEditAttendance
+    ? (await getClubActiveMembers(clubId)).map((m) => ({ user_id: m.user_id, display_name: m.display_name }))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -84,6 +89,7 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
       <AttendanceSummary
         meetingId={meeting.id}
         attendances={meeting.attendances}
+        clubMembers={clubMembers}
         canEdit={canEditAttendance}
       />
       <DiscussionQuestionList meetingId={meeting.id} questions={meeting.questions} isHost={isHost} />
