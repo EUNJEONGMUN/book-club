@@ -363,6 +363,12 @@ export type Database = {
     Functions: {
       apply_to_club: { Args: { invite_token: string }; Returns: Json }
       create_club: { Args: { club_name: string }; Returns: string }
+      get_club_admin_emails: {
+        Args: { target_club_id: string }
+        Returns: {
+          email: string
+        }[]
+      }
       is_club_admin: { Args: { target_club_id: string }; Returns: boolean }
       is_club_member: { Args: { target_club_id: string }; Returns: boolean }
       rotate_invite: { Args: { target_club_id: string }; Returns: string }
