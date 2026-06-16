@@ -87,3 +87,49 @@ export async function setAttendance(meetingId: string, status: AttendanceStatus)
   if (!user) return { ok: false, error: '로그인이 필요합니다' };
   return setAttendanceFor(meetingId, user.id, status);
 }
+
+/**
+ * 참석 기록 완전 삭제. host/admin 전용 (지난 모임 정정용).
+ */
+export async function deleteAttendance(
+  meetingId: string,
+  targetUserId: string
+): Promise<ActionResult> {
+  const supabase = await getSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: '로그인이 필요합니다' };
+
+  const { data: meeting } = await supabase
+    .from('meetings')
+    .select('host_id, club_id')
+    .eq('id', meetingId)
+    .maybeSingle();
+  if (!meeting) return { ok: false, error: '모임을 찾을 수 없습니다.' };
+
+  const isHost = meeting.host_id === user.id;
+  if (!isHost) {
+    const { data: m } = await supabase
+      .from('club_members')
+      .select('role')
+      .eq('club_id', meeting.club_id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (m?.role !== 'admin') {
+      return { ok: false, error: '참석 기록 삭제는 호스트나 관리자만 할 수 있어요.' };
+    }
+  }
+
+  const { data, error } = await supabase
+    .from('attendances')
+    .delete()
+    .eq('meeting_id', meetingId)
+    .eq('user_id', targetUserId)
+    .select('user_id');
+
+  if (error) return { ok: false, error: error.message };
+  if (!data || data.length === 0) {
+    return { ok: false, error: '권한이 없거나 이미 처리된 기록입니다.' };
+  }
+  await revalidateMeetingPaths(meetingId);
+  return { ok: true };
+}
