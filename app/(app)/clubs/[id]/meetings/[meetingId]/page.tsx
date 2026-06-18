@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getMeetingDetail, getMyAttendance } from '@/lib/queries/meetings';
+import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { getMeetingReviews } from '@/lib/queries/reviews';
 import { getClubActiveMembers } from '@/lib/queries/clubs';
@@ -11,7 +11,7 @@ import { DiscussionQuestionForm } from '@/components/meeting/DiscussionQuestionF
 import { DiscussionFileUploader } from '@/components/meeting/DiscussionFileUploader';
 import { MeetingReviews } from '@/components/meeting/MeetingReviews';
 import { AttendanceSummary } from '@/components/meeting/AttendanceSummary';
-import { AttendanceToggle } from '@/components/meeting/AttendanceToggle';
+import { AttendanceSection } from '@/components/meeting/AttendanceSection';
 
 async function getMyRole(clubId: string): Promise<'admin' | 'member' | null> {
   const supabase = await getSupabaseServer();
@@ -38,7 +38,6 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
   const isAdmin = myRole === 'admin';
   const reviews = await getMeetingReviews(meeting.id);
   const isPastMeeting = new Date(meeting.scheduled_at) <= new Date();
-  const myStatus = me ? await getMyAttendance(meeting.id, me.id) : null;
 
   // 지난 모임이면 host/admin만 정정 가능 (수정 모드)
   const canEditAttendance = isPastMeeting && (isHost || isAdmin);
@@ -84,16 +83,22 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
           );
         })()}
       </section>
-      {/* 참석 현황: 항상 표시. 미래 모임이면 본인 토글, 지난 모임 + host/admin은 정정 모드 */}
-      {!isPastMeeting && myRole && (
-        <AttendanceToggle meetingId={meeting.id} initialStatus={myStatus} />
+      {/* 참석 현황: 미래 + 멤버는 토글+카운트 한 묶음(AttendanceSection),
+          지난 모임은 보기 전용 (host/admin은 수정 모드 진입 가능). */}
+      {!isPastMeeting && myRole && me ? (
+        <AttendanceSection
+          meetingId={meeting.id}
+          initialAttendances={meeting.attendances}
+          viewerProfile={me}
+        />
+      ) : (
+        <AttendanceSummary
+          meetingId={meeting.id}
+          attendances={meeting.attendances}
+          clubMembers={clubMembers}
+          canEdit={canEditAttendance}
+        />
       )}
-      <AttendanceSummary
-        meetingId={meeting.id}
-        attendances={meeting.attendances}
-        clubMembers={clubMembers}
-        canEdit={canEditAttendance}
-      />
       <DiscussionQuestionList meetingId={meeting.id} questions={meeting.questions} isHost={isHost} />
       {isHost && (
         <DiscussionQuestionForm meetingId={meeting.id} />
