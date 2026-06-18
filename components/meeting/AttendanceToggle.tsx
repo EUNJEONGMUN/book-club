@@ -1,9 +1,5 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { setAttendance } from '@/lib/actions/attendance';
 import type { AttendanceStatus } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -13,32 +9,17 @@ const OPTIONS: { value: AttendanceStatus; label: string }[] = [
   { value: 'undecided', label: '미정' },
 ];
 
+/**
+ * Controlled — 상태/액션 호출은 부모 (AttendanceSection)에서.
+ * 이 컴포넌트는 prop status 강조 + onChange 콜백만.
+ */
 export function AttendanceToggle({
-  meetingId,
-  initialStatus,
+  status,
+  onChange,
 }: {
-  meetingId: string;
-  initialStatus: AttendanceStatus | null;
+  status: AttendanceStatus | null;
+  onChange: (s: AttendanceStatus) => void;
 }) {
-  const router = useRouter();
-  const [status, setStatus] = useState<AttendanceStatus | null>(initialStatus);
-  const [, startTransition] = useTransition();
-
-  function handle(s: AttendanceStatus) {
-    const prev = status;
-    setStatus(s);
-    startTransition(async () => {
-      const r = await setAttendance(meetingId, s);
-      if (!r.ok) {
-        setStatus(prev);
-        toast.error(r.error);
-        return;
-      }
-      // AttendanceSummary 카운트도 즉시 따라오도록 서버 컴포넌트 재렌더 트리거
-      router.refresh();
-    });
-  }
-
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">내 참석 여부</p>
@@ -46,7 +27,8 @@ export function AttendanceToggle({
         {OPTIONS.map((o) => (
           <button
             key={o.value}
-            onClick={() => handle(o.value)}
+            type="button"
+            onClick={() => onChange(o.value)}
             className={cn(
               'py-3 rounded border text-sm font-medium transition',
               status === o.value

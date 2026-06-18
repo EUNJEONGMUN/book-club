@@ -3,9 +3,8 @@ import { format, differenceInDays } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AttendanceToggle } from './AttendanceToggle';
-import { AttendanceSummary } from './AttendanceSummary';
-import type { Meeting, Profile, Attendance, AttendanceStatus } from '@/lib/types';
+import { AttendanceSection } from './AttendanceSection';
+import type { Meeting, Profile, Attendance } from '@/lib/types';
 
 type Props = {
   meeting: Meeting & {
@@ -13,10 +12,10 @@ type Props = {
     questions_count: number;
     attendances: Array<Attendance & { profile: Profile }>;
   };
-  myStatus: AttendanceStatus | null;
+  viewerProfile: Profile;
 };
 
-export function NextMeetingCard({ meeting, myStatus }: Props) {
+export function NextMeetingCard({ meeting, viewerProfile }: Props) {
   const date = new Date(meeting.scheduled_at);
   const diff = differenceInDays(date, new Date());
   const dDay = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : `D+${-diff}`;
@@ -44,9 +43,11 @@ export function NextMeetingCard({ meeting, myStatus }: Props) {
           </div>
         </div>
 
-        <AttendanceToggle meetingId={meeting.id} initialStatus={myStatus} />
-
-        <AttendanceSummary meetingId={meeting.id} attendances={meeting.attendances} />
+        <AttendanceSection
+          meetingId={meeting.id}
+          initialAttendances={meeting.attendances}
+          viewerProfile={viewerProfile}
+        />
 
         <Link href={`/clubs/${meeting.club_id}/meetings/${meeting.id}`}>
           <Button variant="outline" className="w-full">
