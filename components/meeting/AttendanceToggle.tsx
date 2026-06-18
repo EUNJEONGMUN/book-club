@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { setAttendance } from '@/lib/actions/attendance';
 import type { AttendanceStatus } from '@/lib/types';
@@ -19,6 +20,7 @@ export function AttendanceToggle({
   meetingId: string;
   initialStatus: AttendanceStatus | null;
 }) {
+  const router = useRouter();
   const [status, setStatus] = useState<AttendanceStatus | null>(initialStatus);
   const [, startTransition] = useTransition();
 
@@ -30,7 +32,10 @@ export function AttendanceToggle({
       if (!r.ok) {
         setStatus(prev);
         toast.error(r.error);
+        return;
       }
+      // AttendanceSummary 카운트도 즉시 따라오도록 서버 컴포넌트 재렌더 트리거
+      router.refresh();
     });
   }
 

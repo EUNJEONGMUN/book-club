@@ -33,7 +33,6 @@ export function AttendanceSummary({
   /** true면 "수정" 버튼 노출. 호스트/admin이 지난 모임 정정용. */
   canEdit?: boolean;
 }) {
-  const [items, setItems] = useState(attendances);
   const [editing, setEditing] = useState(false);
 
   return (
@@ -56,14 +55,18 @@ export function AttendanceSummary({
       </div>
 
       {editing ? (
+        // EditPanel은 자기 자신의 로컬 state(initial=attendances)로 optimistic 편집.
+        // editing=false로 돌아오면 prop(attendances)에서 다시 읽음 (서버 refresh 반영).
         <EditPanel
+          key={editing ? 'editing' : 'view'}
           meetingId={meetingId}
-          items={items}
-          setItems={setItems}
+          initial={attendances}
           clubMembers={clubMembers}
         />
       ) : (
-        <ViewGrid items={items} />
+        // 보기 모드 — prop 직접 사용. AttendanceToggle 같은 외부 변경 후
+        // router.refresh()로 prop 갱신되면 자동 반영.
+        <ViewGrid items={attendances} />
       )}
     </div>
   );
@@ -104,15 +107,15 @@ function ViewGrid({ items }: { items: AttendanceWithProfile[] }) {
 
 function EditPanel({
   meetingId,
-  items,
-  setItems,
+  initial,
   clubMembers,
 }: {
   meetingId: string;
-  items: AttendanceWithProfile[];
-  setItems: React.Dispatch<React.SetStateAction<AttendanceWithProfile[]>>;
+  initial: AttendanceWithProfile[];
   clubMembers: ClubMemberMinimal[];
 }) {
+  // optimistic 편집용 로컬 state — 부모의 key prop으로 view→edit 전환 시 새로 초기화됨
+  const [items, setItems] = useState(initial);
   const attending = items.filter((a) => a.status === 'attending');
   const notAttending = items.filter((a) => a.status === 'not_attending');
   const recordedUserIds = new Set(
