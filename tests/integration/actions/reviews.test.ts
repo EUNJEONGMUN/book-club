@@ -38,7 +38,7 @@ describe('meeting reviews', () => {
     const meeting = await seedPastMeeting({ clubId: club.id, hostId: adminUser.id });
 
     await signInAs(member.email, member.password);
-    const r = await upsertMyReview(meeting.id, { content: '좋았어요', is_public: true });
+    const r = await upsertMyReview(meeting.id, { content: '좋았어요', visibility: 'public' });
     expect(r.ok).toBe(true);
 
     // adminUser는 같은 클럽 → 봐야 함
@@ -61,7 +61,7 @@ describe('meeting reviews', () => {
     const meeting = await seedPastMeeting({ clubId: club.id, hostId: adminUser.id });
 
     await signInAs(member.email, member.password);
-    await upsertMyReview(meeting.id, { content: '비공개 메모', is_public: false });
+    await upsertMyReview(meeting.id, { content: '비공개 메모', visibility: 'private' });
 
     // 본인은 own에 보임
     const fromSelf = await getMeetingReviews(meeting.id);
@@ -71,6 +71,33 @@ describe('meeting reviews', () => {
     await signInAs(adminUser.email, adminUser.password);
     const fromAdmin = await getMeetingReviews(meeting.id);
     expect(fromAdmin.others).toHaveLength(0);
+  });
+
+  it('D. 익명 평 — 다른 멤버에게 보이되 작성자 정보 마스킹 ("익명", user_id=null, avatar=null)', async () => {
+    const adminUser = await seedUser();
+    const member = await seedUser();
+    const club = await seedClub('A', adminUser.id);
+    await seedMember(club.id, member.id, 'member');
+    const meeting = await seedPastMeeting({ clubId: club.id, hostId: adminUser.id });
+
+    await signInAs(member.email, member.password);
+    const r = await upsertMyReview(meeting.id, { content: '솔직히...', visibility: 'anonymous' });
+    expect(r.ok).toBe(true);
+
+    // 본인은 own에서 자기 정보 그대로 (마스킹 X)
+    const fromSelf = await getMeetingReviews(meeting.id);
+    expect(fromSelf.own?.content).toBe('솔직히...');
+    expect(fromSelf.own?.user_id).toBe(member.id);
+    expect(fromSelf.own?.display_name).not.toBe('익명');
+
+    // adminUser는 others에서 마스킹된 형태로 봄
+    await signInAs(adminUser.email, adminUser.password);
+    const fromAdmin = await getMeetingReviews(meeting.id);
+    expect(fromAdmin.others).toHaveLength(1);
+    expect(fromAdmin.others[0].content).toBe('솔직히...');
+    expect(fromAdmin.others[0].user_id).toBeNull();
+    expect(fromAdmin.others[0].display_name).toBe('익명');
+    expect(fromAdmin.others[0].avatar_url).toBeNull();
   });
 
   it('C. 미래 모임에 평 작성 시도 → 거절', async () => {
@@ -90,7 +117,7 @@ describe('meeting reviews', () => {
     if (!data) throw new Error('seed failed');
 
     await signInAs(adminUser.email, adminUser.password);
-    const r = await upsertMyReview(data.id, { content: '기대돼요', is_public: false });
+    const r = await upsertMyReview(data.id, { content: '기대돼요', visibility: 'private' as const });
 
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.error).toBe('모임이 끝난 후에 한줄 평을 남길 수 있어요.');

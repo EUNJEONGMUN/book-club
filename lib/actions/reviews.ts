@@ -42,7 +42,7 @@ export async function upsertMyReview(
         meeting_id: meetingId,
         user_id: user.id,
         content: parsed.data.content,
-        is_public: parsed.data.is_public,
+        visibility: parsed.data.visibility,
       },
       { onConflict: 'meeting_id,user_id' }
     )

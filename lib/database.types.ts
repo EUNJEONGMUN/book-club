@@ -226,28 +226,28 @@ export type Database = {
           content: string
           created_at: string
           id: string
-          is_public: boolean
           meeting_id: string
           updated_at: string
           user_id: string
+          visibility: Database["public"]["Enums"]["review_visibility"]
         }
         Insert: {
           content: string
           created_at?: string
           id?: string
-          is_public?: boolean
           meeting_id: string
           updated_at?: string
           user_id: string
+          visibility?: Database["public"]["Enums"]["review_visibility"]
         }
         Update: {
           content?: string
           created_at?: string
           id?: string
-          is_public?: boolean
           meeting_id?: string
           updated_at?: string
           user_id?: string
+          visibility?: Database["public"]["Enums"]["review_visibility"]
         }
         Relationships: [
           {
@@ -381,6 +381,7 @@ export type Database = {
     Enums: {
       attendance_status: "attending" | "not_attending" | "undecided"
       club_member_role: "admin" | "member" | "pending"
+      review_visibility: "private" | "public" | "anonymous"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -513,6 +514,7 @@ export const Constants = {
     Enums: {
       attendance_status: ["attending", "not_attending", "undecided"],
       club_member_role: ["admin", "member", "pending"],
+      review_visibility: ["private", "public", "anonymous"],
     },
   },
 } as const
