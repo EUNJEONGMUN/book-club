@@ -17,6 +17,22 @@ const TEXT_MID = '#5a4f4a';
 const HEADLINE_MAX = 40;
 const BODY_MAX = 200;
 
+// Pretendard 한글 폰트 (jsdelivr CDN). fetch 실패 시 시스템 폰트 fallback.
+const FONT_BOLD_URL =
+  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-Bold.woff2';
+const FONT_REGULAR_URL =
+  'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2/Pretendard-Regular.woff2';
+
+async function fetchFontSafe(url: string): Promise<ArrayBuffer | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    return await res.arrayBuffer();
+  } catch {
+    return null;
+  }
+}
+
 async function isClubMember(clubId: string, userId: string): Promise<boolean> {
   const supabase = await getSupabaseServer();
   const { data } = await supabase
@@ -50,6 +66,15 @@ export async function GET(
     const allowed = await isClubMember(meeting.club_id, user.id);
     if (!allowed) return new Response('Forbidden', { status: 403 });
 
+    // 폰트 fetch (각자 독립 try, 실패해도 진행)
+    const [boldFont, regularFont] = await Promise.all([
+      fetchFontSafe(FONT_BOLD_URL),
+      fetchFontSafe(FONT_REGULAR_URL),
+    ]);
+    const fonts: { name: string; data: ArrayBuffer; weight: 400 | 700; style: 'normal' }[] = [];
+    if (regularFont) fonts.push({ name: 'Pretendard', data: regularFont, weight: 400, style: 'normal' });
+    if (boldFont) fonts.push({ name: 'Pretendard', data: boldFont, weight: 700, style: 'normal' });
+
     const date = new Date(meeting.scheduled_at);
     const dateStr = format(date, 'yyyy.MM.dd EEE HH:mm', { locale: ko }).toUpperCase();
     const locationLine =
@@ -73,6 +98,7 @@ export async function GET(
             alignItems: 'center',
             justifyContent: 'space-between',
             padding: '70px 60px',
+            fontFamily: 'Pretendard, sans-serif',
           }}
         >
           {/* 헤드라인 */}
@@ -194,6 +220,7 @@ export async function GET(
       {
         width: WIDTH,
         height: HEIGHT,
+        ...(fonts.length > 0 ? { fonts } : {}),
       }
     );
   } catch (e) {
