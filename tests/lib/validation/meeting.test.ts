@@ -17,16 +17,37 @@ describe('meetingFormSchema', () => {
     expect(meetingFormSchema.safeParse(valid).success).toBe(true);
   });
 
-  it('빈 책 제목 거부', () => {
-    expect(meetingFormSchema.safeParse({ ...valid, book_title: '' }).success).toBe(false);
+  it('빈 책 제목 → "미정"으로 채워짐', () => {
+    const r = meetingFormSchema.safeParse({ ...valid, book_title: '' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.book_title).toBe('미정');
   });
 
-  it('빈 저자 거부', () => {
-    expect(meetingFormSchema.safeParse({ ...valid, book_author: '' }).success).toBe(false);
+  it('빈 저자 허용 (책 자체가 미정인 경우 자연스럽게 비움)', () => {
+    const r = meetingFormSchema.safeParse({ ...valid, book_author: '' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.book_author).toBe('');
   });
 
-  it('빈 장소 이름 거부', () => {
-    expect(meetingFormSchema.safeParse({ ...valid, location_name: '' }).success).toBe(false);
+  it('빈 장소 이름 → "미정"으로 채워짐', () => {
+    const r = meetingFormSchema.safeParse({ ...valid, location_name: '' });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.location_name).toBe('미정');
+  });
+
+  it('세 필드 모두 비어도 통과 (책·저자·장소 모두 미정)', () => {
+    const r = meetingFormSchema.safeParse({
+      ...valid,
+      book_title: '',
+      book_author: '',
+      location_name: '',
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.book_title).toBe('미정');
+      expect(r.data.book_author).toBe('');
+      expect(r.data.location_name).toBe('미정');
+    }
   });
 
   it('잘못된 URL 거부', () => {

@@ -56,8 +56,10 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
   const { date: initDate, time: initTime } = splitScheduledAt(defaultValues?.scheduled_at ?? '');
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const [scheduledDate, setScheduledDate] = useState(initDate || todayStr);
-  const [scheduledTime, setScheduledTime] = useState(initTime || '');
+  const initialDate = initDate || todayStr;
+  const initialTime = initTime || '13:00';
+  const [scheduledDate, setScheduledDate] = useState(initialDate);
+  const [scheduledTime, setScheduledTime] = useState(initialTime);
 
   const form = useForm<MeetingFormRaw, unknown, MeetingFormInput>({
     resolver: zodResolver(meetingFormSchema),
@@ -65,7 +67,8 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
       book_title: '',
       book_author: '',
       book_cover_url: '',
-      scheduled_at: defaultValues?.scheduled_at ?? '',
+      // 기본 날짜·시간 조합으로 scheduled_at 초기화 (사용자가 안 건드려도 valid)
+      scheduled_at: defaultValues?.scheduled_at ?? `${initialDate}T${initialTime}`,
       location_name: '',
       location_url: '',
       location_address: '',
@@ -124,7 +127,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
             <FormField label="책 제목" error={form.formState.errors.book_title?.message}>
               <Input
                 {...form.register('book_title')}
-                placeholder="예: 데미안"
+                placeholder="예: 데미안 — 비우면 '미정'"
                 className="bg-stone-50 border-stone-200"
               />
             </FormField>
@@ -195,7 +198,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
         <FormField label="장소 이름" error={form.formState.errors.location_name?.message}>
           <Input
             {...form.register('location_name')}
-            placeholder="예: 아마츄어 작업실"
+            placeholder="예: 아마츄어 작업실 — 비우면 '미정'"
             className="bg-stone-50 border-stone-200"
           />
         </FormField>
