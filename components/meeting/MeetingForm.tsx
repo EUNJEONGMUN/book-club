@@ -121,14 +121,14 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
           {/* 제목 / 저자 */}
           <div className="flex-1 space-y-3 min-w-0">
-            <FormField label="책 제목" error={form.formState.errors.book_title?.message}>
+            <FormField label="책 제목 (선택)" error={form.formState.errors.book_title?.message}>
               <Input
                 {...form.register('book_title')}
-                placeholder="예: 데미안"
+                placeholder="예: 데미안 — 비우면 '미정'"
                 className="bg-stone-50 border-stone-200"
               />
             </FormField>
-            <FormField label="저자" error={form.formState.errors.book_author?.message}>
+            <FormField label="저자 (선택)" error={form.formState.errors.book_author?.message}>
               <Input
                 {...form.register('book_author')}
                 placeholder="예: 헤르만 헤세"
@@ -192,10 +192,10 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
             form.setValue('location_address', place.road_address_name || place.address_name, { shouldValidate: true });
           }}
         />
-        <FormField label="장소 이름" error={form.formState.errors.location_name?.message}>
+        <FormField label="장소 이름 (선택)" error={form.formState.errors.location_name?.message}>
           <Input
             {...form.register('location_name')}
-            placeholder="예: 아마츄어 작업실"
+            placeholder="예: 아마츄어 작업실 — 비우면 '미정'"
             className="bg-stone-50 border-stone-200"
           />
         </FormField>
