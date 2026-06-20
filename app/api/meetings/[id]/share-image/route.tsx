@@ -1,4 +1,5 @@
 import { ImageResponse } from 'next/og';
+import * as Sentry from '@sentry/nextjs';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { getMeetingDetail } from '@/lib/queries/meetings';
@@ -43,28 +44,29 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const url = new URL(req.url);
-  const headlineRaw = (url.searchParams.get('headline') ?? '').trim();
-  const bodyRaw = (url.searchParams.get('body') ?? '').trim();
-  const headline = headlineRaw.slice(0, HEADLINE_MAX);
-  const body = bodyRaw.slice(0, BODY_MAX);
+  try {
+    const { id } = await params;
+    const url = new URL(req.url);
+    const headlineRaw = (url.searchParams.get('headline') ?? '').trim();
+    const bodyRaw = (url.searchParams.get('body') ?? '').trim();
+    const headline = headlineRaw.slice(0, HEADLINE_MAX);
+    const body = bodyRaw.slice(0, BODY_MAX);
 
-  // 인증 + 권한
-  const supabase = await getSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return new Response('Unauthorized', { status: 401 });
+    // 인증 + 권한
+    const supabase = await getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return new Response('Unauthorized', { status: 401 });
 
-  const meeting = await getMeetingDetail(id);
-  if (!meeting) return new Response('Not found', { status: 404 });
+    const meeting = await getMeetingDetail(id);
+    if (!meeting) return new Response('Not found', { status: 404 });
 
-  const allowed = await isClubMember(meeting.club_id, user.id);
-  if (!allowed) return new Response('Forbidden', { status: 403 });
+    const allowed = await isClubMember(meeting.club_id, user.id);
+    if (!allowed) return new Response('Forbidden', { status: 403 });
 
-  const [boldFont, regularFont] = await Promise.all([
-    fetchFont(FONT_BOLD_URL),
-    fetchFont(FONT_REGULAR_URL),
-  ]);
+    const [boldFont, regularFont] = await Promise.all([
+      fetchFont(FONT_BOLD_URL),
+      fetchFont(FONT_REGULAR_URL),
+    ]);
 
   const date = new Date(meeting.scheduled_at);
   const dateStr = format(date, 'yyyy.MM.dd EEE HH:mm', { locale: ko }).toUpperCase();
@@ -233,4 +235,10 @@ export async function GET(
       ],
     }
   );
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error('[share-image]', e);
+    Sentry.captureException(e, { tags: { route: 'share-image' } });
+    return new Response(`Image generation failed: ${msg}`, { status: 500 });
+  }
 }

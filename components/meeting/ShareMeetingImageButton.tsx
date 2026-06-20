@@ -35,7 +35,8 @@ export function ShareMeetingImageButton({ meetingId }: { meetingId: string }) {
 
       const res = await fetch(url.toString(), { method: 'GET' });
       if (!res.ok) {
-        toast.error('이미지를 만들지 못했어요. 다시 시도해주세요.');
+        const detail = await res.text().catch(() => '');
+        toast.error(`이미지 생성 실패 (${res.status}): ${detail || '재시도해주세요'}`);
         return;
       }
       const blob = await res.blob();
