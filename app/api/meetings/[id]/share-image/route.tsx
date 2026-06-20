@@ -29,6 +29,27 @@ async function loadFontSafe(relPath: string): Promise<ArrayBuffer | null> {
   }
 }
 
+/**
+ * 책 표지 외부 URL을 서버에서 fetch + base64 data URI로 변환.
+ * Satori가 외부 fetch를 안 하게 되어 CORS/timeout 위험 회피.
+ * 실패 시 null — 호출자가 fallback UI 사용.
+ */
+async function fetchBookCoverDataUri(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/')) return null;
+    const buf = await res.arrayBuffer();
+    // 너무 크면 base64 payload 폭발 → 거부 (보통 책표지 200KB 이하)
+    if (buf.byteLength > 2 * 1024 * 1024) return null;
+    const base64 = Buffer.from(buf).toString('base64');
+    return `data:${contentType};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
 async function isClubMember(clubId: string, userId: string): Promise<boolean> {
   const supabase = await getSupabaseServer();
   const { data } = await supabase
@@ -80,6 +101,10 @@ export async function GET(
         : meeting.location_name;
 
     const hasBookTitle = meeting.book_title && meeting.book_title !== '미정';
+    // 책 표지 — 서버 fetch + base64 인라인 (Satori가 외부 fetch 안 함)
+    const coverDataUri = meeting.book_cover_url
+      ? await fetchBookCoverDataUri(meeting.book_cover_url)
+      : null;
 
     // ImageResponse가 throw하면 framework가 가로채니까 따로 더 감쌀 수 있는 게 별로 없음.
     // 일단 폰트/이미지 빼고 plumbing부터 검증.
@@ -123,7 +148,7 @@ export async function GET(
             ) : null}
           </div>
 
-          {/* 책 영역 — 표지 이미지 일시 제거, 제목만 큰 텍스트로 */}
+          {/* 책 영역 */}
           <div
             style={{
               flex: 1,
@@ -134,34 +159,49 @@ export async function GET(
               margin: '20px 0',
             }}
           >
-            <div
-              style={{
-                width: 600,
-                height: 800,
-                background: '#ffffffaa',
-                borderRadius: 12,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 28,
-                padding: '0 40px',
-              }}
-            >
-              <span style={{ fontSize: 220 }}>📖</span>
-              {hasBookTitle ? (
-                <span
-                  style={{
-                    fontSize: 52,
-                    fontWeight: 700,
-                    color: TEXT_DARK,
-                    textAlign: 'center',
-                  }}
-                >
-                  {meeting.book_title}
-                </span>
-              ) : null}
-            </div>
+            {coverDataUri ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={coverDataUri}
+                alt=""
+                style={{
+                  maxHeight: 800,
+                  maxWidth: 640,
+                  objectFit: 'contain',
+                  borderRadius: 6,
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: 600,
+                  height: 800,
+                  background: '#ffffffaa',
+                  borderRadius: 12,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 28,
+                  padding: '0 40px',
+                }}
+              >
+                <span style={{ fontSize: 220 }}>📖</span>
+                {hasBookTitle ? (
+                  <span
+                    style={{
+                      fontSize: 52,
+                      fontWeight: 700,
+                      color: TEXT_DARK,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {meeting.book_title}
+                  </span>
+                ) : null}
+              </div>
+            )}
           </div>
 
           {/* 본문 */}
