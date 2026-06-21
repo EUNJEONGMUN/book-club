@@ -85,7 +85,7 @@ export function ShareMeetingImageButton({ meetingId }: { meetingId: string }) {
         onClick={() => setOpen(true)}
       >
         <ImageIcon className="w-4 h-4" />
-        모임 공유 이미지 생성
+        모임 공유 이미지 생성 (테스트중)
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => !busy && setOpen(v)}>

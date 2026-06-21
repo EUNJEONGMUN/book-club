@@ -30,24 +30,39 @@ async function loadFontSafe(relPath: string): Promise<ArrayBuffer | null> {
 }
 
 /**
- * 책 표지 외부 URL을 서버에서 fetch + base64 data URI로 변환.
- * Satori가 외부 fetch를 안 하게 되어 CORS/timeout 위험 회피.
- * 실패 시 null — 호출자가 fallback UI 사용.
+ * Kakao 책 검색 API thumbnail URL은 R120x174 같은 작은 사이즈로 리사이즈된 것.
+ * 표시는 640×800인데 120 원본을 업스케일하니 흐림. URL의 R\d+x\d+ 패턴을 더
+ * 큰 사이즈로 바꿔 깨끗한 이미지를 받아본다. 패턴 매치 안 되면 URL 그대로.
  */
-async function fetchBookCoverDataUri(url: string): Promise<string | null> {
+function upscaleKakaoCoverUrl(url: string): string {
+  return url.replace(/\/R\d+x\d+/, '/R600x870');
+}
+
+async function fetchImageOnce(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return null;
     const contentType = res.headers.get('content-type') || 'image/jpeg';
     if (!contentType.startsWith('image/')) return null;
     const buf = await res.arrayBuffer();
-    // 너무 크면 base64 payload 폭발 → 거부 (보통 책표지 200KB 이하)
     if (buf.byteLength > 2 * 1024 * 1024) return null;
     const base64 = Buffer.from(buf).toString('base64');
     return `data:${contentType};base64,${base64}`;
   } catch {
     return null;
   }
+}
+
+/**
+ * 책 표지 외부 URL을 서버에서 fetch + base64 data URI로 변환.
+ * 1) 업스케일 URL 먼저 시도 (Kakao 패턴이면 R600), 2) 실패 시 원본 URL.
+ */
+async function fetchBookCoverDataUri(url: string): Promise<string | null> {
+  const upscaled = upscaleKakaoCoverUrl(url);
+  const primary = await fetchImageOnce(upscaled);
+  if (primary) return primary;
+  if (upscaled !== url) return await fetchImageOnce(url);
+  return null;
 }
 
 async function isClubMember(clubId: string, userId: string): Promise<boolean> {
