@@ -70,6 +70,8 @@ python3 scripts/production-db-dump.py
 
 ## 이후 순서
 
+Preview 분리 후속: 테스트 DB 생성과 시험 흐름 11개·운영 전체 8개 테이블 보존 대조까지 완료했다. Vercel 연결은 공용 Secret 편집 제약 및 API 인증 대기 때문에 아직 분리되지 않았다. `docs/preview-isolation.md`에 현황과 소유자 실행용 도구를 기록했다. 새 코드 push와 운영 배포는 계속 보류한다.
+
 운영 역할·Vercel 환경 읽기 전용 점검도 완료했다. 비슈퍼유저 `postgres`로 별도 운영 복원본에 전환을 실행해 228개 보존 검사를 통과했다. Vercel은 Supabase 세 변수를 Production/Preview 공용으로 설정 중이며 Preview 자동 배포와 main 운영 도메인 자동 연결이 켜져 있다. 원격 설정은 변경하지 않았다. 새 push 전에 Preview의 운영 DB 연결을 분리해야 한다. 상세 및 변경안은 `docs/deployment-readiness-audit.md`를 따른다.
 
 1. **완료:** 생성한 운영 DB 아카이브와 파일을 격리된 로컬 DB·저장 경로에 복원했다. 원래 로컬 DB는 초기화하지 않았다.
