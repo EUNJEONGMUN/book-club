@@ -18,12 +18,68 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = "chvprcpdfgivnfkgwkem"
 CONTAINER = "supabase_db_book-club"
+CA_FILE = ROOT / "scripts/certificates/supabase-prod-ca-2021.crt"
+CA_SHA256 = "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7"
+
+# Only the public certificate is written inside the local container. The password
+# follows it on stdin, remains in process memory, and is never a command argument.
+CONTAINER_SCRIPT = '''set -eu
+certificate=$(mktemp /tmp/book-club-ca.XXXXXX)
+trap 'rm -f "$certificate"' EXIT
+while IFS= read -r line; do
+  printf '%s\\n' "$line"
+  if [ "$line" = "-----END CERTIFICATE-----" ]; then break; fi
+done > "$certificate"
+IFS= read -r PGPASSWORD
+export PGPASSWORD
+export PGSSLROOTCERT="$certificate"
+"$@"
+'''
+
+
+def docker_command():
+    return ["docker", "exec", "-i", "-e", "PGSSLMODE=verify-full",
+            "-e", "PGCONNECT_TIMEOUT=15",
+            "-e", "PGOPTIONS=-c default_transaction_read_only=on -c lock_timeout=5000",
+            CONTAINER, "sh", "-c", CONTAINER_SCRIPT, "sh"]
+
+
+def connection_input(password):
+    certificate = CA_FILE.read_bytes()
+    if hashlib.sha256(certificate).hexdigest() != CA_SHA256:
+        raise RuntimeError("Supabase CA 파일이 없거나 검증한 인증서와 다릅니다. 인증서 검증을 중단합니다.")
+    if "\n" in password or "\r" in password:
+        raise RuntimeError("비밀번호에 줄바꿈을 사용할 수 없습니다.")
+    return certificate.rstrip(b"\r\n") + b"\n" + password.encode() + b"\n"
+
+
+def failure_reason(result):
+    """Classify errors without printing raw process output or credential values."""
+    error = result.stderr.decode(errors="replace").lower()
+    if any(term in error for term in ("certificate verify failed", "root certificate", "certificate does not match")):
+        return "인증서 검증에 실패했습니다. Supabase CA 인증서와 호스트를 확인해주세요."
+    if "password authentication failed" in error or "authentication failed" in error:
+        return "비밀번호 인증에 실패했습니다. Supabase 로그인 비밀번호가 아닌 기존 DB 비밀번호를 확인해주세요. 재설정하지는 마세요."
+    if "no password supplied" in error:
+        return "서버 인증서 검증은 통과했지만 DB 비밀번호가 전달되지 않았습니다."
+    if any(term in error for term in ("could not translate host", "name or service not known", "temporary failure in name resolution")):
+        return "DB 호스트의 이름을 찾지 못했습니다. DNS/네트워크를 확인해주세요."
+    if any(term in error for term in ("timeout", "timed out", "network is unreachable", "connection refused")):
+        return "DB 접속 경로에 연결하지 못했습니다. 네트워크/접속 제한을 확인해주세요."
+    if "tenant or user not found" in error:
+        return "풀러의 프로젝트/사용자 정보를 확인할 수 없습니다. 저장된 접속 정보 확인이 필요합니다."
+    if "permission denied" in error:
+        return "백업에 필요한 읽기 권한이 부족합니다. 권한은 자동 변경하지 않았습니다."
+    if "cannot connect to the docker daemon" in error or "no such container" in error:
+        return "로컬 Docker 또는 Supabase DB 컨테이너가 실행 중인지 확인해주세요."
+    return f"연결 확인에 실패했습니다 (종료 코드 {result.returncode}). 비밀번호·설정은 변경하지 않았습니다."
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.parse_args()
-    if not sys.stdin.isatty():
+    parser.add_argument("--diagnose", action="store_true", help="비밀번호 없이 네트워크·서버 인증서만 확인")
+    args = parser.parse_args()
+    if not args.diagnose and not sys.stdin.isatty():
         raise RuntimeError("Run in your terminal to enter the existing DB password privately.")
     os.umask(0o077)
     if (ROOT / "supabase/.temp/project-ref").read_text().strip() != PROJECT:
@@ -36,20 +92,23 @@ def main():
     # Session-mode pooler, fixed project user, TLS certificate + hostname checks.
     connection = ["--host", url.hostname, "--port", "5432", "--username", "postgres." + PROJECT,
                   "--dbname", "postgres", "--no-password"]
-    docker = ["docker", "exec", "-i", "-e", "PGSSLMODE=verify-full",
-              "-e", "PGSSLROOTCERT=/etc/ssl/certs/ca-certificates.crt",
-              "-e", "PGOPTIONS=-c default_transaction_read_only=on -c lock_timeout=5000",
-              CONTAINER, "sh", "-c", 'IFS= read -r PGPASSWORD; export PGPASSWORD; exec "$@"', "sh"]
-    password = getpass.getpass("기존 운영 DB 비밀번호 (화면에 표시되지 않음): ")
-    if not password or "\n" in password or "\r" in password:
+    docker = docker_command()
+    password = "" if args.diagnose else getpass.getpass("기존 운영 DB 비밀번호 (화면에 표시되지 않음): ")
+    if not args.diagnose and not password:
         raise RuntimeError("A non-empty, single-line password is required.")
-    payload = (password + "\n").encode()
+    payload = connection_input(password)
     password = None
     probe = subprocess.run(docker + ["psql", *connection, "-X", "-qAt", "-v", "ON_ERROR_STOP=1",
                                     "-c", "SELECT current_setting('transaction_read_only')"],
                            input=payload, capture_output=True)
+    if args.diagnose:
+        if b"no password supplied" in probe.stderr.lower() or (probe.returncode == 0 and probe.stdout.strip() == b"on"):
+            print("네트워크 연결과 Supabase 서버 인증서·호스트 검증을 통과했습니다. 비밀번호 인증과 전체 백업은 아직 실행하지 않았습니다.")
+            return
+        raise RuntimeError(failure_reason(probe))
     if probe.returncode or probe.stdout.strip() != b"on":
-        raise RuntimeError("Verified read-only connection failed; no dump was created. Check the existing password/TLS/connectivity without resetting credentials.")
+        reason = failure_reason(probe) if probe.returncode else "서버의 읽기 전용 설정을 확인하지 못했습니다."
+        raise RuntimeError(reason + " DB 백업은 생성하지 않았습니다.")
     backup_root = ROOT / ".local-backups"
     backup_root.mkdir(mode=0o700, exist_ok=True)
     if backup_root.is_symlink() or backup_root.resolve().parent != ROOT:
@@ -64,7 +123,8 @@ def main():
                                 input=payload, stdout=output, stderr=subprocess.PIPE)
     payload = None
     if result.returncode or target.stat().st_size == 0:
-        raise RuntimeError("Dump incomplete. The private folder contains an unverified partial file; no completion manifest was written.")
+        raise RuntimeError("DB 덤프가 완료되지 않았습니다. " + failure_reason(result) +
+                           " 부분 파일에는 완료 manifest를 만들지 않았습니다.")
     with target.open("rb") as stream:
         verified = subprocess.run(["docker", "exec", "-i", CONTAINER, "pg_restore", "--list"],
                                   stdin=stream, capture_output=True)
