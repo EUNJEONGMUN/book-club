@@ -203,7 +203,7 @@ pnpm dlx supabase migration up --local
 pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 ```
 
-운영 DB 적용은 일반 개발 명령에 포함하지 않는다. 단일 모임 전환은 `docs/single-club-cutover.md`의 백업·쓰기 중단·검증 순서를 따른다.
+운영 DB 적용은 일반 개발 명령에 포함하지 않는다. 단일 모임 전환은 `docs/single-club-cutover.md`의 백업·쓰기 중단·검증 순서를 따른다. 현재 단계·중단 기준과 로컬 사전 검사 사용법은 [운영 실행 체크리스트](docs/production-execution-checklist.md)를 참조한다. 사전 검사 성공은 운영 실행 승인이 아니다.
 
 ---
 
