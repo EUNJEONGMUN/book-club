@@ -9,6 +9,8 @@ export async function addQuestion(meetingId: string, input: unknown) {
   if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0].message };
 
   const supabase = await getSupabaseServer();
+  const { data: meeting } = await supabase.from('meetings').select('id').eq('id', meetingId).maybeSingle();
+  if (!meeting) return { ok: false as const, error: '모임을 찾을 수 없습니다.' };
   const { data: existing } = await supabase
     .from('discussion_questions')
     .select('order_idx')
@@ -32,10 +34,12 @@ export async function updateQuestion(id: string, meetingId: string, input: unkno
   const parsed = questionFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false as const, error: parsed.error.issues[0].message };
   const supabase = await getSupabaseServer();
+  const { data: meeting } = await supabase.from('meetings').select('id').eq('id', meetingId).maybeSingle();
+  if (!meeting) return { ok: false as const, error: '모임을 찾을 수 없습니다.' };
   const { error } = await supabase
     .from('discussion_questions')
     .update({ content: parsed.data.content })
-    .eq('id', id);
+    .eq('id', id).eq('meeting_id', meetingId);
   if (error) return { ok: false as const, error: error.message };
   await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
@@ -43,7 +47,9 @@ export async function updateQuestion(id: string, meetingId: string, input: unkno
 
 export async function deleteQuestion(id: string, meetingId: string) {
   const supabase = await getSupabaseServer();
-  const { error } = await supabase.from('discussion_questions').delete().eq('id', id);
+  const { data: meeting } = await supabase.from('meetings').select('id').eq('id', meetingId).maybeSingle();
+  if (!meeting) return { ok: false as const, error: '모임을 찾을 수 없습니다.' };
+  const { error } = await supabase.from('discussion_questions').delete().eq('id', id).eq('meeting_id', meetingId);
   if (error) return { ok: false as const, error: error.message };
   await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
@@ -51,10 +57,12 @@ export async function deleteQuestion(id: string, meetingId: string) {
 
 export async function reorderQuestion(id: string, meetingId: string, newOrderIdx: number) {
   const supabase = await getSupabaseServer();
+  const { data: meeting } = await supabase.from('meetings').select('id').eq('id', meetingId).maybeSingle();
+  if (!meeting) return { ok: false as const, error: '모임을 찾을 수 없습니다.' };
   const { error } = await supabase
     .from('discussion_questions')
     .update({ order_idx: newOrderIdx })
-    .eq('id', id);
+    .eq('id', id).eq('meeting_id', meetingId);
   if (error) return { ok: false as const, error: error.message };
   await revalidateMeetingPaths(meetingId);
   return { ok: true as const };

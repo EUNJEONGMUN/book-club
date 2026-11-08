@@ -1,92 +1,57 @@
 import Link from 'next/link';
-import { ChevronRight, Settings, Users } from 'lucide-react';
-import { getCurrentProfile } from '@/lib/queries/members';
-import { getMyClubs, getPendingCountsForMyAdminClubs } from '@/lib/queries/clubs';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogoutButton } from './logout-button';
+import { requireMember } from '@/lib/auth/membership';
+import { notFound } from 'next/navigation';
+import {
+  getClubSettings,
+  getActiveInvite,
+  getActiveMembers,
+} from '@/lib/queries/club';
+import { InviteLinkPanel } from '@/components/club/InviteLinkPanel';
+import { ClubInfoPanel } from '@/components/club/ClubInfoPanel';
+import { ClubInfoReadOnly } from '@/components/club/ClubInfoReadOnly';
+import { AdminTransferSection } from '@/components/club/AdminTransferSection';
+import { DangerZoneSection } from '@/components/club/DangerZoneSection';
 
-export default async function MorePage() {
-  const [me, clubs, pendingCounts] = await Promise.all([
-    getCurrentProfile(),
-    getMyClubs(),
-    getPendingCountsForMyAdminClubs(),
-  ]);
+export default async function SettingsPage() {
+  const { role, user } = await requireMember();
+  const userId = user.id;
 
-  return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-stone-800">설정</h1>
+  const club = await getClubSettings();
+  if (!club) notFound();
 
-      {/* 내 프로필 */}
-      <Link
-        href="/more/profile"
-        className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-stone-100 shadow-sm hover:bg-stone-50 transition-colors"
-      >
-        <Avatar className="w-12 h-12">
-          <AvatarImage src={me?.avatar_url ?? undefined} alt={me?.display_name} />
-          <AvatarFallback className="bg-stone-100 text-stone-600 text-base font-medium">
-            {me?.display_name.slice(0, 1)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-stone-800">{me?.display_name}</p>
+  if (role === 'admin') {
+    const [invite, members] = await Promise.all([
+      getActiveInvite(),
+      getActiveMembers(),
+    ]);
+
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-xl font-bold">{club.name} 설정</h1>
+          <p className="text-sm text-stone-500">관리자 전용</p>
         </div>
-        <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
-      </Link>
+        <Link href="/more/profile" className="block underline text-sm">내 프로필 수정</Link>
+        <Link href="/more/applicants" className="block underline text-sm">가입 신청자 관리</Link>
+        <ClubInfoPanel club={club} />
+        <InviteLinkPanel initialInvite={invite} />
+        <AdminTransferSection activeMembers={members} currentUserId={userId} />
+        <LogoutButton />
+      </div>
+    );
+  }
 
-      {/* 그룹별 설정 */}
-      {clubs.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-stone-600 px-1">내 그룹</h2>
-          <div className="space-y-3">
-            {clubs.map((club) => {
-              const isAdmin = club.role === 'admin';
-              const pendingCount = pendingCounts[club.id] ?? 0;
-              return (
-                <div
-                  key={club.id}
-                  className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden"
-                >
-                  <div className="px-4 pt-3 pb-2 flex items-center gap-2">
-                    <p className="font-semibold text-stone-800 truncate">{club.name}</p>
-                    {isAdmin && (
-                      <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium shrink-0">
-                        admin
-                      </span>
-                    )}
-                  </div>
-                  <ul className="divide-y divide-stone-100">
-                    <li>
-                      <Link
-                        href={`/clubs/${club.id}/settings`}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors min-h-11"
-                      >
-                        <Settings className="w-4 h-4 text-stone-500 shrink-0" />
-                        <span className="flex-1 text-sm text-stone-700">그룹 설정</span>
-                        <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
-                      </Link>
-                    </li>
-                    {isAdmin && (
-                      <li>
-                        <Link
-                          href={`/clubs/${club.id}/applicants`}
-                          className="flex items-center gap-3 px-4 py-3 hover:bg-stone-50 transition-colors min-h-11"
-                        >
-                          <Users className="w-4 h-4 text-stone-500 shrink-0" />
-                          <span className="flex-1 text-sm text-stone-700">
-                            가입 신청자 ({pendingCount}명)
-                          </span>
-                          <ChevronRight className="w-4 h-4 text-stone-300 shrink-0" />
-                        </Link>
-                      </li>
-                    )}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
+  // member view
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-xl font-bold">{club.name} 설정</h1>
+        <p className="text-sm text-stone-500">멤버</p>
+      </div>
+      <Link href="/more/profile" className="block underline text-sm">내 프로필 수정</Link>
+      <ClubInfoReadOnly club={club} />
+      <DangerZoneSection clubName={club.name} isAdmin={false} />
       <LogoutButton />
     </div>
   );

@@ -1,12 +1,11 @@
-'use server';
 
 import { revalidatePath } from 'next/cache';
 import * as Sentry from '@sentry/nextjs';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { notifyAdminsOnApply } from '@/lib/notifications/admin-apply';
 
-export async function applyToClub(token: string): Promise<
-  { ok: true; clubId: string; clubName: string } | { ok: false; error: string }
+export async function applyForMembership(token: string): Promise<
+  { ok: true; clubName: string } | { ok: false; error: string }
 > {
   const trimmed = token.trim();
   if (trimmed.length === 0) {
@@ -24,11 +23,11 @@ export async function applyToClub(token: string): Promise<
   }
 
   const supabase = await getSupabaseServer();
-  const { data, error } = await supabase.rpc('apply_to_club', { invite_token: parsedToken });
+  const { data, error } = await supabase.rpc('apply_for_membership', { invite_token: parsedToken });
 
   if (error) {
-    console.error('[applyToClub]', error);
-    Sentry.captureException(error, { tags: { action: 'applyToClub' } });
+    console.error('[applyForMembership]', error);
+    Sentry.captureException(error, { tags: { action: 'applyForMembership' } });
     if (error.message?.includes('Not authenticated')) {
       return { ok: false, error: '로그인이 필요합니다.' };
     }
@@ -49,16 +48,15 @@ export async function applyToClub(token: string): Promise<
 
   const result = data as {
     status: 'applied' | 'already_member' | 'already_pending';
-    club_id: string;
     club_name: string;
   };
   if (result.status === 'already_member') {
-    return { ok: false, error: '이미 가입된 그룹입니다.' };
+    return { ok: false, error: '이미 가입된 모임입니다.' };
   }
   if (result.status === 'already_pending') {
     return {
       ok: false,
-      error: '이미 신청한 그룹입니다. admin 승인을 기다려주세요.',
+      error: '이미 신청한 모임입니다. admin 승인을 기다려주세요.',
     };
   }
 
@@ -73,27 +71,25 @@ export async function applyToClub(token: string): Promise<
     const applicantName = profile?.display_name ?? '익명';
     // 비동기 fire-and-forget — 호출자는 기다리지 않음
     notifyAdminsOnApply({
-      clubId: result.club_id,
       clubName: result.club_name,
       applicantDisplayName: applicantName,
     }).catch((e) => {
-      console.error('[applyToClub:notify]', e);
+      console.error('[applyForMembership:notify]', e);
       Sentry.captureException(e, { tags: { notification: 'admin-apply-fail' } });
     });
   }
 
-  return { ok: true, clubId: result.club_id, clubName: result.club_name };
+  return { ok: true, clubName: result.club_name };
 }
 
-export async function approveMember(clubId: string, userId: string): Promise<
+export async function approveMember(userId: string): Promise<
   { ok: true } | { ok: false; error: string }
 > {
   const supabase = await getSupabaseServer();
   // .select()로 변경된 row를 받아야 RLS가 조용히 0 rows로 차단했는지 알 수 있음
   const { data, error } = await supabase
-    .from('club_members')
+    .from('members')
     .update({ role: 'member' })
-    .eq('club_id', clubId)
     .eq('user_id', userId)
     .eq('role', 'pending')
     .select('user_id');
@@ -106,18 +102,17 @@ export async function approveMember(clubId: string, userId: string): Promise<
   if (!data || data.length === 0) {
     return { ok: false, error: '권한이 없거나 이미 처리된 신청입니다.' };
   }
-  revalidatePath(`/clubs/${clubId}/settings`);
+  revalidatePath('/more');
   return { ok: true };
 }
 
-export async function rejectMember(clubId: string, userId: string): Promise<
+export async function rejectMember(userId: string): Promise<
   { ok: true } | { ok: false; error: string }
 > {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
-    .from('club_members')
+    .from('members')
     .delete()
-    .eq('club_id', clubId)
     .eq('user_id', userId)
     .eq('role', 'pending')
     .select('user_id');
@@ -130,17 +125,15 @@ export async function rejectMember(clubId: string, userId: string): Promise<
   if (!data || data.length === 0) {
     return { ok: false, error: '권한이 없거나 이미 처리된 신청입니다.' };
   }
-  revalidatePath(`/clubs/${clubId}/settings`);
+  revalidatePath('/more');
   return { ok: true };
 }
 
 export async function transferAdmin(
-  clubId: string,
   newAdminUserId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await getSupabaseServer();
   const { error } = await supabase.rpc('transfer_admin', {
-    target_club_id: clubId,
     new_admin_user_id: newAdminUserId,
   });
 
@@ -151,13 +144,13 @@ export async function transferAdmin(
       return { ok: false, error: '로그인이 필요합니다.' };
     }
     if (error.message?.includes('Not admin')) {
-      return { ok: false, error: '그룹 관리자만 이양할 수 있어요.' };
+      return { ok: false, error: '모임 관리자만 이양할 수 있어요.' };
     }
     if (error.message?.includes('Cannot transfer admin to yourself')) {
       return { ok: false, error: '본인에게는 이양할 수 없어요.' };
     }
-    if (error.message?.includes('Target user is not in this club')) {
-      return { ok: false, error: '대상이 이 그룹의 멤버가 아닙니다.' };
+    if (error.message?.includes('Target user is not a member')) {
+      return { ok: false, error: '대상이 부글부글의 멤버가 아닙니다.' };
     }
     if (error.message?.includes('Target user is still pending approval')) {
       return { ok: false, error: '승인 대기 중인 사용자에게는 이양할 수 없어요.' };
@@ -165,11 +158,11 @@ export async function transferAdmin(
     return { ok: false, error: '관리자 이양에 실패했어요.' };
   }
 
-  revalidatePath(`/clubs/${clubId}/settings`);
+  revalidatePath('/more');
   return { ok: true };
 }
 
-export async function leaveClub(clubId: string): Promise<
+export async function leaveMembership(): Promise<
   { ok: true } | { ok: false; error: string }
 > {
   const supabase = await getSupabaseServer();
@@ -180,54 +173,29 @@ export async function leaveClub(clubId: string): Promise<
 
   // Guard: admins must transfer or delete first.
   const { data: row } = await supabase
-    .from('club_members')
+    .from('members')
     .select('role')
-    .eq('club_id', clubId)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (row?.role === 'admin') {
     return {
       ok: false,
-      error: '관리자는 탈퇴할 수 없어요. 다른 멤버에게 이양하거나 그룹을 삭제해주세요.',
+      error: '관리자는 탈퇴할 수 없어요. 다른 멤버에게 관리자 권한을 이양해주세요.',
     };
   }
 
   const { error } = await supabase
-    .from('club_members')
+    .from('members')
     .delete()
-    .eq('club_id', clubId)
     .eq('user_id', user.id);
 
   if (error) {
-    console.error('[leaveClub]', error);
-    Sentry.captureException(error, { tags: { action: 'leaveClub' } });
-    return { ok: false, error: '그룹 탈퇴에 실패했어요.' };
+    console.error('[leaveMembership]', error);
+    Sentry.captureException(error, { tags: { action: 'leaveMembership' } });
+    return { ok: false, error: '모임 탈퇴에 실패했어요.' };
   }
 
-  revalidatePath('/clubs');
-  return { ok: true };
-}
-
-export async function deleteClub(clubId: string): Promise<
-  { ok: true } | { ok: false; error: string }
-> {
-  const supabase = await getSupabaseServer();
-  const { data, error } = await supabase
-    .from('clubs')
-    .delete()
-    .eq('id', clubId)
-    .select('id');
-
-  if (error) {
-    console.error('[deleteClub]', error);
-    Sentry.captureException(error, { tags: { action: 'deleteClub' } });
-    return { ok: false, error: '그룹 삭제에 실패했어요.' };
-  }
-  if (!data || data.length === 0) {
-    return { ok: false, error: '그룹 관리자만 삭제할 수 있어요.' };
-  }
-
-  revalidatePath('/clubs');
+  revalidatePath('/');
   return { ok: true };
 }

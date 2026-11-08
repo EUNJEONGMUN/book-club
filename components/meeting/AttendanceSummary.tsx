@@ -9,7 +9,7 @@ import type { Attendance, AttendanceStatus, Profile } from '@/lib/types';
 
 type AttendanceWithProfile = Attendance & { profile: Profile };
 
-type ClubMemberMinimal = {
+type MemberOption = {
   user_id: string;
   display_name: string;
 };
@@ -23,13 +23,13 @@ const VIEW_STATUSES: { value: AttendanceStatus; label: string; bg: string; text:
 export function AttendanceSummary({
   meetingId,
   attendances,
-  clubMembers = [],
+  eligibleMembers = [],
   canEdit = false,
 }: {
   meetingId: string;
   attendances: AttendanceWithProfile[];
   /** 편집 모드의 "추가하기" pool 계산용 (active 멤버 전체) */
-  clubMembers?: ClubMemberMinimal[];
+  eligibleMembers?: MemberOption[];
   /** true면 "수정" 버튼 노출. 호스트/admin이 지난 모임 정정용. */
   canEdit?: boolean;
 }) {
@@ -61,7 +61,7 @@ export function AttendanceSummary({
           key={editing ? 'editing' : 'view'}
           meetingId={meetingId}
           initial={attendances}
-          clubMembers={clubMembers}
+          eligibleMembers={eligibleMembers}
         />
       ) : (
         // 보기 모드 — prop 직접 사용. AttendanceToggle 같은 외부 변경 후
@@ -108,11 +108,11 @@ function ViewGrid({ items }: { items: AttendanceWithProfile[] }) {
 function EditPanel({
   meetingId,
   initial,
-  clubMembers,
+  eligibleMembers,
 }: {
   meetingId: string;
   initial: AttendanceWithProfile[];
-  clubMembers: ClubMemberMinimal[];
+  eligibleMembers: MemberOption[];
 }) {
   // optimistic 편집용 로컬 state — 부모의 key prop으로 view→edit 전환 시 새로 초기화됨
   const [items, setItems] = useState(initial);
@@ -121,7 +121,7 @@ function EditPanel({
   const recordedUserIds = new Set(
     items.filter((a) => a.status === 'attending' || a.status === 'not_attending').map((a) => a.user_id)
   );
-  const available = clubMembers.filter((m) => !recordedUserIds.has(m.user_id));
+  const available = eligibleMembers.filter((m) => !recordedUserIds.has(m.user_id));
 
   const [pending, startTransition] = useTransition();
   const [pickerOpen, setPickerOpen] = useState(false);

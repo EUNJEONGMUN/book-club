@@ -1,109 +1,24 @@
 import { getSupabaseServer } from '@/lib/supabase/server';
-import type { Club, ClubInvite, Meeting, Profile, Attendance } from '@/lib/types';
+import type { ClubSettings, Invite, Meeting, Profile, Attendance } from '@/lib/types';
 
-export type MyClub = Club & {
-  role: 'admin' | 'member';
-};
-
-export type PendingClub = Club & {
-  applied_at: string;
-};
-
-/** Returns clubs where the current user applied but hasn't been approved yet. */
-export async function getMyPendingClubs(): Promise<PendingClub[]> {
+export async function getClubSettings(): Promise<ClubSettings | null> {
   const supabase = await getSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data, error } = await supabase
-    .from('club_members')
-    .select('joined_at, club:clubs(*)')
-    .eq('user_id', user.id)
-    .eq('role', 'pending')
-    .order('joined_at', { ascending: false });
-  if (error) throw error;
-
-  return (data ?? [])
-    .filter((row: any) => row.club != null)
-    .map((row: any) => ({ ...row.club, applied_at: row.joined_at }));
-}
-
-/**
- * Returns pending applicant counts keyed by club_id, for clubs the current user is admin of.
- * Used by /more to render "가입 신청자 (N명)" buttons.
- * Non-admin clubs are not included in the map.
- */
-export async function getPendingCountsForMyAdminClubs(): Promise<Record<string, number>> {
-  const supabase = await getSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return {};
-
-  const { data: adminMemberships } = await supabase
-    .from('club_members')
-    .select('club_id')
-    .eq('user_id', user.id)
-    .eq('role', 'admin');
-  const adminClubIds = (adminMemberships ?? []).map((m) => m.club_id);
-  if (adminClubIds.length === 0) return {};
-
-  const { data: pendingRows } = await supabase
-    .from('club_members')
-    .select('club_id')
-    .in('club_id', adminClubIds)
-    .eq('role', 'pending');
-
-  const counts: Record<string, number> = {};
-  adminClubIds.forEach((id) => {
-    counts[id] = 0;
-  });
-  (pendingRows ?? []).forEach((row) => {
-    counts[row.club_id] = (counts[row.club_id] ?? 0) + 1;
-  });
-  return counts;
-}
-
-/** Returns clubs where the current user is an active member (admin or member). pending excluded. */
-export async function getMyClubs(): Promise<MyClub[]> {
-  const supabase = await getSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data, error } = await supabase
-    .from('club_members')
-    .select('role, club:clubs(*)')
-    .eq('user_id', user.id)
-    .in('role', ['admin', 'member'])
-    .order('joined_at', { ascending: true });
-  if (error) throw error;
-  return (data ?? [])
-    .filter((row: any) => row.club !== null)
-    .map((row: any) => ({ ...row.club, role: row.role })) as MyClub[];
-}
-
-/** Returns the club if the current user is an active member; null otherwise. RLS enforces. */
-export async function getClubById(id: string): Promise<Club | null> {
-  const supabase = await getSupabaseServer();
-  const { data, error } = await supabase
-    .from('clubs')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle();
+  const { data, error } = await supabase.from('club_settings').select('*').eq('id', 1).maybeSingle();
   if (error) throw error;
   return data;
 }
 
-export type NextMeetingInClub = Meeting & {
+export type NextMeetingWithAttendance = Meeting & {
   host: Profile;
   questions_count: number;
   attendances: Array<Attendance & { profile: Profile }>;
 };
 
-export async function getNextMeetingInClub(clubId: string): Promise<NextMeetingInClub | null> {
+export async function getNextMeeting(): Promise<NextMeetingWithAttendance | null> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
     .select('*, host:profiles!meetings_host_id_fkey(*), discussion_questions(count), attendances(*, profile:profiles(*))')
-    .eq('club_id', clubId)
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true })
     .limit(1)
@@ -111,40 +26,37 @@ export async function getNextMeetingInClub(clubId: string): Promise<NextMeetingI
   if (error) throw error;
   if (!data) return null;
   const questions_count = (data as any).discussion_questions?.[0]?.count ?? 0;
-  return { ...(data as any), questions_count } as NextMeetingInClub;
+  return { ...(data as any), questions_count } as NextMeetingWithAttendance;
 }
 
-export async function getUpcomingMeetingsInClub(clubId: string): Promise<Array<Meeting & { host: Profile }>> {
+export async function getUpcomingMeetings(): Promise<Array<Meeting & { host: Profile }>> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
     .select('*, host:profiles!meetings_host_id_fkey(*)')
-    .eq('club_id', clubId)
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true });
   if (error) throw error;
   return (data ?? []) as Array<Meeting & { host: Profile }>;
 }
 
-export async function getPastMeetingsInClub(clubId: string): Promise<Array<Meeting & { host: Profile }>> {
+export async function getPastMeetings(): Promise<Array<Meeting & { host: Profile }>> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
     .select('*, host:profiles!meetings_host_id_fkey(*)')
-    .eq('club_id', clubId)
     .lt('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Array<Meeting & { host: Profile }>;
 }
 
-/** Returns the currently active invite for the club, or null. RLS restricts this to club admins. */
-export async function getActiveInvite(clubId: string): Promise<ClubInvite | null> {
+/** Returns the currently active invite for the club, or null. RLS restricts this to administrators. */
+export async function getActiveInvite(): Promise<Invite | null> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
-    .from('club_invites')
+    .from('invites')
     .select('*')
-    .eq('club_id', clubId)
     .is('revoked_at', null)
     .gte('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
@@ -157,16 +69,15 @@ export async function getActiveInvite(clubId: string): Promise<ClubInvite | null
 export type PendingApplicant = {
   user_id: string;
   display_name: string;
-  joined_at: string; // application time (joined_at in club_members)
+  joined_at: string; // application time
 };
 
-/** Returns pending applicants for the club. RLS restricts to active members of the club. */
-export async function getPendingApplicants(clubId: string): Promise<PendingApplicant[]> {
+/** Returns pending applicants for the club. RLS restricts to active members. */
+export async function getPendingApplicants(): Promise<PendingApplicant[]> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
-    .from('club_members')
+    .from('members')
     .select('user_id, joined_at, profile:profiles(display_name)')
-    .eq('club_id', clubId)
     .eq('role', 'pending')
     .order('joined_at', { ascending: true });
   if (error) throw error;
@@ -179,20 +90,19 @@ export async function getPendingApplicants(clubId: string): Promise<PendingAppli
     }));
 }
 
-export type ClubActiveMember = {
+export type ActiveMember = {
   user_id: string;
   display_name: string;
   role: 'admin' | 'member';
   joined_at: string;
 };
 
-/** Returns admin + member rows for the club. Pending excluded. RLS restricts to active members of the club. */
-export async function getClubActiveMembers(clubId: string): Promise<ClubActiveMember[]> {
+/** Returns admin + member rows for the club. Pending excluded. RLS restricts to active members. */
+export async function getActiveMembers(): Promise<ActiveMember[]> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
-    .from('club_members')
+    .from('members')
     .select('user_id, role, joined_at, profile:profiles(display_name)')
-    .eq('club_id', clubId)
     .in('role', ['admin', 'member'])
     .order('joined_at', { ascending: true });
   if (error) throw error;
@@ -206,7 +116,7 @@ export async function getClubActiveMembers(clubId: string): Promise<ClubActiveMe
     }));
 }
 
-export type ClubMemberWithStats = {
+export type MemberWithStats = {
   user_id: string;
   display_name: string;
   avatar_url: string | null;
@@ -216,17 +126,16 @@ export type ClubMemberWithStats = {
 };
 
 /**
- * Returns active members (admin + member) of the club with per-member
- * attended + hosted counts scoped to this club. Pending excluded.
- * RLS restricts to active members of the club — non-members get [].
+ * Returns active members (admin + member) of the service with per-member
+ * attended + hosted counts for the service. Pending excluded.
+ * RLS restricts to active members — non-members get [].
  */
-export async function getClubMembersWithStats(clubId: string): Promise<ClubMemberWithStats[]> {
+export async function getMembersWithStats(): Promise<MemberWithStats[]> {
   const supabase = await getSupabaseServer();
 
   const { data: memberRows, error: memberErr } = await supabase
-    .from('club_members')
+    .from('members')
     .select('user_id, role, profile:profiles(display_name, avatar_url)')
-    .eq('club_id', clubId)
     .in('role', ['admin', 'member']);
   if (memberErr) throw memberErr;
   const members = (memberRows ?? []).filter((r: any) => r.profile != null);
@@ -235,8 +144,7 @@ export async function getClubMembersWithStats(clubId: string): Promise<ClubMembe
 
   const { data: meetings, error: meetingsErr } = await supabase
     .from('meetings')
-    .select('id, host_id')
-    .eq('club_id', clubId);
+    .select('id, host_id');
   if (meetingsErr) throw meetingsErr;
   const meetingIds = (meetings ?? []).map((m) => m.id);
 
@@ -277,26 +185,22 @@ export type MemberHistoryItem = {
 };
 
 /**
- * Returns meeting history for one member within one club.
+ * Returns meeting history for one member within the service.
  * Items where the member was host take precedence over attendance-only.
  * Sorted by scheduled_at desc.
- * RLS restricts to active members of the club — non-members get [].
+ * RLS restricts to active members — non-members get [].
  */
-export async function getMemberHistoryInClub(
-  clubId: string,
-  userId: string
-): Promise<MemberHistoryItem[]> {
+export async function getMemberHistory(userId: string): Promise<MemberHistoryItem[]> {
   const supabase = await getSupabaseServer();
 
   const [{ data: hosted }, { data: attended }] = await Promise.all([
     supabase
       .from('meetings')
       .select('id, book_title, book_cover_url, scheduled_at')
-      .eq('club_id', clubId)
       .eq('host_id', userId),
     supabase
       .from('attendances')
-      .select('meeting_id, meeting:meetings!inner(book_title, book_cover_url, scheduled_at, club_id)')
+      .select('meeting_id, meeting:meetings!inner(book_title, book_cover_url, scheduled_at)')
       .eq('user_id', userId)
       .eq('status', 'attending'),
   ]);
@@ -315,8 +219,8 @@ export async function getMemberHistoryInClub(
 
   (attended ?? []).forEach((a: any) => {
     if (map.has(a.meeting_id)) return; // 발제 우선 보존
-    const m = a.meeting as { book_title: string; book_cover_url: string | null; scheduled_at: string; club_id: string } | null;
-    if (!m || m.club_id !== clubId) return; // 다른 클럽 모임 제외
+    const m = a.meeting as { book_title: string; book_cover_url: string | null; scheduled_at: string } | null;
+    if (!m) return;
     map.set(a.meeting_id, {
       meeting_id: a.meeting_id,
       book_title: m.book_title,

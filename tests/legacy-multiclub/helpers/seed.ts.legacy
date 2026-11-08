@@ -4,6 +4,7 @@ import { admin } from './admin';
 const NEVER_UUID = '00000000-0000-0000-0000-000000000000';
 
 export async function resetDb(): Promise<void> {
+  delete process.env.BOOK_CLUB_ID;
   const a = admin();
   await a.from('attendances').delete().neq('meeting_id', NEVER_UUID);
   await a.from('discussion_questions').delete().neq('id', NEVER_UUID);
@@ -62,6 +63,7 @@ export async function seedClub(name: string, adminUserId: string): Promise<Seede
   });
   if (memberErr) throw memberErr;
 
+  process.env.BOOK_CLUB_ID ??= club.id;
   return { id: club.id, name: club.name };
 }
 

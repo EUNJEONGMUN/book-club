@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       attendances: {
@@ -73,93 +48,13 @@ export type Database = {
           },
         ]
       }
-      club_invites: {
-        Row: {
-          club_id: string
-          created_at: string
-          created_by: string
-          expires_at: string
-          id: string
-          revoked_at: string | null
-          token: string
-        }
-        Insert: {
-          club_id: string
-          created_at?: string
-          created_by: string
-          expires_at?: string
-          id?: string
-          revoked_at?: string | null
-          token: string
-        }
-        Update: {
-          club_id?: string
-          created_at?: string
-          created_by?: string
-          expires_at?: string
-          id?: string
-          revoked_at?: string | null
-          token?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "club_invites_club_id_fkey"
-            columns: ["club_id"]
-            isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "club_invites_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      club_members: {
-        Row: {
-          club_id: string
-          joined_at: string
-          role: Database["public"]["Enums"]["club_member_role"]
-          user_id: string
-        }
-        Insert: {
-          club_id: string
-          joined_at?: string
-          role: Database["public"]["Enums"]["club_member_role"]
-          user_id: string
-        }
-        Update: {
-          club_id?: string
-          joined_at?: string
-          role?: Database["public"]["Enums"]["club_member_role"]
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "club_members_club_id_fkey"
-            columns: ["club_id"]
-            isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "club_members_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      clubs: {
+      club_settings: {
         Row: {
           created_at: string
           created_by: string
           description: string | null
-          id: string
+          id: number
+          legacy_club_id: string
           name: string
           updated_at: string
         }
@@ -167,7 +62,8 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
-          id?: string
+          id?: number
+          legacy_club_id: string
           name: string
           updated_at?: string
         }
@@ -175,13 +71,14 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
-          id?: string
+          id?: number
+          legacy_club_id?: string
           name?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "clubs_created_by_fkey"
+            foreignKeyName: "club_settings_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -217,6 +114,41 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invites: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -271,7 +203,6 @@ export type Database = {
           book_author: string
           book_cover_url: string | null
           book_title: string
-          club_id: string
           created_at: string
           discussion_file_name: string | null
           discussion_file_url: string | null
@@ -287,7 +218,6 @@ export type Database = {
           book_author: string
           book_cover_url?: string | null
           book_title: string
-          club_id: string
           created_at?: string
           discussion_file_name?: string | null
           discussion_file_url?: string | null
@@ -303,7 +233,6 @@ export type Database = {
           book_author?: string
           book_cover_url?: string | null
           book_title?: string
-          club_id?: string
           created_at?: string
           discussion_file_name?: string | null
           discussion_file_url?: string | null
@@ -317,16 +246,35 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "meetings_club_id_fkey"
-            columns: ["club_id"]
-            isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "meetings_host_id_fkey"
             columns: ["host_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      members: {
+        Row: {
+          joined_at: string
+          role: Database["public"]["Enums"]["member_role"]
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          role: Database["public"]["Enums"]["member_role"]
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          role?: Database["public"]["Enums"]["member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -337,21 +285,18 @@ export type Database = {
           avatar_url: string | null
           display_name: string
           id: string
-          is_admin: boolean
           joined_at: string
         }
         Insert: {
           avatar_url?: string | null
           display_name: string
           id: string
-          is_admin?: boolean
           joined_at?: string
         }
         Update: {
           avatar_url?: string | null
           display_name?: string
           id?: string
-          is_admin?: boolean
           joined_at?: string
         }
         Relationships: []
@@ -361,26 +306,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      apply_to_club: { Args: { invite_token: string }; Returns: Json }
-      create_club: { Args: { club_name: string }; Returns: string }
-      get_club_admin_emails: {
-        Args: { target_club_id: string }
+      apply_for_membership: { Args: { invite_token: string }; Returns: Json }
+      get_admin_emails: {
+        Args: never
         Returns: {
           email: string
         }[]
       }
-      is_club_admin: { Args: { target_club_id: string }; Returns: boolean }
-      is_club_member: { Args: { target_club_id: string }; Returns: boolean }
-      rotate_invite: { Args: { target_club_id: string }; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
+      is_member: { Args: never; Returns: boolean }
+      rotate_invite: { Args: never; Returns: string }
       transfer_admin: {
-        Args: { new_admin_user_id: string; target_club_id: string }
+        Args: { new_admin_user_id: string }
         Returns: undefined
       }
       validate_invite_token: { Args: { invite_token: string }; Returns: Json }
     }
     Enums: {
       attendance_status: "attending" | "not_attending" | "undecided"
-      club_member_role: "admin" | "member" | "pending"
+      member_role: "admin" | "member" | "pending"
       review_visibility: "private" | "public" | "anonymous"
     }
     CompositeTypes: {
@@ -507,13 +451,10 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       attendance_status: ["attending", "not_attending", "undecided"],
-      club_member_role: ["admin", "member", "pending"],
+      member_role: ["admin", "member", "pending"],
       review_visibility: ["private", "public", "anonymous"],
     },
   },

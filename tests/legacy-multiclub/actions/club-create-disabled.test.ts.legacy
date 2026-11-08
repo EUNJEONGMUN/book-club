@@ -1,0 +1,34 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { admin } from '../helpers/admin';
+import { currentClient, signInAs, signOut } from '../helpers/auth';
+import { resetDb, seedUser, seedClub } from '../helpers/seed';
+
+describe('부글부글 전용: 그룹 생성 차단', () => {
+  beforeEach(async () => {
+    await resetDb();
+    signOut();
+  });
+
+  it('기존 그룹 관리자도 RPC와 테이블 직접 INSERT로 그룹을 생성할 수 없다', async () => {
+    const user = await seedUser();
+    const club = await seedClub('부글부글', user.id);
+    await signInAs(user.email, user.password);
+
+    const rpc = await currentClient().rpc('create_club', { club_name: '생성 금지' });
+    expect(rpc.error).not.toBeNull();
+
+    const insert = await currentClient().from('clubs').insert({
+      name: '생성 금지', created_by: user.id,
+    });
+    expect(insert.error).not.toBeNull();
+
+    const { data, error } = await admin().from('clubs').select('id');
+    expect(error).toBeNull();
+    expect(data).toEqual([{ id: club.id }]);
+  });
+
+  it('비로그인 사용자도 그룹 생성 RPC를 실행할 수 없다', async () => {
+    const result = await currentClient().rpc('create_club', { club_name: '생성 금지' });
+    expect(result.error).not.toBeNull();
+  });
+});

@@ -9,21 +9,21 @@ async function clubExists(clubId: string): Promise<boolean> {
   return !!data;
 }
 
-describe('deleteClub (RLS-enforced)', () => {
+describe('deleteClub (data preservation)', () => {
   beforeEach(async () => {
     await resetDb();
     signOut();
   });
 
-  it('A. admin이 호출하면 club 삭제', async () => {
+  it('A. admin도 모임 전체를 삭제할 수 없고 club은 보존됨', async () => {
     const adminUser = await seedUser();
     const club = await seedClub('A', adminUser.id);
 
     await signInAs(adminUser.email, adminUser.password);
     const result = await deleteClub(club.id);
 
-    expect(result.ok).toBe(true);
-    expect(await clubExists(club.id)).toBe(false);
+    expect(result.ok).toBe(false);
+    expect(await clubExists(club.id)).toBe(true);
   });
 
   it('B. 일반 member 호출은 거절 + club 보존', async () => {
@@ -36,7 +36,7 @@ describe('deleteClub (RLS-enforced)', () => {
     const result = await deleteClub(club.id);
 
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.error).toBe('그룹 관리자만 삭제할 수 있어요.');
+    if (!result.ok) expect(result.error).toBe('부글부글의 기록 보존을 위해 모임 전체 삭제는 지원하지 않습니다.');
     expect(await clubExists(club.id)).toBe(true);
   });
 });

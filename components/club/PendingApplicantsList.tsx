@@ -6,15 +6,13 @@ import { toast } from 'sonner';
 import { Check, X, Loader2, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { approveMember, rejectMember } from '@/lib/actions/club-members';
+import { approveMember, rejectMember } from '@/lib/actions/club';
 import { Button } from '@/components/ui/button';
-import type { PendingApplicant } from '@/lib/queries/clubs';
+import type { PendingApplicant } from '@/lib/queries/club';
 
 export function PendingApplicantsList({
-  clubId,
   initialApplicants,
 }: {
-  clubId: string;
   initialApplicants: PendingApplicant[];
 }) {
   const router = useRouter();
@@ -34,7 +32,7 @@ export function PendingApplicantsList({
   function handleApprove(userId: string) {
     mark(userId, true);
     startTransition(async () => {
-      const result = await approveMember(clubId, userId);
+      const result = await approveMember(userId);
       mark(userId, false);
       if (!result.ok) {
         toast.error(result.error);
@@ -50,7 +48,7 @@ export function PendingApplicantsList({
     if (!confirm('가입 신청을 거절할까요?')) return;
     mark(userId, true);
     startTransition(async () => {
-      const result = await rejectMember(clubId, userId);
+      const result = await rejectMember(userId);
       mark(userId, false);
       if (!result.ok) {
         toast.error(result.error);

@@ -1,3 +1,23 @@
+# 현재 상태 — 단일 부글부글 전환 (2026-11-08)
+
+운영 반영 준비: `codex/single-club-transition` 브랜치로 분리했다. 기준은 원격 main `378cc2e`이며 구 로컬 HEAD와 파일 내용은 동일하다. 운영 읽기 전용 API에서 `transaction_read_only=on`을 확인한 후 46개 테이블의 레코드 및 파일 14개를 `.local-backups/production-readonly-20261108T045110487853Z/`에 사전 복사하고 해시를 검증했다. 이 사본은 전체 DB 덤프/복원 검증을 대신하지 않는다. 조회된 자동 백업은 0개, PITR 비활성화다. 사용자는 기존 DB 비밀번호를 보관하고 있다. 본인 터미널에서 `python3 scripts/production-db-dump.py`를 실행해 숨김 입력할 수 있도록 준비했으며 실제 운영 덤프는 아직 실행 전이다. 상세 결과와 다음 순서는 `docs/production-preflight.md`, 미등록 PR 초안은 `docs/single-club-pr.md`다. 이 준비 작업은 운영 데이터·권한·설정 변경, push·배포를 하지 않았다. 이후에도 전체 아카이브·파일의 격리 복원 검증과 외부 쓰기 차단 검증 전에는 운영 전환하지 않는다.
+
+1·2·3단계 화면/서버/DB 전환과 이전 구조 정리·회귀 검증을 로컬에서 완료했다. 운영 DB에는 2단계 전환을 적용하지 않았고 배포도 보류 상태다. 과거 기록의 "다음 단계"보다 이 문단과 README·docs/bootstrap.md를 우선한다.
+
+데이터 보존이 최우선이다. 기존 로컬/운영 데이터를 초기화하거나 보관 스키마를 삭제하지 않는다. 승인된 멤버·관리자 권한과 계정·일정 ID·초대코드·파일 경로를 유지한다. 복구 가능한 DB/Storage 백업은 Git에서 제외한 `.local-backups`에 있다.
+
+현재 코드: `lib/auth/membership.ts`, `lib/actions/club.ts`, `lib/services`, `lib/queries/club.ts`. 기존 `/clubs/…` 주소는 호환 연결만 제공한다. DB 구조는 `club_settings`·`members`·`invites`, 원래 테이블은 비공개 `legacy_multiclub`에 보관한다. 데이터 이동 전후 비교·복원·실패 롤백·빈 DB 초기 설치를 검증했다.
+
+통합 테스트는 고정 로컬 컨테이너에서 매 시험을 롤백한다. 과거 다중 그룹 테스트 원본(`.ts.legacy`)은 실행하지 않는다. 기존 `resetDb` 방식도 사용하지 않는다. 최종 단위 31개·DB 통합 52개·조회 전용 브라우저 4개, 타입 검사와 빌드가 통과했다. `.local-backups/phase3-before.json`과 비교해 현재·보관 17개 테이블의 기존 레코드 및 계정 식별·인증 정보가 보존된 것을 확인했다. 화면 테스트는 기존 기록을 읽으며 회원·일정·참석·한줄 평을 수정하지 않는다. 보존 비교: `node scripts/check-local-records.mjs snapshot|compare .local-backups/파일명.json`.
+
+추가 보완: 마이그레이션 04로 과거 참석 DB 우회 차단, 보관본의 외부 FK 분리 및 쓰기 거절을 적용했다. 03의 대상 선택은 검증된 UUID 기준으로 변경했다. 대표 데이터(실제 PDF·한글 파일명·세 공개 방식의 평·탈퇴/대기 사용자·OAuth identity·초대 만료/취소) 리허설 19개 검증을 통과했다. 최종 단위 39개·DB 통합 60개·브라우저 4개 및 빌드 통과. `hardening-before.json` 대비 현재/보관 17개 테이블 보존을 확인했다.
+
+운영 절차는 `docs/single-club-cutover.md`, 구 버전 호환 점검 패치는 `scripts/maintenance-bridge.patch`다. 앱 점검 모드는 준비했지만 운영 게이트웨이에서 Auth/REST/Storage 직접 쓰기를 막는 설정은 아직 실행하지 않았다. 이 검증 전에는 운영 전환하지 않는다. 운영 배포·DB 변경은 계속 보류한다.
+
+---
+
+아래는 2026년 6월 당시의 학습·작업 기록이며 현재 동작 설명이 아니다.
+
 # HANDOFF — 부글부글 앱 단단하게 만들기 (운영 안정성 트랙)
 
 ## Goal

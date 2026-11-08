@@ -1,3 +1,4 @@
+import { getClubName } from '@/lib/club-name';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -6,6 +7,7 @@ import { SignupForm } from './signup-form';
 import { CompleteProfileForm } from './complete-profile-form';
 
 export default async function SignupPage() {
+  const clubName = await getClubName();
   const supabase = await getSupabaseServer();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -22,7 +24,7 @@ export default async function SignupPage() {
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center space-y-2">
             <div className="text-4xl">📖</div>
-            <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">부글부글</h1>
+            <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">{clubName}</h1>
             <p className="text-sm text-stone-500">이메일 인증 완료! 이름을 입력해주세요</p>
           </div>
           <Suspense fallback={null}>
@@ -44,7 +46,7 @@ export default async function SignupPage() {
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
           <div className="text-4xl">📖</div>
-          <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">부글부글</h1>
+          <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">{clubName}</h1>
           <p className="text-sm text-stone-500">함께 책 읽는 사람들</p>
         </div>
         <Suspense fallback={null}>

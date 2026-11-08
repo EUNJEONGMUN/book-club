@@ -5,20 +5,18 @@ import { toast } from 'sonner';
 import { Copy, RefreshCw, Loader2, Key } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { rotateInvite } from '@/lib/actions/club-invites';
+import { rotateInvite } from '@/lib/actions/club';
 import { Button } from '@/components/ui/button';
-import type { ClubInvite } from '@/lib/types';
+import type { Invite } from '@/lib/types';
 
 const INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30일 (rotate_invite SQL과 일치)
 
 export function InviteLinkPanel({
-  clubId,
   initialInvite,
 }: {
-  clubId: string;
-  initialInvite: ClubInvite | null;
+  initialInvite: Invite | null;
 }) {
-  const [invite, setInvite] = useState(initialInvite);
+  const [invite, setInvite] = useState<Pick<Invite, 'token' | 'expires_at'> | null>(initialInvite);
   const [rotating, setRotating] = useState(false);
 
   const fullUrl = invite
@@ -29,7 +27,7 @@ export function InviteLinkPanel({
     if (rotating) return;
     if (invite && !confirm('현재 초대링크가 무효화됩니다. 계속할까요?')) return;
     setRotating(true);
-    const result = await rotateInvite(clubId);
+    const result = await rotateInvite();
     setRotating(false);
     if (!result.ok) {
       toast.error(result.error);
@@ -39,13 +37,8 @@ export function InviteLinkPanel({
     // local state 즉시 반영 — router.refresh()로는 client useState가 안 갱신됨
     const now = Date.now();
     setInvite({
-      id: '',
-      club_id: clubId,
       token: result.token,
-      created_by: '',
-      created_at: new Date(now).toISOString(),
       expires_at: new Date(now + INVITE_TTL_MS).toISOString(),
-      revoked_at: null,
     });
   }
 

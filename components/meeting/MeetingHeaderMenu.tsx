@@ -23,11 +23,9 @@ import {
 
 export function MeetingHeaderMenu({
   meetingId,
-  clubId,
   isHost,
 }: {
   meetingId: string;
-  clubId: string;
   isHost: boolean;
 }) {
   const router = useRouter();
@@ -43,7 +41,7 @@ export function MeetingHeaderMenu({
     if (deleting) return;
     setDeleting(true);
     try {
-      const result = await deleteMeeting(meetingId, clubId);
+      const result = await deleteMeeting(meetingId);
       if (result && !result.ok) {
         toast.error(result.error);
         setDeleting(false);
@@ -77,7 +75,7 @@ export function MeetingHeaderMenu({
           {isHost && (
             <DropdownMenuItem
               className="py-2.5 gap-2"
-              onClick={() => router.push(`/clubs/${clubId}/meetings/${meetingId}/edit`)}
+              onClick={() => router.push(`/meetings/${meetingId}/edit`)}
             >
               <Pencil className="w-4 h-4" />
               모임 정보 수정

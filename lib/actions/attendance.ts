@@ -27,7 +27,7 @@ export async function setAttendanceFor(
 
   const { data: meeting } = await supabase
     .from('meetings')
-    .select('scheduled_at, host_id, club_id')
+    .select('scheduled_at, host_id')
     .eq('id', meetingId)
     .maybeSingle();
   if (!meeting) return { ok: false, error: '모임을 찾을 수 없습니다.' };
@@ -40,9 +40,8 @@ export async function setAttendanceFor(
   if (!isSelf && !isHost) {
     // 타인 거 변경 — host 아니면 admin인지 확인
     const { data: m } = await supabase
-      .from('club_members')
+      .from('members')
       .select('role')
-      .eq('club_id', meeting.club_id)
       .eq('user_id', user.id)
       .maybeSingle();
     if (m?.role !== 'admin') {
@@ -52,9 +51,8 @@ export async function setAttendanceFor(
   if (isSelf && isPast && !isHost) {
     // 본인 거지만 지난 모임 — host 아니면 admin인지 확인
     const { data: m } = await supabase
-      .from('club_members')
+      .from('members')
       .select('role')
-      .eq('club_id', meeting.club_id)
       .eq('user_id', user.id)
       .maybeSingle();
     if (m?.role !== 'admin') {
@@ -101,7 +99,7 @@ export async function deleteAttendance(
 
   const { data: meeting } = await supabase
     .from('meetings')
-    .select('host_id, club_id')
+    .select('host_id')
     .eq('id', meetingId)
     .maybeSingle();
   if (!meeting) return { ok: false, error: '모임을 찾을 수 없습니다.' };
@@ -109,9 +107,8 @@ export async function deleteAttendance(
   const isHost = meeting.host_id === user.id;
   if (!isHost) {
     const { data: m } = await supabase
-      .from('club_members')
+      .from('members')
       .select('role')
-      .eq('club_id', meeting.club_id)
       .eq('user_id', user.id)
       .maybeSingle();
     if (m?.role !== 'admin') {

@@ -1,41 +1,46 @@
 import { test, expect } from '@playwright/test';
 
-const UNIQUE = Date.now();
-
-test('로그인 → 모임 등록 → 발제문 추가 → 참석 체크', async ({ page }) => {
-  // 1. 부트스트랩 admin 계정으로 로그인
+// Read-only browser regression: never create/delete records or change attendance.
+test.beforeEach(async ({ page }) => {
   await page.goto('/login');
   await page.getByLabel('이메일').fill('admin@example.local');
   await page.getByLabel('비밀번호').fill('password123');
   await page.getByRole('button', { name: '로그인', exact: true }).click();
   await expect(page).toHaveURL('/');
+});
 
-  // 2. 새 모임 등록 (수동 입력 — book/place search APIs는 외부 의존성)
-  await page.goto('/meetings/new');
-  await page.getByPlaceholder('예: 데미안').fill(`테스트 책 ${UNIQUE}`);
-  await page.getByPlaceholder('예: 헤르만 헤세').fill('테스트 저자');
+test('로그인 후 그룹 선택 없이 홈과 고정 메뉴를 이용한다', async ({ page }) => {
+  await expect(page.getByRole('heading', { name: /안녕하세요/ })).toBeVisible();
+  for (const [name, href] of [['홈','/'],['모임','/meetings'],['멤버','/members'],['설정','/more']]) {
+    await expect(page.getByRole('navigation').getByRole('link', { name, exact: true })).toHaveAttribute('href', href);
+  }
+  await expect(page.getByRole('button', { name: /새 그룹|그룹 만들기/ })).toHaveCount(0);
+});
 
-  // 날짜: 오늘이 prefill 되어 있지만 명시적으로 내일로 설정
-  const tomorrow = new Date(Date.now() + 86400000);
-  const isoDate = tomorrow.toISOString().slice(0, 10); // YYYY-MM-DD
-  await page.locator('input[type="date"]').fill(isoDate);
-  // 시간 셀렉트
-  await page.locator('select').first().selectOption('19:00');
+test('기존 지난 모임을 새 주소에서 읽을 수 있다', async ({ page }) => {
+  await page.getByRole('navigation').getByRole('link', { name: '모임', exact: true }).click();
+  await expect(page).toHaveURL('/meetings');
+  const past = page.locator('section').filter({ has: page.getByRole('heading', { name: '지난 모임', exact: true }) });
+  await past.getByRole('link').first().click();
+  await expect(page).toHaveURL(/\/meetings\/[a-f0-9-]+$/);
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '한줄 평', exact: true })).toBeVisible();
+});
 
-  await page.getByPlaceholder('예: 아마츄어 작업실').fill('테스트 카페');
-  await page.getByRole('button', { name: '저장' }).click();
-  await expect(page).toHaveURL(/\/meetings\/[a-f0-9-]+/);
+test('멤버·설정·프로필을 조회하며 전체 삭제 기능은 제공하지 않는다', async ({ page }) => {
+  await page.getByRole('navigation').getByRole('link', { name: '멤버', exact: true }).click();
+  await expect(page).toHaveURL('/members');
+  await expect(page.getByText(/멤버 \d+명/)).toBeVisible();
+  await page.getByRole('navigation').getByRole('link', { name: '설정', exact: true }).click();
+  await expect(page.getByRole('button', { name: '그룹 삭제', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '가입 신청자 관리', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: '내 프로필 수정', exact: true }).click();
+  await expect(page).toHaveURL('/more/profile');
+  await expect(page.getByLabel('이름')).not.toHaveValue('');
+});
 
-  // 3. 발제문 추가 (호스트로 새 모임을 만들었으므로 + 질문 추가 버튼 노출됨)
-  await page.getByRole('button', { name: /질문 추가/ }).click();
-  // MarkdownEditor의 textarea
-  await page.locator('textarea').first().fill('주인공의 선택에 대해 어떻게 생각하시나요?');
-  await page.getByRole('button', { name: '등록' }).click();
-  await expect(page.getByText('Q1.')).toBeVisible();
-
-  // 4. 참석 체크는 이제 홈 카드(NextMeetingCard)에서 — 상세 페이지에서 제거됨
-  await page.goto('/');
-  await page.getByRole('button', { name: '참석' }).first().click();
-  await page.reload();
-  await expect(page.getByRole('button', { name: '참석' }).first()).toHaveClass(/bg-slate-900|bg-blue/);
+test('예전 부글부글 주소는 기존 ID의 새 상세 화면으로 연결한다', async ({ page }) => {
+  await page.goto('/clubs/10000000-0000-0000-0000-000000000001/meetings/20000000-0000-0000-0000-000000000002');
+  await expect(page).toHaveURL('/meetings/20000000-0000-0000-0000-000000000002');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 });
