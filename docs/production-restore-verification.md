@@ -2,6 +2,8 @@
 
 2026-11-08 검증 완료. **226개 검사 통과.** 운영 DB에 접속하지 않고, 외부 네트워크·공개 포트가 없는 임시 로컬 PostgreSQL 컨테이너에서 수행했다.
 
+후속 실제 Auth·파일 HTTP·브라우저 검증도 로컬에서 완료했다. 해당 결과와 남은 Google 외부 인증 범위는 `docs/local-service-flow-verification.md`를 참조한다. 아래는 최초 격리 복원 단계의 결과다.
+
 ## 사용한 백업과 증거
 
 - 운영 DB 아카이브: `.local-backups/production-dump-20261108T052113760121Z/database.dump`
