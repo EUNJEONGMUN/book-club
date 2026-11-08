@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Run real local Auth/REST/Storage/browser checks on a separate production restore."""
 import base64
+import argparse
 from datetime import datetime, timezone
 import hashlib
 import hmac
@@ -37,8 +38,24 @@ def storage_migrations_match(before, after):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--write-barrier-rehearsal', action='store_true',
+                        help='Test temporary DB write rejection and recovery on an offline restore')
+    parser.add_argument('--write-barrier-db-only', action='store_true',
+                        help='Skip Storage mutations while matching its hosted service version')
+    parser.add_argument('--write-barrier-storage-image', choices=['ghcr.io/supabase/storage-api:v1.84.32'],
+                        help='Use a pinned official Storage image in disposable barrier containers only')
+    parser.add_argument('--write-barrier-matching-services', action='store_true',
+                        help='Use the Auth/REST/Storage versions observed read-only in Production')
+    args = parser.parse_args()
+    if args.write_barrier_db_only and not args.write_barrier_rehearsal:
+        parser.error('--write-barrier-db-only requires --write-barrier-rehearsal')
+    if args.write_barrier_storage_image and not args.write_barrier_rehearsal:
+        parser.error('--write-barrier-storage-image requires --write-barrier-rehearsal')
+    if args.write_barrier_matching_services and (not args.write_barrier_rehearsal or args.write_barrier_storage_image):
+        parser.error('--write-barrier-matching-services requires barrier rehearsal without an image override')
     os.umask(0o077)
-    folder = ROOT / ".local-backups" / ("local-service-flow-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ"))
+    folder = ROOT / ".local-backups" / (("local-write-barrier-" if args.write_barrier_rehearsal else "local-service-flow-") + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ"))
     folder.mkdir(mode=0o700)
     label = "book-club.service-verification"
     prefix = "book-club-services-" + str(time.time_ns())
@@ -59,6 +76,8 @@ def main():
         if result.stderr:
             (folder / (str(len(list(folder.iterdir()))) + "-" + stage + ".log")).write_bytes(result.stderr)
         if check and result.returncode:
+            if result.stdout:
+                (folder / (str(len(list(folder.iterdir()))) + '-' + stage + '-stdout.log')).write_bytes(result.stdout)
             raise RuntimeError(stage + " failed; private logs: " + str(folder))
         return result
 
@@ -111,6 +130,15 @@ def main():
         run(["node", "scripts/check-local-records.mjs", "snapshot", str(local_snapshot)], "local-before")
         images = {k: inspect(v)["Config"]["Image"] for k, v in {
             "db": LOCAL_DB, "auth": "supabase_auth_book-club", "rest": "supabase_rest_book-club", "storage": "supabase_storage_book-club"}.items()}
+        if args.write_barrier_storage_image:
+            run(['docker', 'image', 'inspect', args.write_barrier_storage_image], 'verify-pinned-storage-image')
+            images['storage'] = args.write_barrier_storage_image
+        if args.write_barrier_matching_services:
+            images.update(auth='public.ecr.aws/supabase/gotrue:v2.197.0',
+                          rest='public.ecr.aws/supabase/postgrest:v14.18',
+                          storage='ghcr.io/supabase/storage-api:v1.89.13')
+            for image in images.values():
+                run(['docker', 'image', 'inspect', image], 'verify-matching-image')
         roles = run(["docker", "exec", LOCAL_DB, "pg_dumpall", "-U", "supabase_admin", "--roles-only", "--no-role-passwords"], "bootstrap-roles").stdout
         require(not re.search(rb"\bPASSWORD\s+'", roles, re.I), "bootstrap roles contain no existing passwords")
         network = run(["docker", "network", "create", "--internal", "--label", label + "=true", prefix], "create-internal-network").stdout.decode().strip()
@@ -124,7 +152,8 @@ def main():
         else:
             raise RuntimeError("Local verification DB did not start.")
         sql(roles.replace(b"CREATE ROLE supabase_admin;\n", b"").decode(), "postgres")
-        sql("CREATE DATABASE " + DATABASE + " OWNER supabase_admin;", "postgres")
+        owner = 'postgres' if args.write_barrier_rehearsal else 'supabase_admin'
+        sql("CREATE DATABASE " + DATABASE + " OWNER " + owner + ";", "postgres")
         run(["docker", "exec", "-i", db, "pg_restore", "-h", "/tmp", "-U", "supabase_admin", "--exit-on-error", "--dbname", DATABASE], "restore", archive)
         for version in ("20261108000002", "20261108000003", "20261108000004"):
             path = next((ROOT / "supabase/migrations").glob(version + "_*.sql"))
@@ -162,6 +191,12 @@ def main():
             "DATABASE_URL": "postgresql://supabase_storage_admin@db:5432/" + DATABASE,
             "FILE_STORAGE_BACKEND_PATH": "/mnt", "STORAGE_BACKEND": "file", "TENANT_ID": "stub", "GLOBAL_S3_BUCKET": "stub",
             "FILE_SIZE_LIMIT": "52428800", "ENABLE_IMAGE_TRANSFORMATION": "false", "S3_PROTOCOL_ENABLED": "false"}
+        s3_credentials = None
+        if args.write_barrier_rehearsal and not args.write_barrier_db_only:
+            s3_credentials = {'accessKeyId': secrets.token_hex(12), 'secretAccessKey': secrets.token_hex(32)}
+            storage_env.update(S3_PROTOCOL_ENABLED='true', REGION='ap-northeast-2',
+                               S3_PROTOCOL_ACCESS_KEY_ID=s3_credentials['accessKeyId'],
+                               S3_PROTOCOL_ACCESS_KEY_SECRET=s3_credentials['secretAccessKey'])
         storage = start("storage", images["storage"], storage_env, extra=["--tmpfs", "/mnt:rw,mode=0700,size=536870912"])
         for _ in range(100):
             if all(inspect(cid)["State"]["Running"] for cid in (auth, rest, storage)):
@@ -185,7 +220,7 @@ def main():
                 tar.addfile(info, io.BytesIO(data))
                 attributes.append({"path": "/mnt/" + str(name), "contentType": (obj.get("metadata") or {}).get("mimetype", "application/octet-stream")})
         run(["docker", "exec", "-i", storage, "tar", "-xf", "-", "-C", "/mnt"], "restore-storage-files", tar_buffer.getvalue())
-        set_attributes = "const fs=require('fs'),x=require('fs-xattr');(async()=>{for(const a of JSON.parse(fs.readFileSync(0,'utf8'))){await x.set(a.path,'user.supabase.content-type',a.contentType);await x.set(a.path,'user.supabase.cache-control','no-cache')}})().catch(()=>process.exit(1));"
+        set_attributes = "const fs=require('fs'),mod=require('fs-xattr'),x=mod.default??mod,set=x.set??x.setAttribute;(async()=>{for(const a of JSON.parse(fs.readFileSync(0,'utf8'))){await set(a.path,'user.supabase.content-type',a.contentType);await set(a.path,'user.supabase.cache-control','no-cache')}})().catch(()=>process.exit(1));"
         run(["docker", "exec", "-i", storage, "node", "-e", set_attributes], "storage-file-attributes", json.dumps(attributes).encode())
         source = run(["git", "archive", "HEAD"], "copy-app-source").stdout
         app_dir = folder / "app"; app_dir.mkdir()
@@ -197,6 +232,8 @@ def main():
             "transportContainer": storage,
             "anon": anon, "service": service, "club": CLUB, "files": files,
             "meetings": baseline["public.meetings"], "password": secrets.token_urlsafe(24), "fixtureSuffix": secrets.token_hex(6)}
+        config['writeBarrierDbOnly'] = args.write_barrier_db_only
+        config['s3Credentials'] = s3_credentials
         config_path = folder / "runtime-config.json"; config_path.write_text(json.dumps(config, ensure_ascii=False))
         seed = "INSERT INTO public.profiles(id,display_name) SELECT id,'로컬 흐름 검증 '||(raw_user_meta_data->>'fixture_role') FROM auth.users WHERE raw_user_meta_data->>'fixture_run'='" + config["fixtureSuffix"] + "' ON CONFLICT(id) DO NOTHING; "
         seed += "INSERT INTO public.members(user_id,role) SELECT id,(raw_user_meta_data->>'fixture_role')::public.member_role FROM auth.users WHERE raw_user_meta_data->>'fixture_run'='" + config["fixtureSuffix"] + "' AND raw_user_meta_data->>'fixture_role'<>'none';"
@@ -205,10 +242,12 @@ def main():
         # implemented as a fixed SQL file invocation rather than a database URL.
         config["dbContainer"] = db; config["database"] = DATABASE; config["seedFile"] = str(seed_file)
         config_path.write_text(json.dumps(config, ensure_ascii=False))
-        print("Isolated service copies and original file bytes ready. Running actual browser login and downloads.", flush=True)
-        run(["node", "scripts/local-service-flow.mjs", str(config_path)], "browser-runtime")
+        print("Isolated service copies and original file bytes ready. " +
+              ("Running HTTP/SQL write-barrier and recovery checks." if args.write_barrier_rehearsal else "Running actual browser login and downloads."), flush=True)
+        runner = "scripts/local-write-barrier.mjs" if args.write_barrier_rehearsal else "scripts/local-service-flow.mjs"
+        run(["node", runner, str(config_path)], "write-barrier-runtime" if args.write_barrier_rehearsal else "browser-runtime")
         browser_report = json.loads((folder / "browser-report.json").read_text())
-        require(browser_report["passed"], "actual browser flow checks passed")
+        require(browser_report["passed"], "actual write-barrier service checks passed" if args.write_barrier_rehearsal else "actual browser flow checks passed")
         # Stop write-capable services before the final immutable-row comparison.
         run(["docker", "stop", auth, storage], "stop-runtime-services")
         after = snapshot()
@@ -238,6 +277,11 @@ def main():
             "production_connection_used": False, "original_auth_users": len(baseline["auth.users"]),
             "external_oauth_tested": False, "fixture_accounts_only": True, "original_archive_sha256": manifest["sha256"]}
         report["storage_migration_checksum_updates"] = storage_hash_updates
+        report['service_images'] = images
+        if args.write_barrier_rehearsal:
+            report['write_barrier'] = browser_report['write_barrier']
+            report['production_write_barrier_validated'] = False
+            report['service_flow_checks'] = report.pop('browser_checks')
     except Exception as error:
         (folder / "failure.json").write_text(json.dumps({"passed":False,"error":str(error) if isinstance(error,RuntimeError) else type(error).__name__,"checks":passed}))
         raise
@@ -260,7 +304,9 @@ def main():
             run(["node", "scripts/check-local-records.mjs", "compare", str(local_snapshot)], "local-after")
             passed.append("existing local application data unchanged")
     (folder / "verification-report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2))
-    print(json.dumps({"passed":True,"preservationChecks":len(passed),"browserChecks":len(report['browser_checks']),"downloads":report['file_downloads'],"report":str(folder/'verification-report.json')},ensure_ascii=False))
+    print(json.dumps({"passed":True,"preservationChecks":len(passed),
+                      ("serviceFlowChecks" if args.write_barrier_rehearsal else "browserChecks"):len(report.get('service_flow_checks', report.get('browser_checks', []))),
+                      "downloads":report['file_downloads'],"report":str(folder/'verification-report.json')},ensure_ascii=False))
 
 
 if __name__ == "__main__":

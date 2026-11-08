@@ -5,6 +5,7 @@ No production connection, hosted API, password prompt, exposed port, or app DB r
 Original archives/manifests are immutable. Reports contain no printed row values.
 """
 import argparse
+import importlib.util
 from datetime import datetime, timezone
 import hashlib
 import io
@@ -76,7 +77,11 @@ def main():
     parser.add_argument("--records", required=True, help="Earlier read-only records/file copy directory")
     parser.add_argument("--postgres-rehearsal", action="store_true",
                         help="Rehearse as non-superuser postgres with the hosted Storage policy grant")
+    parser.add_argument('--write-barrier-rehearsal', action='store_true',
+                        help='Keep local-only write guards across old-schema conversion transactions')
     args = parser.parse_args()
+    if args.write_barrier_rehearsal and not args.postgres_rehearsal:
+        parser.error('--write-barrier-rehearsal requires --postgres-rehearsal')
     os.umask(0o077)
     backup = private_path(args.backup)
     copied = private_path(args.records)
@@ -130,7 +135,7 @@ def main():
                       "sql", statement.encode(), check)
 
     def snapshot(database):
-        tables = json.loads(sql("SELECT COALESCE(jsonb_agg(jsonb_build_object('schema',schemaname,'table',tablename)), '[]'::jsonb) FROM pg_catalog.pg_tables WHERE schemaname IN ('public','auth','storage','supabase_migrations','legacy_multiclub');", database).stdout)
+        tables = json.loads(sql("SELECT COALESCE(jsonb_agg(jsonb_build_object('schema',schemaname,'table',tablename)), '[]'::jsonb) FROM pg_catalog.pg_tables WHERE schemaname IN ('public','auth','storage','supabase_migrations','legacy_multiclub','cutover_failed_public');", database).stdout)
         parts = []
         for table in tables:
             name = table["schema"] + "." + table["table"]
@@ -280,6 +285,23 @@ def main():
                     "non-superuser postgres uses managed Storage policy grant without ownership")
             require(all(row["owner"] == "postgres" for row in json.loads(sql("SELECT jsonb_agg(jsonb_build_object('owner',tableowner)) FROM pg_tables WHERE schemaname='public';", MIGRATION_DB).stdout)),
                     "application table owners match hosted postgres role")
+        guard = None
+        if args.write_barrier_rehearsal:
+            spec = importlib.util.spec_from_file_location('write_guard', ROOT / 'scripts/write-barrier-sql.py')
+            guard = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(guard)
+            sql(guard.install(MIGRATION_DB), MIGRATION_DB, migration_role)
+            require(True, 'temporary statement guards installed on the old production schema as postgres')
+            frozen_public = inside(['pg_dump', '-h', '/tmp', '-U', migration_role, '-d', MIGRATION_DB,
+                                    '--schema=public', '-Fc', '--lock-wait-timeout=5s'], 'frozen-public-backup').stdout
+            save(folder, 'frozen-public-before-conversion.dump', frozen_public)
+            public_defaults = sql("SELECT coalesce(jsonb_agg(to_jsonb(d) ORDER BY oid),'[]'::jsonb) FROM pg_default_acl d WHERE defaclnamespace='public'::regnamespace;", MIGRATION_DB, migration_role).stdout
+            original_publications = json.loads(sql("SELECT coalesce(jsonb_agg(jsonb_build_object('publication',pubname,'table',tablename)),'[]'::jsonb) FROM pg_publication_tables WHERE schemaname='public';", MIGRATION_DB, migration_role).stdout)
+            require(sql("SELECT count(*) FROM pg_trigger t JOIN pg_proc p ON p.oid=t.tgfoid JOIN pg_namespace n ON n.oid=p.pronamespace JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace tn ON tn.oid=c.relnamespace WHERE NOT t.tgisinternal AND n.nspname='public' AND tn.nspname NOT IN ('public');", MIGRATION_DB, migration_role).stdout.strip() == b'0',
+                    'no managed-table trigger depends on a public function that would need additional rebinding during rollback')
+            probe = sql("SET ROLE authenticated; UPDATE public.profiles SET display_name=display_name WHERE false;", MIGRATION_DB, 'authenticator', check=False)
+            require(probe.returncode != 0 and b'Temporary write barrier active' in probe.stderr,
+                    'old-schema direct API login is refused before conversion')
         migrations = []
         for version in ("20261108000002", "20261108000003", "20261108000004"):
             paths = list((ROOT / "supabase/migrations").glob(version + "_*.sql"))
@@ -287,7 +309,18 @@ def main():
                 raise RuntimeError("Unexpected migration file set.")
             body = paths[0].read_bytes()
             migrations.append({"name": paths[0].name, "sha256": digest(body)})
-            sql(body.decode(), MIGRATION_DB, migration_role)
+            candidate = guard.guard_migration(body.decode(), MIGRATION_DB) if guard else body.decode()
+            if guard:
+                quote = lambda value: "'" + value.replace("'", "''") + "'"
+                ledger = ("INSERT INTO supabase_migrations.schema_migrations(version,name,statements) VALUES("
+                          + quote(version) + ',' + quote(paths[0].stem.split('_', 1)[1])
+                          + ',ARRAY[' + quote(body.decode()) + ']::text[]);\n')
+                marker = candidate.rindex('COMMIT;')
+                candidate = candidate[:marker] + ledger + candidate[marker:]
+            sql(candidate, MIGRATION_DB, migration_role)
+            if guard:
+                missing = json.loads(sql("SELECT count(*) AS n FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('public','auth','storage','legacy_multiclub') AND c.relkind IN ('r','p') AND has_table_privilege('postgres',c.oid,'TRIGGER') AND NOT EXISTS(SELECT 1 FROM pg_trigger t WHERE t.tgrelid=c.oid AND t.tgname='cutover_write_barrier' AND t.tgfoid='cutover_guard.reject_writes()'::regprocedure);", MIGRATION_DB, migration_role).stdout)
+                require(missing == 0, 'new and archived tables guarded before commit: ' + version)
         after = snapshot(MIGRATION_DB)
         save(folder, "converted-records.json", after)
         project = lambda rs, omit: [{k: v for k, v in row.items() if k not in omit} for row in rs]
@@ -299,12 +332,89 @@ def main():
         for name in ("public.discussion_questions", "public.attendances", "public.meeting_reviews"):
             require(canonical(before[name]) == canonical(after[name]), "activity record fully preserved: " + name)
         for name in sorted(k for k in before if k.startswith(("auth.", "storage.", "supabase_migrations."))):
-            require(canonical(before[name]) == canonical(after[name]), "entire table unchanged after conversion: " + name)
+            if guard and name == 'supabase_migrations.schema_migrations':
+                originals = {row['version'] for row in before[name]}
+                retained = [row for row in after[name] if row['version'] in originals]
+                added = [row for row in after[name] if row['version'] not in originals]
+                require(canonical(retained) == canonical(before[name]) and {row['version'] for row in added} == {'20261108000002','20261108000003','20261108000004'} and len(added) == 3,
+                        'original migration history preserved and exactly three applied versions registered atomically')
+            else:
+                require(canonical(before[name]) == canonical(after[name]), "entire table unchanged after conversion: " + name)
         require(canonical(project(before["public.club_members"], ["club_id"])) == canonical(after["public.members"]), "member IDs roles and join timestamps preserved")
         require(canonical(project(before["public.club_invites"], ["club_id"])) == canonical(after["public.invites"]), "invite IDs tokens creator and expiration preserved")
         old_club = before["public.clubs"][0]
         expected_settings = {**{k: v for k, v in old_club.items() if k != "id"}, "id": 1, "legacy_club_id": CLUB}
         require(after["public.club_settings"] == [expected_settings], "club settings preserve all original fields")
+        if guard:
+            probe = sql("SET ROLE service_role; UPDATE public.profiles SET display_name=display_name WHERE false;", MIGRATION_DB, 'authenticator', check=False)
+            require(probe.returncode != 0 and b'Temporary write barrier active' in probe.stderr,
+                    'privileged direct API login remains refused after conversion')
+            # Recover only the application schema. Keep failed/new data quarantined;
+            # Auth rows and physical Storage bytes never need to be overwritten.
+            public_toc = inside(['pg_restore', '--list'], 'frozen-public-toc', frozen_public).stdout
+            public_toc_without_defaults = b'\n'.join(line for line in public_toc.splitlines() if b' DEFAULT ACL ' not in line) + b'\n'
+            inside(['sh', '-c', 'cat > /tmp/frozen-public.dump'], 'copy-local-public-dump', frozen_public)
+            inside(['sh', '-c', 'cat > /tmp/public-restore.list'], 'copy-local-public-list', public_toc_without_defaults)
+            public_sql = inside(['pg_restore', '--schema=public', '--no-owner', '--use-list=/tmp/public-restore.list', '--file', '-', '/tmp/frozen-public.dump'],
+                                'extract-frozen-public-backup').stdout.decode()
+            recovery = 'BEGIN; SET LOCAL lock_timeout=\'5s\';\n' + guard.local_assertion(MIGRATION_DB)
+            # Preserve the public schema OID and its managed default privileges.
+            # Move only the app objects; no old/new rows are dropped or overwritten.
+            recovery += """
+CREATE SCHEMA cutover_failed_public;
+REVOKE ALL ON SCHEMA cutover_failed_public FROM PUBLIC,anon,authenticated,service_role;
+DO $move$
+DECLARE o record;
+BEGIN
+ FOR o IN SELECT c.relname FROM pg_class c WHERE c.relnamespace='public'::regnamespace AND c.relkind IN ('r','p') ORDER BY c.relname
+ LOOP EXECUTE format('ALTER TABLE public.%I SET SCHEMA cutover_failed_public',o.relname); END LOOP;
+ FOR o IN SELECT p.oid::regprocedure AS signature FROM pg_proc p WHERE p.pronamespace='public'::regnamespace AND p.prokind='f'
+ LOOP EXECUTE format('ALTER FUNCTION %s SET SCHEMA cutover_failed_public',o.signature); END LOOP;
+ FOR o IN SELECT typname FROM pg_type WHERE typnamespace='public'::regnamespace AND typtype IN ('e','d')
+ LOOP EXECUTE format('ALTER TYPE public.%I SET SCHEMA cutover_failed_public',o.typname); END LOOP;
+ FOR o IN SELECT relname FROM pg_class WHERE relnamespace='public'::regnamespace AND relkind='S'
+ LOOP EXECUTE format('ALTER SEQUENCE public.%I SET SCHEMA cutover_failed_public',o.relname); END LOOP;
+END $move$;
+"""
+            for item in original_publications:
+                recovery += 'ALTER PUBLICATION ' + quote_identifier(item['publication']) + ' DROP TABLE cutover_failed_public.' + quote_identifier(item['table']) + ';\n'
+            if re.search(r'^CREATE SCHEMA public;', public_sql, re.M):
+                raise RuntimeError('Unexpected public schema CREATE in scoped backup; inspect before recovery.')
+            recovery += public_sql + '\n'
+            current_storage_policies = json.loads(sql("SELECT coalesce(jsonb_agg(policyname),'[]'::jsonb) FROM pg_policies WHERE schemaname='storage' AND tablename='objects';", MIGRATION_DB, migration_role).stdout)
+            for name in current_storage_policies:
+                recovery += 'DROP POLICY ' + quote_identifier(name) + ' ON storage.objects;\n'
+            recovery += b''.join(p for p in source_policies if b' ON storage.objects ' in p).decode()
+            recovery += "CREATE TABLE cutover_failed_public.migration_history AS TABLE supabase_migrations.schema_migrations; DELETE FROM supabase_migrations.schema_migrations WHERE version IN ('20261108000002','20261108000003','20261108000004');\n"
+            recovery += guard.attach(MIGRATION_DB) + "NOTIFY pgrst,'reload schema';\nCOMMIT;\n"
+            save(folder, 'local-application-rollback.sql', recovery.encode())
+            sql(recovery, MIGRATION_DB, migration_role)
+            rolled = snapshot(MIGRATION_DB)
+            save(folder, 'rollback-records.json', rolled)
+            for name, rows in before.items():
+                require(canonical(rows) == canonical(rolled[name]), 'rollback restores original live rows without overwriting Auth/Storage: ' + name)
+            for name, rows in after.items():
+                if name.startswith('public.'):
+                    require(canonical(rows) == canonical(rolled[name.replace('public.', 'cutover_failed_public.', 1)]),
+                            'failed/new application data is preserved in private quarantine: ' + name)
+            require(canonical(rolled['cutover_failed_public.migration_history']) == canonical(after['supabase_migrations.schema_migrations']),
+                    'failed conversion migration history preserved while live ledger returns to its original versions')
+            require(sql("SELECT coalesce(jsonb_agg(to_jsonb(d) ORDER BY oid),'[]'::jsonb) FROM pg_default_acl d WHERE defaclnamespace='public'::regnamespace;", MIGRATION_DB, migration_role).stdout == public_defaults,
+                    'public schema and managed default privileges remain intact without requiring a privileged role')
+            rollback_publications = json.loads(sql("SELECT coalesce(jsonb_agg(jsonb_build_object('publication',pubname,'table',tablename)),'[]'::jsonb) FROM pg_publication_tables WHERE schemaname='public';", MIGRATION_DB, migration_role).stdout)
+            require(canonical(rollback_publications) == canonical(original_publications),
+                    'original live Realtime publication membership is restored')
+            rolled_policies = inside(['pg_dump', '-h', '/tmp', '-U', migration_role, '-d', MIGRATION_DB,
+                                      '--schema-only', '--no-owner', '--no-acl'], 'rollback-policy-dump').stdout
+            live_policy = lambda definitions: sorted(p for p in policy_statements(definitions) if b' ON public.' in p or b' ON storage.objects ' in p)
+            require(live_policy(source_schema) == live_policy(rolled_policies), 'original live application and Storage RLS predicates restored during rollback')
+            require(sql("SELECT has_schema_privilege('anon','cutover_failed_public','USAGE') OR has_schema_privilege('authenticated','cutover_failed_public','USAGE') OR has_schema_privilege('service_role','cutover_failed_public','USAGE');", MIGRATION_DB, migration_role).stdout.strip() == b'f',
+                    'failed conversion data remains in a private quarantine schema')
+            require(sql("SELECT count(*) FROM public.clubs;", MIGRATION_DB, migration_role).stdout.strip() == b'1',
+                    'original multi-club-compatible application schema is available again before writes resume')
+            sql(guard.remove(MIGRATION_DB), MIGRATION_DB, migration_role)
+            require(sql("SELECT to_regnamespace('cutover_guard') IS NULL;", MIGRATION_DB, migration_role).stdout.strip() == b't',
+                    'temporary guards removed without dropping original application or managed triggers')
         baseline_after = snapshot(BASE_DB)
         require(set(baseline_after) == set(before) and all(canonical(baseline_after[k]) == canonical(before[k]) for k in before), "baseline restored database unchanged by rehearsal")
         report = {
@@ -318,6 +428,8 @@ def main():
             "auth_users": len(before["auth.users"]), "auth_identities": len(before["auth.identities"]),
             "migrations": migrations, "checks": checks,
             "schema_rehearsal_role": migration_role,
+            "write_barrier_rehearsal": args.write_barrier_rehearsal,
+            "application_schema_rollback_rehearsal": args.write_barrier_rehearsal,
             "limitations": ["cluster roles bootstrapped from password-free local role definitions, not a production roles backup",
                             "online DB and file copies were taken at different times; final write-frozen backup is still required",
                             "file bytes restored offline; Auth service/OAuth providers and Storage HTTP API were not started"],

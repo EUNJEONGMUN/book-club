@@ -1,5 +1,7 @@
 # 운영 실행 권한·배포 환경 점검 — 2026-11-08
 
+2026-11-09 후속: 운영 읽기 전용 조회로 실제 DB 역할(REST authenticator/Auth supabase_auth_admin/Storage supabase_storage_admin)과 Auth 2.197.0·REST14.18·Storage1.89.13을 확인했다. TRIGGER 권한은 public/auth/storage 45개 중41개. 제외된 것은 내부 마이그레이션 테이블2개와 비활성 벡터테이블2개다. 이 기능을 사용하는 임시 쓰기 거절 후보는 같은 서비스 버전의 로컬에서 40개 흐름·92개 보존, 구 구조에서 전환/정책·이력 복구까지296개 검사를 통과했다. 운영에서는 설치·해제·변경 요청을 보내지 않았고 Vercel 변경/배포도 없다. 현재는 실행 후보를 확인한 단계이며 운영 적용 보장은 아니다. 상세·경계·복구는 `docs/single-club-cutover.md` 최신 절 우선. 이후 '차단수단 미확정'은 과거 상태다.
+
 최신 준비 결과: Preview Google 인증까지 검증했고, 구 운영 소스의 점검 패치 로컬 production 빌드·HTTP 차단/해제 23개도 통과했다. 별도 내부 Docker 컨테이너의 실제 PostgREST PATCH로 read-only 기본값을 우회하는 쓰기를 재현했다. DB IP 제한도 HTTPS API에는 적용되지 않으므로 두 방법을 완전 차단으로 간주하지 않는다. 운영 프로젝트/플랜에서 지원 가능한 실제 차단·복구 방법을 확인해야 하며 운영 전환은 계속 보류한다. 이번 준비에서는 운영/테스트 Supabase 또는 Vercel 설정을 조회·변경하지 않았다. 구체적인 결과·근거·지원 확인 항목은 `docs/single-club-cutover.md`를 우선한다.
 
 후속 완료: 별도 무료 `book-club-preview` DB 생성, 구조 27개 적용, 시험 계정·PDF의 11개 흐름 검증과 운영 8개 테이블 보존 확인에 이어 Vercel의 신규 Preview 연결 분리도 완료했다. 이후 사용자가 작업 브랜치를 push했고 실제 Preview의 이메일 로그인·조회·권한·다운로드 22개 확인과 운영/테스트 기록 보존 대조를 통과했다. 운영 DB 변경/운영 배포는 하지 않았다. 최신 결과는 `docs/hosted-preview-verification.md`, 연결 분리 기록은 `docs/preview-isolation.md`를 우선하며 아래 표는 분리 전 점검 기록이다.

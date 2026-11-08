@@ -1,8 +1,43 @@
 # 부글부글 운영 전환·복구 절차
 
-현재는 운영 반영 전 준비·로컬 검증 결과와 계획이다. 운영에 적용하거나 배포한 상태가 아니다. **외부 쓰기 차단 수단이 확정·검증되지 않아 운영 전환은 보류한다.**
+현재는 운영 반영 전 준비·로컬 검증 결과와 계획이다. 운영에 적용하거나 배포한 상태가 아니다. **운영 실행용 안전장치·최종 백업·실행 승인이 남아 운영 전환은 보류한다.**
 
 2026-11-08 사전 조회·복사 결과와 전체 DB 백업 입력 절차는 `docs/production-preflight.md`에 기록했다. 사전 레코드/파일 복사만으로 최종 백업 조건이 충족되지는 않는다.
+
+## 2026-11-09 후속 확인: 실제 실행 후보와 복구
+
+채택할 후보는 **구 앱 점검 화면 + DB의 임시 쓰기 거절 트리거**다. 이는 Supabase 전용 점검 모드가 아니라 공식적으로 허용되는 기능을 조합한 설계다. [관리형 테이블의 트리거 허용 범위](https://supabase.com/changelog/34270-restricting-access-on-auth-storage-and-realtime-schemas-on-april-21-2025), [PostgreSQL 문장 단위 트리거](https://www.postgresql.org/docs/17/sql-createtrigger.html)를 근거로 했으며 설치·해제는 현재까지 **격리된 로컬 복원본에서만** 실행했다. 운영 적용 승인이 내려진 상태가 아니다.
+
+운영의 읽기 전용 카탈로그에서 public/auth/storage의 테이블 45개 중 41개에 `postgres`의 TRIGGER 권한이 있음을 확인했다. 제외된 네 테이블은 Auth/Storage 내부 마이그레이션 이력 두 개와 비활성화된 벡터 기능 테이블 두 개다. 실제 GET 조회로 DB 연결을 확인했으며 REST=`authenticator`, Auth=`supabase_auth_admin`, Storage=`supabase_storage_admin`이었다. 운영 서비스 버전은 Auth 2.197.0·PostgREST 14.18·Storage 1.89.13이고, 현재 S3 기능은 켜져 있다. 운영의 진행 중 S3 분할 업로드·파트 및 벡터 버킷/인덱스 수는 조회 당시 모두 0이었다. 이 수치와 역할은 실행 직전에 다시 확인해야 한다.
+
+| 검증 | 결과 |
+|---|---|
+| 운영과 같은 Auth/REST/Storage 버전의 로컬 서비스 | 실제 HTTP/SQL/S3 검사 **40개**, 원본 보존 검사 **92개** 통과 |
+| 차단 범위 | 일반/서비스 역할의 REST 수정, postgres 소유 SECURITY DEFINER RPC, 비밀번호 로그인·갱신·사용자 수정·관리자 계정 생성/삭제, 일반 업로드·교체·삭제·사전 발급 서명 업로드 |
+| 추가 파일 경로 | 새 TUS 이어올리기, S3 저장·교체·삭제·복사·분할 업로드 생성, 이미 시작한 TUS/S3 업로드의 진행·완료·취소 거절. 해제 후 같은 업로드·토큰으로 재개 성공 |
+| 읽기·백업 | 기존 토큰의 사용자 조회/REST 읽기와 원본 파일 14개 다운로드 유지. 차단 상태 전체 DB dump·별도 DB 복원의 모든 행 일치 |
+| 전환·복구 | 비슈퍼유저 postgres로 구 구조 차단 → 02/03/04 전환 → 구 앱 구조 복구 → 차단 해제까지 **296개 검사** 통과 |
+| 회귀·안전 검사 | Python **29개** 통과. 로컬 SQL 생성기는 운영 기본 DB명 `postgres` 등 고정 시험 대상 밖의 이름을 거절 |
+
+차단 함수는 쓰기 직전에 `session_user`를 검사한다. API에서 `service_role`로 바꾸거나 postgres 소유 함수를 호출해도 로그인한 DB 세션 역할은 바뀌지 않으므로 거절된다. 검증된 직접 `postgres` 연결만 백업·전환·복구를 수행한다. 이 연결을 쓰는 다른 관리 도구·자동 작업은 중단해야 한다. 기존 JWT/비밀번호/OAuth 설정을 바꾸는 절차가 아니다.
+
+차단 설치는 한 트랜잭션이며 잠금을 5초 안에 확보하지 못하면 롤백한다. 적용 파일 자체는 그대로 보존하고, 실행 때 각 마이그레이션의 **COMMIT 전**에 새 테이블의 보호 장치와 버전 이력 기록을 추가한다. 따라서 03에서 생성한 테이블이 잠시 무보호로 공개되는 틈을 만들지 않는다. 원본 마이그레이션의 해시는 별도로 기록한다. 평소의 `supabase db push`를 이 전환 실행기로 취급하지 않는다.
+
+복구는 **쓰기를 재개하기 전**에만 수행한다. 차단을 유지한 채 전환된 앱 객체를 비공개 `cutover_failed_public`으로 옮겨 보존하고, 중단 시점의 public 전용 백업으로 구 앱 구조·업무 데이터·권한/정책을 복구한다. 기존 public 스키마 자체와 관리형 기본 권한은 유지해 추가 권한 상승을 요구하지 않는다. 인증·Storage 레코드는 기존 상태를 유지하고, Storage 정책은 원래 정의로 되돌린다. 새 전환 이력도 비공개로 복사한 뒤 라이브 이력은 원래 버전으로 복원한다. 기존 Realtime 대상과 API 구조 목록 갱신도 확인한다. 원래 데이터와 실패 상태를 함께 보존하며 앱 테이블을 삭제하는 방식이 아니다. [소유한 차단 함수와 종속 트리거 해제](https://www.postgresql.org/docs/17/sql-dropfunction.html)는 대상 의존성을 확인한 뒤 수행한다.
+
+**남은 실행 조건:** 로컬은 파일 백엔드이고 운영은 관리형 오브젝트 저장소다. 서비스 버전과 프로토콜을 맞췄지만 운영 게이트웨이·물리 저장소에서 차단을 직접 시험한 결과는 아니다. PostgreSQL도 같은 17 계열의 로컬 이미지로 검증했으며 운영 minor 빌드와 동일하다고 주장하지 않는다. 차단 설치 시점에 이미 본문을 전송 중인 HTTP 요청은 먼저 종료를 확인해야 한다. 관리형 Preview에서의 사전 시험을 권장하며, 운영 실행용 대상/단계 확인 장치, 점검 시간과 복구 담당자 확정, 최종 중단 시점 DB/파일 백업·복원 검증 및 별도 운영 승인이 필요하다. 쓰기를 재개한 뒤에는 이 복구본으로 즉시 덮어쓰지 않고 새 기록을 먼저 보존·대조한다.
+
+재현(로컬 Docker만 사용):
+
+```bash
+python3 -B scripts/verify-local-service-flow.py --write-barrier-rehearsal --write-barrier-matching-services
+python3 -B scripts/verify-production-restore.py \
+  --backup .local-backups/production-dump-20261108T052113760121Z \
+  --records .local-backups/production-readonly-20261108T045110487853Z \
+  --postgres-rehearsal --write-barrier-rehearsal
+```
+
+첫 명령에는 보고서에 적힌 공식 이미지가 로컬에 필요하다. 이번에 관찰한 고정 버전이며 자동으로 운영 버전과 동기화되는 옵션이 아니다. 기존 로컬 서비스는 교체하지 않는다. 최종 비공개 증거: `.local-backups/local-write-barrier-20261108T153144751004Z/verification-report.json`(40/92/파일14), `.local-backups/production-restore-verified-20261108T153150952866Z/verification-report.json`(296), `.local-backups/write-barrier-audit-20261108T141720527220Z/verification-summary.json`(종합, `production_ready=false`). API 역할은 차단 장치의 비공개 스키마·함수 권한도 명시적으로 제거했다. 운영 13개 테이블은 모든 점검 후에도 이전 기준과 같았고 원본 사전 백업 자료19개·파일14개 해시/크기도 유지됐다. 사전 생산 백업은 온라인 사본 상태 그대로이며 최종 중단 백업이 아니다.
 
 ## 진행 조건
 
@@ -21,9 +56,9 @@
    - 환경변수 변경이 기존 배포에 자동 반영된다고 가정하지 않는다. 점검 모드는 DB 클라이언트 생성 전에 응답하므로 구/신 스키마 모두에 동작한다. `MAINTENANCE_MODE=0`이 평상시 값이다.
    - 별도 운영 승인·사전 안내 후 `MAINTENANCE_MODE=1`이 반영된 호환 브리지를 재배포하여 업무 화면·인증 반환·Server Action/API 요청이 503인지 확인한다. 응답은 no-store, Retry-After 60이다. 정적 자원과 Sentry `/monitoring` 터널은 기존 미들웨어의 예외이므로 모든 URL이 503이라고 가정하지 않는다. 이 예외가 Supabase 쓰기 차단을 대신하는 것도 아니다.
 2. **모든 외부 쓰기 차단·진행 중 요청 종료 확인**
-   - **현재 미완료인 선행 조건이다.** 관리형 Supabase에는 프로젝트 전체의 전용 점검/읽기 전용 모드가 없다. `default_transaction_read_only`는 새 연결의 기본값일 뿐이며 기존 연결은 쓰기를 계속할 수 있고 REST API도 명시적 read-write 트랜잭션으로 쓸 수 있다. 로컬의 실제 PostgREST PATCH로 이 한계를 재현했다. [Supabase 공식 설명](https://supabase.com/kb/troubleshooting/putting-a-project-in-read-only-mode-or-freezing-writes-during-a-migration-b5a2c7).
+   - **운영 설치·차단 확인은 아직 하지 않았다.** 위 후속 확인의 트리거 방식이 현재 후보이며 기존의 가상 게이트웨이 계획을 대체한다. 관리형 Supabase에는 프로젝트 전체의 전용 점검/읽기 전용 모드가 없다. `default_transaction_read_only`는 새 연결의 기본값일 뿐이며 기존 연결은 쓰기를 계속할 수 있고 REST API도 명시적 read-write 트랜잭션으로 쓸 수 있다. 로컬의 실제 PostgREST PATCH로 이 한계를 재현했다. [Supabase 공식 설명](https://supabase.com/kb/troubleshooting/putting-a-project-in-read-only-mode-or-freezing-writes-during-a-migration-b5a2c7).
    - DB 네트워크 제한은 Auth·REST·Storage HTTPS API를 차단하지 않는다. 앱에 프록시를 추가해도 기존 탭이 사용하는 원래 Supabase 주소를 차단하는 근거가 되지 않는다. Data API 중지만으로 Auth·Storage까지 중지됐다고 판단하지 않는다. [네트워크 제한 범위](https://supabase.com/docs/guides/platform/network-restrictions), [Data API 중지 범위](https://supabase.com/docs/guides/api/securing-your-api).
-   - 운영 프로젝트/플랜에서 실제로 지원되는 차단·복구 방법을 Supabase 측에 먼저 확인한다. 확인할 범위는 Auth 가입/로그인/토큰 갱신, REST의 INSERT/UPDATE/DELETE·RPC, Storage 업로드/교체/삭제·기존 서명 업로드·진행 중 업로드, 외부 자동 작업과 service-role/직접 DB 쓰기다. 원래 API 주소로 오는 요청도 포함한다. 지금은 해당 제어 수단이나 사업자 지원 가능 여부가 확인되지 않았다.
+   - 실행 직전 현재 권한·서비스 역할·보호할 테이블·기능과 원래 API 주소를 다시 대조한다. 후보 방식의 핵심 경로는 위와 같이 검증했고 실제 운영 차단 확인은 별도 승인 이후다. 예상과 다른 관리형 제약이나 서비스 역할이 발견되면 중단하고 Supabase 측에 지원 가능한 방식을 확인한다. 기존 서명/분할 업로드와 다른 관리 도구·service-role/직접 DB 쓰기도 범위에 포함한다.
    - 운영과 분리된 환경에서 차단과 해제를 시험하고, 관리자 DB 백업·파일 다운로드·복구용 접속이 유지되는지 확인한다. 완전 중단만 가능하다면 최종 파일 백업 경로와 검증 순서를 먼저 다시 설계한다. 계정 비밀번호·JWT 키·OAuth Secret을 바꾸거나 프로젝트를 일단 중지하는 방식으로 대체하지 않는다.
    - 실제 전환 시에는 검증된 차단 정책과 접근 로그로 새 쓰기의 거절 및 진행 중 쓰기의 종료를 확인한다. 검증이 없거나 파일 백업을 읽을 수 없으면 여기서 중단하며 최종 백업·DB 전환으로 진행하지 않는다. 토큰·키는 로그나 문서에 저장하지 않는다.
 3. **최종 백업 및 기준 확정**
