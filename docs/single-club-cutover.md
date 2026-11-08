@@ -6,7 +6,7 @@
 
 ## 진행 조건
 
-- 2026-11-08 신규 Preview용 Supabase 연결 분리를 완료했다(`docs/preview-isolation.md`). 기존 Production 항목을 유지하고 테스트 DB 세 값은 Preview 전용이다. 새 Preview 배포 후 실제 요청 검증은 남아 있고 기존 Preview에는 옛 연결이 포함될 수 있다. main의 운영 도메인 자동 연결은 계속 켜져 있으므로 일반 merge를 후보 배포 준비 수단으로 사용하지 않는다. push는 사용자가 하는 기존 방침을 유지한다.
+- 2026-11-08 신규 Preview용 Supabase 연결 분리와 실제 Preview 이메일 로그인·핵심 조회·권한·다운로드 22개 확인을 완료했다(`docs/hosted-preview-verification.md`). 기존 Production 항목을 유지하고 테스트 DB 세 값은 Preview 전용이다. Preview Google 인증 설정은 남아 있고 기존 Preview에는 옛 연결이 포함될 수 있다. main의 운영 도메인 자동 연결은 계속 켜져 있으므로 일반 merge를 후보 배포 준비 수단으로 사용하지 않는다. push는 사용자가 하는 기존 방침을 유지한다.
 
 - 보존 대상은 운영 부글부글 UUID `7504fd29-94ee-4134-b4f6-d7adb25fb2ac`다. 이름으로 대상을 선택하지 않는다. 로컬 시드 UUID와 구분한다.
 - 원래 앱·환경 설정·DB·Storage 백업과 복원 검증 결과를 확보한다. `legacy_multiclub`는 원본 계정과 독립된 읽기 전용 보관본이며 외부 백업을 대체하지 않는다.

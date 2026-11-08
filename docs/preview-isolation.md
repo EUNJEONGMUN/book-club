@@ -1,6 +1,6 @@
 # Preview 전용 DB 준비 — 2026-11-08
 
-**Vercel의 신규 Preview용 DB 연결 분리를 완료했다.** 사용자가 수정된 `--resume`을 실행했고 성공 보고서와 관리 화면을 대조했다. 운영 DB 기록·구조·기존 운영 배포는 유지했으며 push/merge/신규 배포는 하지 않았다. 다음은 분리된 설정으로 새 Preview를 배포한 뒤 실제 앱 요청을 검증하는 단계다. 사용자가 push하는 기존 방침을 유지하며 main merge/운영 배포는 승인하지 않는다.
+**Vercel의 신규 Preview용 DB 연결 분리를 완료했다.** 이후 사용자가 작업 브랜치를 직접 push해 새 Preview를 배포했고 실제 브라우저 로그인·권한·파일 다운로드 22개 확인도 마쳤다. 운영 DB 기록·구조·기존 운영 배포는 유지했으며 main merge/운영 배포는 하지 않았다. 최신 실제 배포 결과는 `docs/hosted-preview-verification.md`를 따른다.
 
 ## 분리 완료 확인
 
@@ -12,7 +12,7 @@
 - Production: 기존 URL/anon/service-role·메일·Google 항목은 기존 ID를 유지하며 Production 전용으로 남았다. 값 재발급/덮어쓰기/삭제를 하지 않았다.
 - Sentry 빌드 토큰은 기존 Production/Preview 공용 상태를 유지했다. 자동 Preview 생성과 main 운영 도메인 자동 연결 설정도 원래 상태를 유지했다.
 
-분리 후 운영 DB의 8개 업무 테이블은 최초 기준과 **전체 행이 동일**했고 계정 23개·Storage 파일 14개·운영 마이그레이션01·원본 dump 해시도 유지됐다. 보고서는 `production-preservation-after-separation.json`, 관리 화면 증거는 `preview-final-ui.txt`와 `production-final-ui.txt`다. 새 Preview 배포/그 앱의 실제 요청 검증은 아직 하지 않았다. 이전 Preview에 이미 포함된 운영 연결값은 소급 제거되지 않으므로 기존 접근 보호를 유지한다.
+분리 후 운영 DB의 8개 업무 테이블은 최초 기준과 **전체 행이 동일**했고 계정 23개·Storage 파일 14개·운영 마이그레이션01·원본 dump 해시도 유지됐다. 보고서는 `production-preservation-after-separation.json`, 관리 화면 증거는 `preview-final-ui.txt`와 `production-final-ui.txt`다. 이후 새 Preview 배포/실제 요청 검증과 추가 보존 비교도 완료했다(`docs/hosted-preview-verification.md`). 이전 Preview에 이미 포함된 운영 연결값은 소급 제거되지 않으므로 기존 접근 보호를 유지한다.
 
 이번 분리 명령은 완료했으므로 다시 실행할 필요가 없다. 이번 작업에 사용한 임시 토큰은 소유자가 폐기할 수 있다. 아래는 중단 진단 및 도구 동작의 기록이다.
 
@@ -86,6 +86,6 @@ python3 scripts/separate-preview-env.py --apply
 
 ## 연결 분리 후 검증
 
-성공 보고서와 관리 화면에서 Production/Preview의 세 항목이 분리됐는지 확인한다. 운영 도메인과 기존 서비스는 그대로 유지한다. 새 Preview 실제 배포/요청 검증은 그 뒤 진행하며 운영 승격은 하지 않는다. 기존 Preview 배포에 이미 포함된 운영 값은 환경 설정 수정으로 소급 제거되지 않으므로 접근 보호를 유지하고 별도 정리 범위를 결정해야 한다. 실제 Preview 주소가 정해지면 필요한 사이트/OAuth 반환 주소를 그 주소에 맞춰 구성한다.
+성공 보고서와 관리 화면에서 Production/Preview의 세 항목 분리를 확인했고, 이후 새 Preview 배포와 이메일 로그인·핵심 조회·다운로드 검증도 완료했다. 운영 도메인과 기존 서비스는 그대로 유지하며 운영 승격은 하지 않았다. 기존 Preview 배포에 이미 포함된 운영 값은 환경 설정 수정으로 소급 제거되지 않으므로 접근 보호를 유지하고 별도 정리 범위를 결정해야 한다. Preview Google 제공자와 필요한 사이트/OAuth 반환 주소 구성은 별도 단계로 남아 있다.
 
 근거: [Vercel 환경변수 PATCH](https://vercel.com/docs/rest-api/projects/edit-an-environment-variable), [환경별 변수 생성](https://vercel.com/docs/rest-api/projects/create-one-or-more-environment-variables), [기존 배포에 소급되지 않는 환경변수 변경](https://vercel.com/docs/environment-variables).

@@ -238,7 +238,7 @@ pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 
 Vercel의 Production / Preview / Development는 환경별로 분리한다. Production의 Supabase 주소·anon 키·service-role 키를 Preview/Development에 복사하지 않는다. Preview에는 별도 검증 DB의 같은 프로젝트에 속한 세 값을 함께 설정하고, 실회원 없는 시험 데이터를 사용한다. 로컬은 로컬 Supabase만 사용한다.
 
-2026-11-08 Supabase 세 변수의 Production/Preview 분리를 완료했다. Production 기존 항목은 유지하고 Preview에만 별도 `book-club-preview` 프로젝트의 세 값을 등록했다. Preview의 운영 메일 발송 키·Google 키는 제외했다. 새 Preview 배포 후 실제 요청과 필요한 OAuth 반환 주소는 추가 검증하며 운영 배포는 계속 보류한다. 기존 Preview 배포에는 옛 값이 남아 있을 수 있다. 최신 확인 결과는 `docs/preview-isolation.md`를 따른다.
+2026-11-08 Supabase 세 변수의 Production/Preview 분리를 완료했다. Production 기존 항목은 유지하고 Preview에만 별도 `book-club-preview` 프로젝트의 세 값을 등록했다. 새 Preview에서 실제 이메일 로그인·권한·다운로드 22개 확인과 운영/테스트 기록 보존 비교를 통과했다. Preview Google/Kakao/Gemini 설정과 운영 반영은 별도 범위로 남아 있다. 기존 Preview 배포에는 옛 값이 남아 있을 수 있다. 최신 결과는 `docs/hosted-preview-verification.md`, 연결 분리 기록은 `docs/preview-isolation.md`를 따른다.
 `SENTRY_AUTH_TOKEN` 은 로컬에 두지 않고 (`.env.sentry-build-plugin` 은 wizard 생성 시 자동으로 gitignored) Vercel 환경변수로만 관리.
 
 ---

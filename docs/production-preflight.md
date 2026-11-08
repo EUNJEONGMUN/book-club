@@ -70,13 +70,15 @@ python3 scripts/production-db-dump.py
 
 ## 이후 순서
 
-Preview 분리 후속 완료: 소유자가 API 도구의 이어하기를 실행해 신규 Preview 연결 분리를 완료했다. 기존 Production 변수 10개 ID 보존, Production 값 쓰기 요청0, 테스트 DB 세 값의 Preview 전용 등록을 보고서·관리 화면에서 확인했다. 운영 8개 테이블은 전체 행이 최초 기준과 동일했고 Auth23/Storage14/운영마이그레이션01/원본dump해시도 유지됐다. Secret 원문은 가려져 독립적인 전후 값 대조를 수행하지 않았다. 새 Preview 배포 후 앱의 실제 요청 검증은 남아 있다. `docs/preview-isolation.md` 참조. push는 사용자가 수행하며 main merge/운영 배포는 보류한다.
+실제 Preview 후속 완료: 사용자가 `codex/single-club-transition`을 push했고 커밋 `565c6ce`의 Preview가 Ready가 됐다. 실제 브라우저 22개 확인(시험 계정 이메일 인증·역할별 조회·PDF 클릭 다운로드 등)과 운영13/테스트18개 테이블 기록·인증정보·파일 행 보존 비교를 통과했다. 운영 도메인/기존 main 배포는 그대로다. `docs/hosted-preview-verification.md` 참조. Preview Google 제공자·반환 주소와 외부 쓰기 차단 수단/최종 백업은 계속 남아 있다.
+
+Preview 분리 후속 완료: 소유자가 API 도구의 이어하기를 실행해 신규 Preview 연결 분리를 완료했다. 기존 Production 변수 10개 ID 보존, Production 값 쓰기 요청0, 테스트 DB 세 값의 Preview 전용 등록을 보고서·관리 화면에서 확인했다. 운영 8개 테이블은 전체 행이 최초 기준과 동일했고 Auth23/Storage14/운영마이그레이션01/원본dump해시도 유지됐다. Secret 원문은 가려져 독립적인 전후 값 대조를 수행하지 않았다. 이후 실제 Preview의 이메일 로그인·핵심 조회·다운로드도 위와 같이 검증했다. `docs/preview-isolation.md` 참조. push는 사용자가 수행하며 main merge/운영 배포는 보류한다.
 
 운영 역할·Vercel 환경 읽기 전용 점검도 완료했다. 비슈퍼유저 `postgres`로 별도 운영 복원본에 전환을 실행해 228개 보존 검사를 통과했다. 당시 Vercel은 Supabase 세 변수를 Production/Preview 공용으로 설정 중이었고 이후 위와 같이 분리했다. Preview 자동 배포와 main 운영 도메인 자동 연결은 계속 켜져 있다. 당시 점검 기록은 `docs/deployment-readiness-audit.md`를 따른다.
 
 1. **완료:** 생성한 운영 DB 아카이브와 파일을 격리된 로컬 DB·저장 경로에 복원했다. 원래 로컬 DB는 초기화하지 않았다.
 2. **완료:** 원본 백업의 전체 레코드·권한·계정·파일 바이트와 02→03→04 적용 후 데이터 보존을 대조했다. 이후 별도 로컬 Auth/REST/Storage와 임시 계정으로 이메일 로그인·세션 갱신·파일 HTTP·브라우저 다운로드도 검증했다(18개 흐름, 92개 보존 검사). 결과는 `docs/local-service-flow-verification.md`. 실제 Google 인증과 앱의 인증된 이름 등록 화면까지도 확인했다. 운영 역할 카탈로그 조회와 해당 권한의 로컬 리허설도 완료했다. 새 로컬 프로필 등록/승인은 제출하지 않았다.
-3. **신규 Preview 연결 분리 완료.** 새 Preview 배포 후 실제 앱 연결 검증과 운영 전환 중 외부 Auth/REST/RPC/Storage 쓰기 차단 수단 확정·시험은 남아 있다. 현재 외부 쓰기 차단은 미구성 상태다.
+3. **신규 Preview 연결 분리 및 실제 핵심 앱 흐름 검증 완료.** Preview Google 인증 설정과 운영 전환 중 외부 Auth/REST/RPC/Storage 쓰기 차단 수단 확정·시험은 남아 있다. 현재 외부 쓰기 차단은 미구성 상태다.
 4. 별도 운영 반영 승인 후에만 점검·쓰기 중단, 최종 DB/파일 백업, 재검증, DB 전환, 새 앱 배포, 비교, 서비스 재개를 진행한다. 구체적인 순서와 복구 기준은 `docs/single-club-cutover.md`를 따른다.
 
 Google 로그인 후속: 로컬 설정과 실패/취소 안내·목적지 보존·위험한 이동 주소 차단을 검증했다. 전체 단위 66개·타입 검사·분리 빌드 통과. 이후 사용자가 실제 Google 인증을 완료해 인증된 이름 입력 화면(`/signup`)에 도착했다. 새 로컬 계정/Google identity 각 1개만 생성됐고 원래 기록·인증 정보·운영 백업은 보존됐다. 같은 Google 제공자 식별자의 운영 프로필/관리자 멤버십도 백업에서 확인했다. 새 로컬 이름 등록·모임 가입 승인은 제출하지 않았다. 상세 `docs/google-oauth-check.md`.
