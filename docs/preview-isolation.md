@@ -1,6 +1,20 @@
 # Preview 전용 DB 준비 — 2026-11-08
 
-**테스트 DB 준비는 완료했고 Vercel 연결 분리는 아직 완료하지 않았다.** 사용자가 API 도구를 실행해 메일 키의 Preview 적용만 제외한 뒤 보존 검사에서 중단됐다. DB 연결 세 변수는 아직 공용이다. 읽기 전용 진단으로 표시 정보의 자동 보완을 확인했고, 수정한 `--resume`의 소유자 실행 단계가 남아 있다. 운영 배포/push/merge는 하지 않았다. 이 단계가 끝나기 전에는 작업 브랜치를 push하지 않는다.
+**Vercel의 신규 Preview용 DB 연결 분리를 완료했다.** 사용자가 수정된 `--resume`을 실행했고 성공 보고서와 관리 화면을 대조했다. 운영 DB 기록·구조·기존 운영 배포는 유지했으며 push/merge/신규 배포는 하지 않았다. 다음은 분리된 설정으로 새 Preview를 배포한 뒤 실제 앱 요청을 검증하는 단계다. 사용자가 push하는 기존 방침을 유지하며 main merge/운영 배포는 승인하지 않는다.
+
+## 분리 완료 확인
+
+최종 보고서는 `.local-backups/preview-isolation-20261108T112238765928Z/vercel-env-20261108T123216739088Z.json`이다. `applied`, `preview_variables_verified`, `production_records_preserved`가 모두 true이고 Production 항목 10개의 ID가 보존됐다. 완료 단계는 공용 항목 6개의 Preview 제외와 테스트 연결 세 변수의 Preview 전용 생성이다. Production 값 쓰기 요청은 0건이다. Secret 원문은 API에서 가려져 **실제 값의 독립적인 전후 대조를 수행한 것은 아니다**.
+
+관리 화면에서도 다음을 확인했다.
+
+- Preview: 새 URL/anon은 Config, service-role은 Secret이며 모두 Preview 전용이다. 공개 URL을 표시해 `https://teecqonbbmsritclbcyc.supabase.co`인 것을 확인했다. 메일 발송 키와 기존 Google 키는 Preview 목록에서 제외됐다.
+- Production: 기존 URL/anon/service-role·메일·Google 항목은 기존 ID를 유지하며 Production 전용으로 남았다. 값 재발급/덮어쓰기/삭제를 하지 않았다.
+- Sentry 빌드 토큰은 기존 Production/Preview 공용 상태를 유지했다. 자동 Preview 생성과 main 운영 도메인 자동 연결 설정도 원래 상태를 유지했다.
+
+분리 후 운영 DB의 8개 업무 테이블은 최초 기준과 **전체 행이 동일**했고 계정 23개·Storage 파일 14개·운영 마이그레이션01·원본 dump 해시도 유지됐다. 보고서는 `production-preservation-after-separation.json`, 관리 화면 증거는 `preview-final-ui.txt`와 `production-final-ui.txt`다. 새 Preview 배포/그 앱의 실제 요청 검증은 아직 하지 않았다. 이전 Preview에 이미 포함된 운영 연결값은 소급 제거되지 않으므로 기존 접근 보호를 유지한다.
+
+이번 분리 명령은 완료했으므로 다시 실행할 필요가 없다. 이번 작업에 사용한 임시 토큰은 소유자가 폐기할 수 있다. 아래는 중단 진단 및 도구 동작의 기록이다.
 
 ## 환경 분리 중단 진단과 수정
 
@@ -10,13 +24,13 @@
 
 수정 도구는 직접 scope PATCH를 성공시킨 ID에 대해서만 `type=sensitive`가 유지된 상태의 `visibility: null → secret`을 허용한다. 다른 ID의 표시 변경, 키·유형·ID·불투명 값 지문 변경 등은 계속 거절한다. 검사 조건을 통째로 끄지 않았다. `--inspect`는 HTTP GET만 허용하며, `--apply`는 미해결 실패 보고서가 있으면 인증 전에 거절한다.
 
-현재 이어하기 명령:
+당시 사용한 이어하기 명령(완료, 재실행 불필요):
 
 ```bash
 python3 scripts/separate-preview-env.py --resume
 ```
 
-`--resume`은 같은 실패 보고서의 실제 읽기 전용 진단이 존재하고, 현재 Production 정보 및 완료된 범위 변경이 그 진단과 일치할 때만 실행한다. 기존 메일 키 작업은 반복하지 않고 원래 계획의 남은 범위 변경과 테스트 키 생성만 한다. 다른 부분 적용/오류는 자동으로 덮어쓰거나 복구하지 않는다. 실제 실패 형태를 재현해 5건의 남은 scope PATCH와 Preview 전용 생성만 나가는 것을 시험했다. Python 전체 **26개 검사 통과**. 아직 이어하기 실제 API 실행 결과는 대기 중이다.
+`--resume`은 같은 실패 보고서의 실제 읽기 전용 진단이 존재하고, 현재 Production 정보 및 완료된 범위 변경이 그 진단과 일치할 때만 실행한다. 기존 메일 키 작업은 반복하지 않고 원래 계획의 남은 범위 변경과 테스트 키 생성만 한다. 다른 부분 적용/오류는 자동으로 덮어쓰거나 복구하지 않는다. 실제 실패 형태를 재현해 5건의 남은 scope PATCH와 Preview 전용 생성만 나가는 것을 시험했다. Python 전체 **26개 검사 통과**. 이후 사용자의 실제 이어하기 실행도 성공했다.
 
 중단 후 운영 DB의 8개 테이블 전체 행도 첫 기준과 동일했고, 계정 23개·Storage 14개·운영 최신 버전01과 아카이브 해시가 유지됐다. 추가 운영 쓰기/배포는 하지 않았다. 근거는 같은 비공개 폴더의 `production-preservation-after-stop.json`, `visibility-diagnosis-review.json`이다.
 
@@ -43,7 +57,7 @@ python3 scripts/separate-preview-env.py --resume
 
 ## Vercel에서 확인한 제한
 
-기존 URL/anon/service-role은 저장 후 읽을 수 없는 Secret으로 Production/Preview를 공유한다. Edit 화면에서 Environments 선택이 비활성화되어 있었고, Preview 전용 동일 이름을 추가하는 요청은 기존 공용 항목과 충돌해 저장되지 않았다. 기존 값을 덮어쓰거나 공용 항목을 삭제하지 않았다. 현재 세 값은 **계속 공용**이다.
+당시 기존 URL/anon/service-role은 저장 후 읽을 수 없는 Secret으로 Production/Preview를 공유했다. Edit 화면에서 Environments 선택이 비활성화되어 있었고, Preview 전용 동일 이름을 추가하는 요청은 기존 공용 항목과 충돌해 저장되지 않았다. 이후 소유자 API 도구로 기존 항목의 Preview 적용만 제외하고 새 Preview 전용 항목을 생성해 분리했다. 기존 값을 덮어쓰거나 공용 항목을 삭제하지 않았다.
 
 자동 승인 검토가 범위 불명확한 Vercel 플러그인 연결과 공용 항목 삭제 흐름을 거부했다. 이를 우회하는 브라우저 명령이나 비공개 API 호출은 사용하지 않았다. 미리보기 Branch Tracking 일시 중지는 앞선 UI 저장 하나가 반영된 뒤 원래 켜짐으로 복구했고, 켜짐·Save 비활성 상태를 확인했다. 운영 자동 배포/도메인 설정은 변경하지 않았다.
 
@@ -53,7 +67,7 @@ python3 scripts/separate-preview-env.py --resume
 
 `scripts/separate-preview-env.py`를 준비했다. 계정 소유자가 [Vercel 토큰 관리](https://vercel.com/account/settings/tokens)에서 `scone’s projects` 안의 `book-club` 프로젝트 범위와 짧은 만료 기간을 가진 임시 API 토큰을 직접 생성해 사용한다. 토큰 자체는 해당 프로젝트의 다른 자원을 관리할 권한을 가질 수 있으므로 이 도구에만 숨김 입력하고 작업 후 본인이 폐기한다. 토큰을 채팅에 보내거나 파일/셸 인자에 넣지 않는다.
 
-아래는 실패 이력이 없는 최초 실행용 명령이다. **현재 중단 건에는 위의 `--resume`을 사용한다.** 프로젝트 폴더에서 본인 터미널로 실행한다:
+아래는 실패 이력이 없는 최초 실행용 명령이다. 현재 작업은 완료했으므로 추가 실행하지 않는다. 프로젝트 폴더에서 본인 터미널로 실행한다:
 
 ```bash
 python3 scripts/separate-preview-env.py --apply
@@ -66,7 +80,7 @@ python3 scripts/separate-preview-env.py --apply
 3. 검증된 테스트 프로젝트의 주소·anon·service-role 세 값을 **Preview 전용**으로 추가한다. 키의 JWT 프로젝트/역할도 확인한다. 메일 발송 키와 기존 Google Secret은 Preview에 새로 넣지 않는다.
 4. Production 변수들의 ID·유형·표시 정보와 최종 환경 범위를 전후 대조한다. 관측한 Secret 표시 정보 자동 보완만 해당 요청의 ID에 한해 허용한다. 원문 값을 출력/저장하지 않는다. API 응답의 빈 Secret 표시값은 원문 대조로 취급하지 않고, 기존 항목 식별 및 Production 값 쓰기 금지 조건을 유지한다.
 
-삭제·프로젝트 설정·배포 API는 도구에서 거절한다. 인증서는 검증하고 리다이렉트를 따라 토큰을 전달하지 않는다. 토큰은 메모리에서만 사용하며 보고서는 같은 비공개 폴더에 저장한다. 안전 가드·부분 재개 시험을 포함한 Python 전체 26개 통과. 실제 첫 실행과 읽기 전용 진단은 수행했고 이어하기는 아직 대기 중이다.
+삭제·프로젝트 설정·배포 API는 도구에서 거절한다. 인증서는 검증하고 리다이렉트를 따라 토큰을 전달하지 않는다. 토큰은 메모리에서만 사용하며 보고서는 같은 비공개 폴더에 저장한다. 안전 가드·부분 재개 시험을 포함한 Python 전체 26개 통과. 실제 첫 실행·읽기 전용 진단·이어하기까지 완료했다.
 
 성공 시 `Preview settings separated; Production variable records preserved. No deployment created.`와 보고서 경로가 표시된다. Production 값 쓰기 요청은 0건이며 Secret 원문은 가려져 별도 값 대조를 하지 못했다는 안내도 표시한다. 실패하면 보고서를 먼저 확인하고 임의 재실행/공용 변수 삭제/키 재발급을 하지 않는다. 부분 적용 시에도 운영 키를 Preview에 다시 연결해 오류를 숨기지 않는다.
 
