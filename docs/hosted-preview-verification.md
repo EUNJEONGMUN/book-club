@@ -45,6 +45,22 @@ Vercel 운영 화면도 기존 `book-club-five-nu.vercel.app`, main 커밋 `378c
 
 Git 제외·권한 600인 `.local-backups/hosted-preview-20261108T131327152820Z/`에 `browser-report.json`(22개), `preservation-report.json`(31개 테이블), `browser-download-verification.json`, `member-download-verification.json`, 관찰한 인증 요청 주소, 스크린샷과 운영 배포 확인 기록을 보관한다. 사용자 비밀번호·운영 키를 보고서에 출력하지 않았다. 원시 보존 스냅샷은 암호 해시와 기존 기록을 포함하므로 비공개로 유지한다.
 
-이번 Preview 검증은 **이메일/암호 로그인과 핵심 조회·권한·다운로드**다. Preview의 Google 제공자·허용된 반환 주소, Kakao/Gemini 시험 설정은 아직 구성하지 않았다. Google 로그인은 앞서 로컬에서 소유자가 직접 검증한 결과와 구분한다. 실제 배포에서 Google 인증까지 확인하려면 테스트 Supabase에만 제공자와 반환 주소를 준비하고 소유자가 직접 인증해야 한다.
+초기 22개 Preview 검증은 **이메일/암호 로그인과 핵심 조회·권한·다운로드**다. 이후 실제 Preview의 Google 로그인도 아래 절차로 검증했다. Kakao/Gemini 시험 설정은 아직 구성하지 않았다. Google의 기존 로컬 검증 결과와 이번 실제 Preview 검증을 구분한다.
+
+### Preview Google 로그인 — 테스트 연결·실제 인증 검증 완료
+
+사전 읽기 전용 점검에서 테스트 프로젝트의 Google 제공자는 비활성화, Client ID/Secret은 없음, Site URL은 `http://localhost:3000`, 추가 반환 주소는 빈 값이었다. 로컬 Google Client ID는 운영에서 쓰는 것과 같았다. Google Cloud `book-club-498111` 프로젝트에는 운영과 일치하는 기존 `book-club 웹 클라이언트` 하나만 있었다. 기존 클라이언트나 운영 로그인 설정은 수정하지 않았다.
+
+새 `book-club-preview` 웹 클라이언트 양식을 준비한 뒤 소유자가 직접 생성하고 JSON을 다운로드했다. JSON은 로컬 파일에서 읽어 검증했으며 새 Client ID가 운영과 다르고, JavaScript 원본은 위 고정 Preview·브랜치 주소 두 개, 승인된 리디렉션 URI는 **테스트 전용** `https://teecqonbbmsritclbcyc.supabase.co/auth/v1/callback` 하나뿐임을 확인했다. Client Secret은 채팅·로그·Git·보고서에 기록하지 않았고 Vercel이나 기존 로컬 환경변수도 수정하지 않았다. Google 프로젝트의 기존 동의 화면은 공유하며 별도의 동의 화면·권한 변경은 요청하지 않았다.
+
+고정된 테스트 프로젝트에만 Auth 설정 PATCH 1회를 보냈다. Google 제공자를 켜고 새 Client ID/Secret을 연결했으며 nonce 검사 생략은 false로 유지했다. Site URL은 브랜치 Preview 주소, 허용 반환 주소는 두 Preview의 정확한 `/auth/callback` 경로와 `next` 쿼리 변형 네 개다. 호스트 와일드카드·운영 URL은 추가하지 않았다. 방법은 [Supabase Google 로그인 문서](https://supabase.com/docs/guides/auth/social-sign-in/auth-google)와 [반환 URL 문서](https://supabase.com/docs/guides/auth/redirect-urls)를 기준으로 한다.
+
+첫 저장 후 비교 도구는 API의 비밀키 조회값이 원문이라고 가정해 전체 일치 검사에서 중단됐다. 비밀키 조회값만 입력 원문과 달랐으며 단순 SHA-256 가정으로도 확인되지 않았다. 재저장·키 재발급은 하지 않았다. 원문을 읽어 독립 검증했다고 주장하지 않고 실제 Google 인증 성공으로 연결이 작동함을 검증했다. 나머지 요청한 다섯 설정은 모두 일치했고, 테스트의 관련 없는 Auth 설정과 운영 Auth 전체 지문은 동일했다. 최초 검사 보고서는 그대로 남기고 `final-verification.json`에 최종 결과와 제한을 분리해 기록했다.
+
+브랜치 Preview의 새 탭에서 실제 `Google로 계속하기`를 클릭했다. 이미 소유자가 로그인·승인한 Google 브라우저 상태가 재사용되어 계정 선택·추가 동의 화면 없이 인증 후 `/signup?next=%2Fmeetings%2F57e15624-e1b9-48b6-9601-2ff293b2d75a`로 복귀했다. 이름 입력 화면에 표시된 계정은 테스트 DB의 새 Google 인증 계정과 일치했다. 새로고침 후에도 인증 상태가 유지되고, 가입 전 계정의 모임 직접 접근은 같은 이름 입력 화면으로 돌아왔다. 이름의 `완료`·가입 신청·회원 승인·권한 부여는 실행하지 않았다. 첫 테스트 Google 계정에는 프로필·회원 기록이 없으므로 이 화면은 정상이다. 기존 운영 계정 ID나 권한을 복사하지 않았다. 원래 고정 Preview의 멤버 로그인 탭도 변경하지 않았다.
+
+설정 전후에는 운영 13개·테스트 18개 테이블의 비교 대상 기록이 모두 동일했다. Google 인증 후에는 **테스트 Auth 사용자 1개·Google identity 1개 생성만** 확인했으며, 기존 모든 비교 대상 기록은 보존됐다. 운영은 계속 Auth 23개·일정 11개·파일 14개이며, 테스트는 Auth 4개·프로필/회원 각각 3개·일정 3개·파일 1개다. 사용자가 추가한 시험 일정도 유지했고 초기화하지 않았다. 운영 Auth 설정 전체 지문과 원본 dump 해시도 최종 대조에서 동일했다. 운영 DB 쓰기·운영 배포·main 병합은 실행하지 않았다.
+
+사전 점검 증거는 Git 제외 `.local-backups/preview-google-20261108T133657043756Z/`, 실제 연결·인증 증거는 `.local-backups/preview-google-configuration-20261108T135048313280Z/`의 `final-verification.json`, `google-preservation-report.json`, `browser-google-report.json`, `google-login-verified.jpg` 등에 보관한다. 이번 최종 화면의 리소스 목록에는 Supabase 요청이 남아 있지 않아 브라우저 네트워크 목적지를 별도 관찰했다고 주장하지 않는다. 대상은 테스트에만 생성된 Google identity와 화면 계정의 일치, 운영·테스트 보존 대조로 확인했다. Google 계정의 이름 등록·가입 승인 이후 전체 회원 이용 흐름은 이번 Google 검증 범위에 포함하지 않는다.
 
 운영 전환 전에는 외부 Auth/REST/RPC/Storage 쓰기를 실제로 차단할 수 있는 수단의 확정·검증과, 쓰기 중단 시점의 최종 DB/파일 백업·복원 검증이 계속 필요하다. 구체적인 운영 전환은 별도 승인 범위다. 기존 Preview에 포함된 옛 운영 연결은 소급 제거된 것이 아니며 접근 보호를 유지한다.
