@@ -17,6 +17,7 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECT = "chvprcpdfgivnfkgwkem"
+CLUB = "7504fd29-94ee-4134-b4f6-d7adb25fb2ac"
 CONTAINER = "supabase_db_book-club"
 CA_FILE = ROOT / "scripts/certificates/supabase-prod-ca-2021.crt"
 CA_SHA256 = "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7"
@@ -40,8 +41,32 @@ export PGSSLROOTCERT="$certificate"
 def docker_command():
     return ["docker", "exec", "-i", "-e", "PGSSLMODE=verify-full",
             "-e", "PGCONNECT_TIMEOUT=15",
-            "-e", "PGOPTIONS=-c default_transaction_read_only=on -c lock_timeout=5000",
+            "-e", "PGOPTIONS=",
             CONTAINER, "sh", "-c", CONTAINER_SCRIPT, "sh"]
+
+
+# Check the transaction we actually opened, not whether a pooler forwarded
+# libpq's startup options. No database/role/session-wide default is changed.
+PROBE_SQL = f"""BEGIN READ ONLY;
+SELECT jsonb_build_object(
+  'read_only', current_setting('transaction_read_only'),
+  'database', current_database(),
+  'club_id', (SELECT id::text FROM public.clubs WHERE id = '{CLUB}'::uuid)
+);
+ROLLBACK;"""
+
+
+def verify_probe(result):
+    if result.returncode:
+        raise RuntimeError(failure_reason(result) + " DB 백업은 생성하지 않았습니다.")
+    try:
+        state = json.loads(result.stdout)
+    except (ValueError, UnicodeDecodeError):
+        raise RuntimeError("연결 확인 응답을 해석하지 못했습니다. 비밀값은 출력하지 않았으며 DB 백업은 생성하지 않았습니다.") from None
+    if not isinstance(state, dict) or state.get("read_only") != "on":
+        raise RuntimeError("백업 연결의 읽기 전용 트랜잭션을 확인하지 못했습니다. DB 백업은 생성하지 않았습니다.")
+    if state.get("database") != "postgres" or state.get("club_id") != CLUB:
+        raise RuntimeError("접속한 DB의 부글부글 식별자가 일치하지 않습니다. DB 백업은 생성하지 않았습니다.")
 
 
 def connection_input(password):
@@ -64,6 +89,8 @@ def failure_reason(result):
         return "서버 인증서 검증은 통과했지만 DB 비밀번호가 전달되지 않았습니다."
     if any(term in error for term in ("could not translate host", "name or service not known", "temporary failure in name resolution")):
         return "DB 호스트의 이름을 찾지 못했습니다. DNS/네트워크를 확인해주세요."
+    if "lock timeout" in error:
+        return "백업에 필요한 읽기 잠금을 기다리다 중단했습니다. 사용량이 적을 때 다시 시도해주세요."
     if any(term in error for term in ("timeout", "timed out", "network is unreachable", "connection refused")):
         return "DB 접속 경로에 연결하지 못했습니다. 네트워크/접속 제한을 확인해주세요."
     if "tenant or user not found" in error:
@@ -99,16 +126,17 @@ def main():
     payload = connection_input(password)
     password = None
     probe = subprocess.run(docker + ["psql", *connection, "-X", "-qAt", "-v", "ON_ERROR_STOP=1",
-                                    "-c", "SELECT current_setting('transaction_read_only')"],
+                                    "-c", PROBE_SQL],
                            input=payload, capture_output=True)
     if args.diagnose:
-        if b"no password supplied" in probe.stderr.lower() or (probe.returncode == 0 and probe.stdout.strip() == b"on"):
+        if b"no password supplied" in probe.stderr.lower():
             print("네트워크 연결과 Supabase 서버 인증서·호스트 검증을 통과했습니다. 비밀번호 인증과 전체 백업은 아직 실행하지 않았습니다.")
             return
+        if probe.returncode == 0:
+            raise RuntimeError("비밀번호 없이 DB에 연결되었습니다. 접속 설정 확인이 필요하며 백업은 실행하지 않았습니다.")
         raise RuntimeError(failure_reason(probe))
-    if probe.returncode or probe.stdout.strip() != b"on":
-        reason = failure_reason(probe) if probe.returncode else "서버의 읽기 전용 설정을 확인하지 못했습니다."
-        raise RuntimeError(reason + " DB 백업은 생성하지 않았습니다.")
+    verify_probe(probe)
+    print("서버 인증서·DB 인증·부글부글 식별자·읽기 전용 트랜잭션을 확인했습니다. DB 백업을 시작합니다.", flush=True)
     backup_root = ROOT / ".local-backups"
     backup_root.mkdir(mode=0o700, exist_ok=True)
     if backup_root.is_symlink() or backup_root.resolve().parent != ROOT:
@@ -119,7 +147,9 @@ def main():
     folder.mkdir(mode=0o700)
     target = folder / "database.dump"
     with target.open("xb") as output:
-        result = subprocess.run(docker + ["pg_dump", *connection, "--format=custom"],
+        # PostgreSQL pg_dump starts REPEATABLE READ, READ ONLY itself.
+        # Use its SQL-level lock timeout instead of startup options.
+        result = subprocess.run(docker + ["pg_dump", *connection, "--format=custom", "--lock-wait-timeout=5s"],
                                 input=payload, stdout=output, stderr=subprocess.PIPE)
     payload = None
     if result.returncode or target.stat().st_size == 0:
@@ -136,6 +166,7 @@ def main():
     manifest = {
         "project_ref": PROJECT, "completed_at": datetime.now(timezone.utc).isoformat(),
         "format": "pg_dump-custom", "bytes": target.stat().st_size,
+        "probe_transaction_read_only": True, "probe_club_id": CLUB,
         "sha256": checksum,
         "archive_list_verified": True, "restore_verified": False, "writes_frozen": False,
         "includes_storage_bytes": False, "includes_cluster_roles": False,

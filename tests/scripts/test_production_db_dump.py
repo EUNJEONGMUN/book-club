@@ -1,5 +1,6 @@
 """Backup connection guards; no production credentials or network required."""
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 import unittest
@@ -44,7 +45,28 @@ class ProductionDumpGuards(unittest.TestCase):
         self.assertIn("서버 인증서 검증은 통과", dump.failure_reason(result))
         command = dump.docker_command()
         self.assertIn("PGSSLMODE=verify-full", command)
-        self.assertIn("PGOPTIONS=-c default_transaction_read_only=on -c lock_timeout=5000", command)
+        self.assertIn("PGOPTIONS=", command)
+
+    def test_explicit_read_only_result_is_required(self):
+        state = {"read_only": "on", "database": "postgres", "club_id": dump.CLUB}
+        dump.verify_probe(subprocess.CompletedProcess([], 0, json.dumps(state).encode(), b""))
+        state["read_only"] = "off"
+        with self.assertRaises(RuntimeError):
+            dump.verify_probe(subprocess.CompletedProcess([], 0, json.dumps(state).encode(), b""))
+
+    def test_unexpected_database_or_club_is_rejected(self):
+        for change in ({"database": "unexpected"}, {"club_id": None}, {"club_id": "another-club"}):
+            state = {"read_only": "on", "database": "postgres", "club_id": dump.CLUB, **change}
+            with self.subTest(change=change), self.assertRaises(RuntimeError):
+                dump.verify_probe(subprocess.CompletedProcess([], 0, json.dumps(state).encode(), b""))
+
+    def test_unparseable_or_failed_probe_is_rejected(self):
+        for result in (subprocess.CompletedProcess([], 0, b"", b""),
+                       subprocess.CompletedProcess([], 0, b"on", b""),
+                       subprocess.CompletedProcess([], 0, b"null", b""),
+                       subprocess.CompletedProcess([], 2, b"{}", b"error")):
+            with self.subTest(result=result), self.assertRaises(RuntimeError):
+                dump.verify_probe(result)
 
 
 if __name__ == "__main__":

@@ -56,6 +56,10 @@ python3 scripts/production-db-dump.py
 
 2026-11-08 실행 중 발견된 인증서 오류를 수정했다. 시스템 CA만 사용하던 연결에 공식 Supabase Root 2021 CA를 추가했으며, 인증서·호스트 검증을 유지한다. `python3 scripts/production-db-dump.py --diagnose`로 비밀번호 없이 실제 운영 접속 경로의 TLS 검증을 통과했다. 이 진단은 비밀번호 인증 성공이나 덤프 완료를 뜻하지 않는다. 공개 인증서 원본·해시는 `scripts/certificates/README.md`에 기록했다. 오류는 인증서/비밀번호/DNS/네트워크/Docker 등으로 구분하며 원시 오류나 비밀값을 출력하지 않는다.
 
+이후 사용자의 연결은 성공했지만 기존 도구의 읽기 전용 확인 조건에서 중단됐다. 접속 시작 옵션(`PGOPTIONS`)의 전달 여부를 가정하지 않도록 바꿨다. 이제 `BEGIN READ ONLY` 안에서 읽기 전용 상태·DB 이름·보존 대상 부글부글 ID를 JSON으로 확인하고 `ROLLBACK`한다. DB나 역할의 기본 설정은 바꾸지 않는다. 실제 덤프는 PostgreSQL `pg_dump` 자체의 `REPEATABLE READ, READ ONLY` 트랜잭션을 사용하며, 잠금 대기 제한도 도구의 `--lock-wait-timeout=5s` 옵션으로 적용한다. [PostgreSQL 17 구현 근거](https://github.com/postgres/postgres/blob/REL_17_STABLE/src/bin/pg_dump/pg_dump.c).
+
+로컬의 새 임시 DB에서 기본 읽기 전용 설정이 `off`인 상태로 시작해 명시적 트랜잭션의 `on` 응답, 쓰기 차단, 아카이브 생성·목록 확인·다른 임시 DB에 복원, 원본/복원 기록 일치를 검증했다. 시험 후 원래 기본 설정은 `off`였고 생성한 시험 DB만 정리했다. 관련 안전 가드 단위 테스트 9개도 통과했다. 사용자 비밀번호를 통한 실제 운영 덤프는 여전히 미실행 상태다.
+
 성공하면 새 `.local-backups/production-dump-…/` 아래에 `database.dump`, `database.contents.txt`, SHA-256이 담긴 `manifest.json`이 생긴다. 실패 시 완료 manifest가 생성되지 않으며 부분 파일을 복구본으로 사용하지 않는다. 이 도구는 구문·안전 가드와 로컬 PostgreSQL 도구 실행을 확인했으며, 운영 비밀번호 입력을 통한 실제 덤프 실행은 아직 하지 않았다.
 
 이 아카이브에는 Storage 실제 바이트와 클러스터 역할이 포함되지 않는다. 앞서 내려받은 파일 사본을 함께 보존하고, 역할·소유권·권한 호환성을 검토해야 한다. 실제 복원 검증까지 완료되어야 복구 가능하다고 판단한다.
