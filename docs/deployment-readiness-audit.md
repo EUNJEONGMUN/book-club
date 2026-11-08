@@ -1,5 +1,7 @@
 # 운영 실행 권한·배포 환경 점검 — 2026-11-08
 
+최신 준비 결과: Preview Google 인증까지 검증했고, 구 운영 소스의 점검 패치 로컬 production 빌드·HTTP 차단/해제 23개도 통과했다. 별도 내부 Docker 컨테이너의 실제 PostgREST PATCH로 read-only 기본값을 우회하는 쓰기를 재현했다. DB IP 제한도 HTTPS API에는 적용되지 않으므로 두 방법을 완전 차단으로 간주하지 않는다. 운영 프로젝트/플랜에서 지원 가능한 실제 차단·복구 방법을 확인해야 하며 운영 전환은 계속 보류한다. 이번 준비에서는 운영/테스트 Supabase 또는 Vercel 설정을 조회·변경하지 않았다. 구체적인 결과·근거·지원 확인 항목은 `docs/single-club-cutover.md`를 우선한다.
+
 후속 완료: 별도 무료 `book-club-preview` DB 생성, 구조 27개 적용, 시험 계정·PDF의 11개 흐름 검증과 운영 8개 테이블 보존 확인에 이어 Vercel의 신규 Preview 연결 분리도 완료했다. 이후 사용자가 작업 브랜치를 push했고 실제 Preview의 이메일 로그인·조회·권한·다운로드 22개 확인과 운영/테스트 기록 보존 대조를 통과했다. 운영 DB 변경/운영 배포는 하지 않았다. 최신 결과는 `docs/hosted-preview-verification.md`, 연결 분리 기록은 `docs/preview-isolation.md`를 우선하며 아래 표는 분리 전 점검 기록이다.
 
 운영 DB는 읽기 전용으로 조회했고 Vercel은 설정 화면만 열었다. 운영 데이터·역할·환경변수·배포 설정을 변경하지 않았다. Git push/merge/배포도 하지 않았다. 비밀값을 펼치거나 복사하지 않고 변수 이름과 적용 범위만 확인했다.

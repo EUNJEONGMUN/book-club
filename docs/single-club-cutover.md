@@ -1,12 +1,12 @@
 # 부글부글 운영 전환·복구 절차
 
-현재는 로컬 검증용 계획이다. 운영에 적용하거나 배포한 상태가 아니다.
+현재는 운영 반영 전 준비·로컬 검증 결과와 계획이다. 운영에 적용하거나 배포한 상태가 아니다. **외부 쓰기 차단 수단이 확정·검증되지 않아 운영 전환은 보류한다.**
 
 2026-11-08 사전 조회·복사 결과와 전체 DB 백업 입력 절차는 `docs/production-preflight.md`에 기록했다. 사전 레코드/파일 복사만으로 최종 백업 조건이 충족되지는 않는다.
 
 ## 진행 조건
 
-- 2026-11-08 신규 Preview용 Supabase 연결 분리와 실제 Preview 이메일 로그인·핵심 조회·권한·다운로드 22개 확인을 완료했다(`docs/hosted-preview-verification.md`). 기존 Production 항목을 유지하고 테스트 DB 세 값은 Preview 전용이다. Preview Google 인증 설정은 남아 있고 기존 Preview에는 옛 연결이 포함될 수 있다. main의 운영 도메인 자동 연결은 계속 켜져 있으므로 일반 merge를 후보 배포 준비 수단으로 사용하지 않는다. push는 사용자가 하는 기존 방침을 유지한다.
+- 2026-11-08 신규 Preview용 Supabase 연결 분리와 실제 Preview 이메일 로그인·핵심 조회·권한·다운로드 22개 확인 및 Google 로그인·인증된 가입 화면·세션 유지·가입 전 접근 제한 검증을 완료했다(`docs/hosted-preview-verification.md`). 기존 Production 항목을 유지하고 테스트 DB 세 값은 Preview 전용이다. 기존 Preview에는 옛 연결이 포함될 수 있다. main의 운영 도메인 자동 연결은 계속 켜져 있으므로 일반 merge를 후보 배포 준비 수단으로 사용하지 않는다. push는 사용자가 하는 기존 방침을 유지한다.
 
 - 보존 대상은 운영 부글부글 UUID `7504fd29-94ee-4134-b4f6-d7adb25fb2ac`다. 이름으로 대상을 선택하지 않는다. 로컬 시드 UUID와 구분한다.
 - 원래 앱·환경 설정·DB·Storage 백업과 복원 검증 결과를 확보한다. `legacy_multiclub`는 원본 계정과 독립된 읽기 전용 보관본이며 외부 백업을 대체하지 않는다.
@@ -19,11 +19,13 @@
 1. **구 앱에서 점검 모드 준비**
    - 현재 운영 중인 구 스키마 호환 버전에 `scripts/maintenance-bridge.patch`의 점검 응답만 적용한 브리지 배포를 준비한다. 전체 새 앱을 먼저 배포하지 않는다.
    - 환경변수 변경이 기존 배포에 자동 반영된다고 가정하지 않는다. 점검 모드는 DB 클라이언트 생성 전에 응답하므로 구/신 스키마 모두에 동작한다. `MAINTENANCE_MODE=0`이 평상시 값이다.
-   - 사전 안내 후 `MAINTENANCE_MODE=1`이 반영된 호환 브리지를 재배포하여 GET 안내·Server Action/API POST 모두 503인지 확인한다. 응답은 no-store, Retry-After 60이다.
+   - 별도 운영 승인·사전 안내 후 `MAINTENANCE_MODE=1`이 반영된 호환 브리지를 재배포하여 업무 화면·인증 반환·Server Action/API 요청이 503인지 확인한다. 응답은 no-store, Retry-After 60이다. 정적 자원과 Sentry `/monitoring` 터널은 기존 미들웨어의 예외이므로 모든 URL이 503이라고 가정하지 않는다. 이 예외가 Supabase 쓰기 차단을 대신하는 것도 아니다.
 2. **모든 외부 쓰기 차단·진행 중 요청 종료 확인**
-   - 앱 외에도 Auth의 가입/로그인/토큰 갱신, REST의 INSERT/UPDATE/DELETE 및 RPC, Storage 업로드/교체/삭제를 게이트웨이에서 차단한다. 기존 탭의 직접 SDK 요청도 차단되어야 한다.
-   - 기존 유효한 관리자 토큰의 읽기 요청과 파일 다운로드만 검증 경로에서 허용한다. 토큰·키를 로그나 문서에 저장하지 않는다.
-   - 게이트웨이 정책·접근 로그에서 실제 차단을 확인하고, 진행 중인 쓰기가 종료되었는지 확인한다. 차단 검증에 실패하면 여기서 중단한다.
+   - **현재 미완료인 선행 조건이다.** 관리형 Supabase에는 프로젝트 전체의 전용 점검/읽기 전용 모드가 없다. `default_transaction_read_only`는 새 연결의 기본값일 뿐이며 기존 연결은 쓰기를 계속할 수 있고 REST API도 명시적 read-write 트랜잭션으로 쓸 수 있다. 로컬의 실제 PostgREST PATCH로 이 한계를 재현했다. [Supabase 공식 설명](https://supabase.com/kb/troubleshooting/putting-a-project-in-read-only-mode-or-freezing-writes-during-a-migration-b5a2c7).
+   - DB 네트워크 제한은 Auth·REST·Storage HTTPS API를 차단하지 않는다. 앱에 프록시를 추가해도 기존 탭이 사용하는 원래 Supabase 주소를 차단하는 근거가 되지 않는다. Data API 중지만으로 Auth·Storage까지 중지됐다고 판단하지 않는다. [네트워크 제한 범위](https://supabase.com/docs/guides/platform/network-restrictions), [Data API 중지 범위](https://supabase.com/docs/guides/api/securing-your-api).
+   - 운영 프로젝트/플랜에서 실제로 지원되는 차단·복구 방법을 Supabase 측에 먼저 확인한다. 확인할 범위는 Auth 가입/로그인/토큰 갱신, REST의 INSERT/UPDATE/DELETE·RPC, Storage 업로드/교체/삭제·기존 서명 업로드·진행 중 업로드, 외부 자동 작업과 service-role/직접 DB 쓰기다. 원래 API 주소로 오는 요청도 포함한다. 지금은 해당 제어 수단이나 사업자 지원 가능 여부가 확인되지 않았다.
+   - 운영과 분리된 환경에서 차단과 해제를 시험하고, 관리자 DB 백업·파일 다운로드·복구용 접속이 유지되는지 확인한다. 완전 중단만 가능하다면 최종 파일 백업 경로와 검증 순서를 먼저 다시 설계한다. 계정 비밀번호·JWT 키·OAuth Secret을 바꾸거나 프로젝트를 일단 중지하는 방식으로 대체하지 않는다.
+   - 실제 전환 시에는 검증된 차단 정책과 접근 로그로 새 쓰기의 거절 및 진행 중 쓰기의 종료를 확인한다. 검증이 없거나 파일 백업을 읽을 수 없으면 여기서 중단하며 최종 백업·DB 전환으로 진행하지 않는다. 토큰·키는 로그나 문서에 저장하지 않는다.
 3. **최종 백업 및 기준 확정**
    - 쓰기가 중단된 상태에서 전체 DB(인증/보관 스키마 포함)와 Storage 바이트·메타데이터를 백업하고 SHA-256과 시점을 기록한다.
    - 별도 DB에 실제 복원해 읽을 수 있는지 확인한다. 보존 기준을 동일한 스냅샷/중단 구간에서 수집한다.
@@ -49,6 +51,24 @@
 
 ## 로컬 재현
 
+2026-11-08 준비 검증 결과:
+
+- 구 운영 커밋 `378cc2e07321fe88d66178fe29cef2dfb4f5a027`에 점검 패치만 적용한 로컬 production 빌드와 **23개 검사 통과**. 실제 HTTP 요청 18개(업무 화면·OAuth 반환·공유 이미지 API·변경 메서드·가상 Server Action·RSC 포함)가 503/no-store/Retry-After 60을 반환했다. 인증 쿠키가 있는 요청도 가짜 Auth/REST/Storage 수신기에 도달하지 않았다. 점검 해제 후 일반 로그인 경로의 HTTP 200과 Auth 수신기 감지 양성 대조를 확인했다. 기존 회원 로그인 자체를 다시 수행한 검사는 아니다.
+- 새 내부 Docker 네트워크의 합성 테이블에서 기존 연결의 쓰기, 새 일반 연결의 명시적 read-write 전환, 실제 PostgREST PATCH 성공을 재현했다. 그 뒤에도 새 연결의 read-only 기본값은 on이었다. **읽기 전용 기본값만으로 전환하면 안 된다는 근거**다. 임시 컨테이너/네트워크는 정리했다.
+- 원본 DB dump 해시와 사전 복사 manifest의 자료 19개를 다시 대조했다. 포함된 실제 파일 14개도 해시·크기가 동일하다. 이 사본은 계속 온라인 사전 백업이며 쓰기 중단 시점의 최종 백업으로 승격하지 않았다.
+- 앱·라이브러리·컴포넌트·의존성·DB 마이그레이션은 검증한 Preview `565c6ce`와 같았다. 이번 변경은 준비 도구와 문서뿐이다. 운영과 테스트 Supabase DB, Vercel 설정·배포에 연결하거나 변경하지 않았다.
+
+증거는 Git 제외 `.local-backups/maintenance-bridge-20261108T140830800Z/verification-report.json`, `.local-backups/freeze-limit-20261108T140555088161Z/verification-report.json`, `.local-backups/cutover-preparation-20261108T141111811264Z/verification-summary.json`이다. 마지막 보고서의 `production_ready`는 **false**다. 현재 운영에서 적용할 수 있는 완전한 쓰기 차단을 검증한 상태가 아니다.
+
+다음 두 도구는 운영에 연결하지 않는 준비 검증이다. 첫 도구는 고정된 구 운영 커밋에 점검 패치만 적용한 복사본을 로컬에서 빌드하고 실제 HTTP 차단/해제를 확인한다. DB 접속 URL은 가짜 loopback 수신기뿐이며 외부 통신을 차단한다. 둘째 도구는 외부 통신·공개 포트가 없는 새 Docker 컨테이너의 합성 데이터로 읽기 전용 기본값의 한계를 재현한다. 둘째 도구의 성공은 **차단 실패의 재현 성공**이며 운영 차단 검증 통과가 아니다.
+
+```bash
+node scripts/verify-maintenance-bridge.mjs
+python3 -B scripts/verify-readonly-freeze-limit.py
+```
+
+첫 도구는 `next build --webpack`으로 확인하므로 실제 Vercel 후보 빌드/보호된 URL 검증을 대신하지 않는다. 실제 배포 생성은 별도 승인 범위다. 두 도구 모두 `.local-backups`에 비공개 보고서를 남기고 생성한 복사본·서버·컨테이너·네트워크를 정리한다. 기존 로컬 DB와 운영 데이터는 수정하지 않는다.
+
 ```bash
 node scripts/check-local-records.mjs snapshot .local-backups/검증-전.json
 pnpm test
@@ -59,3 +79,12 @@ node scripts/check-local-records.mjs compare .local-backups/검증-전.json
 ```
 
 리허설은 고정 로컬 Docker 컨테이너에 새 임시 DB를 만들어 복원하며, 원래 로컬 DB를 초기화하지 않는다. 파일 시험은 생성한 랜덤 경로의 PDF 하나만 추가/다운로드/정리한다. 기존 파일·계정·기록은 수정하지 않는다. 운영 URL 입력은 거절한다.
+
+## 차단 수단을 확인할 때 전달할 내용
+
+아래는 지원 가능 여부 확인용 항목이며 문의를 실제 전송한 상태가 아니다. 비밀번호·API 키·회원 기록·백업 파일은 전달하지 않는다.
+
+- 같은 프로젝트를 유지하며 public 스키마를 전환하려 한다. `default_transaction_read_only`와 DB IP 제한의 한계는 확인했다.
+- 기존 Supabase 기본 도메인의 Auth·REST/RPC·Storage 변경 요청을 잠시 거절하고 진행 중 작업을 종료시키는 지원 방법이 있는가? 유효한 기존 토큰·service-role·서명 업로드도 고려해야 한다.
+- 차단 중 관리자 DB 덤프·읽기 전용 검사·Storage 원본 파일 다운로드와 마이그레이션 접속을 유지할 수 있는가? 일부만 가능하면 제약을 명시해 달라.
+- 현재 플랜에서의 지원 여부·비용·필요 권한·소요 시간·해제/실패 복구 방법과 차단을 입증할 로그를 먼저 확인해야 한다. 계획 변경이나 유료 기능 신청은 아직 승인하지 않았다.
