@@ -1,5 +1,9 @@
 # 현재 상태 — 단일 부글부글 전환 (2026-11-08)
 
+최신 진행: 실제 운영 아카이브 `.local-backups/production-dump-20261108T052113760121Z/database.dump`의 격리 복원·전환 데이터 보존 검증을 완료했다. 운영 연결 없이 `--network none`인 별도 로컬 컨테이너에서 전체 복원, 아카이브 원본 49개 COPY 블록·시퀀스 2개·RLS 정의·파일 14개를 대조하고 두 번째 복원 DB에 02→03→04를 적용해 모든 기존 기록 보존을 확인했다. 226개 검사 통과. 실제 사용 중인 로컬 DB 17개 테이블도 전후 동일했다. 모든 시험 컨테이너는 정리했고 원래 백업/manifest는 유지했다. 생성 당시 manifest의 restore_verified=false를 고치지 않고 옆에 restore-verification.json을 추가했다. 최종 원시 보고서는 `.local-backups/production-restore-verified-20261108T053618984183Z/verification-report.json`, 공개 가능한 요약은 `docs/production-restore-verification.md`, 재현 도구는 `scripts/verify-production-restore.py`다. 역할은 비밀번호 없는 로컬 정의로 초기화했으며 스키마 예행연습은 격리 DB의 supabase_admin으로 수행했다. 실제 운영 역할 권한·Auth/OAuth·파일 HTTP 서비스 검증과 쓰기 중단 후 최종 백업은 남아 있다. 운영 DB/설정·push·배포는 계속 변경하지 않았다.
+
+아래의 “운영 덤프/복원 미실행” 문구들은 이전 단계 당시의 기록이며 최신 상태는 위 문단을 우선한다.
+
 백업 도구 두 번째 후속 수정: 사용자의 접속은 성공했지만 `PGOPTIONS`의 적용을 가정한 읽기 전용 확인에서 중단됐다. 명시적 `BEGIN READ ONLY` 안에서 상태·DB·부글부글 ID를 JSON 확인하고 롤백하도록 수정했다. `pg_dump` 자체의 읽기 전용 트랜잭션을 사용하고 잠금 대기 제한은 `--lock-wait-timeout=5s`로 지정한다. 로컬 새 임시 DB에서 기본 off → 트랜잭션 on, 쓰기 차단, 덤프·목록·복원, 원본/복원 기록 일치를 끝까지 검증했고 안전 가드 단위 테스트 9개 통과. 운영 데이터/역할/기본 설정은 변경하지 않았다. 실제 운영 덤프는 사용자 터미널에서 같은 명령으로 다시 실행해야 한다.
 
 백업 도구 후속 수정: 사용자가 실행 시 연결 오류를 보고했고, 비밀번호 없이 재현한 결과 시스템 CA에 Supabase 루트가 없어 TLS 인증서 검증이 실패한 것이었다. `scripts/certificates/`에 공식 공개 CA를 추가하고 백업 도구가 검증된 파일을 임시 로컬 컨테이너 경로로 전달하도록 수정했다. `verify-full`과 읽기 전용 옵션은 유지했다. `--diagnose`로 실제 운영 경로의 TLS/호스트 검증을 통과했고 비밀번호 인증/전체 덤프는 아직 사용자 터미널 입력이 필요하다. 원시 오류를 숨기되 원인별 한국어 메시지를 제공한다.
