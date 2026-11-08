@@ -71,10 +71,10 @@ python3 scripts/production-db-dump.py
 ## 이후 순서
 
 1. **완료:** 생성한 운영 DB 아카이브와 파일을 격리된 로컬 DB·저장 경로에 복원했다. 원래 로컬 DB는 초기화하지 않았다.
-2. **완료:** 원본 백업의 전체 레코드·권한·계정·파일 바이트와 02→03→04 적용 후 데이터 보존을 대조했다. 이후 별도 로컬 Auth/REST/Storage와 임시 계정으로 이메일 로그인·세션 갱신·파일 HTTP·브라우저 다운로드도 검증했다(18개 흐름, 92개 보존 검사). 결과는 `docs/local-service-flow-verification.md`. 실제 Google 외부 인증과 운영 역할·권한 최종 확인은 남아 있다.
+2. **완료:** 원본 백업의 전체 레코드·권한·계정·파일 바이트와 02→03→04 적용 후 데이터 보존을 대조했다. 이후 별도 로컬 Auth/REST/Storage와 임시 계정으로 이메일 로그인·세션 갱신·파일 HTTP·브라우저 다운로드도 검증했다(18개 흐름, 92개 보존 검사). 결과는 `docs/local-service-flow-verification.md`. 실제 Google 인증과 앱의 인증된 이름 등록 화면까지도 확인했다. 새 로컬 프로필 등록/승인과 운영 역할·권한 최종 확인은 별도 범위로 남아 있다.
 3. 배포 환경 분리와 외부 Auth/REST/RPC/Storage 쓰기 차단 방식을 구체화해 검증한다. 현재 외부 쓰기 차단은 미구성 상태다.
 4. 별도 운영 반영 승인 후에만 점검·쓰기 중단, 최종 DB/파일 백업, 재검증, DB 전환, 새 앱 배포, 비교, 서비스 재개를 진행한다. 구체적인 순서와 복구 기준은 `docs/single-club-cutover.md`를 따른다.
 
-Google 로그인 후속: 로컬 설정을 확인하고 실패/취소 안내와 내부 목적지 보존, 위험한 이동 주소 차단을 보완했다. 전체 단위 66개·타입 검사·분리된 운영용 빌드 통과. 계정 소유자의 실제 Google 인증 결과는 아직 대기 중이다. `docs/google-oauth-check.md`를 따른다.
+Google 로그인 후속: 로컬 설정과 실패/취소 안내·목적지 보존·위험한 이동 주소 차단을 검증했다. 전체 단위 66개·타입 검사·분리 빌드 통과. 이후 사용자가 실제 Google 인증을 완료해 인증된 이름 입력 화면(`/signup`)에 도착했다. 새 로컬 계정/Google identity 각 1개만 생성됐고 원래 기록·인증 정보·운영 백업은 보존됐다. 같은 Google 제공자 식별자의 운영 프로필/관리자 멤버십도 백업에서 확인했다. 새 로컬 이름 등록·모임 가입 승인은 제출하지 않았다. 상세 `docs/google-oauth-check.md`.
 
 참고: [Supabase 읽기 전용 옵션](https://supabase.com/docs/reference/api/v1-run-a-query), [DB 백업과 Storage 백업 범위](https://supabase.com/docs/guides/platform/backups).
