@@ -75,4 +75,6 @@ python3 scripts/production-db-dump.py
 3. 배포 환경 분리와 외부 Auth/REST/RPC/Storage 쓰기 차단 방식을 구체화해 검증한다. 현재 외부 쓰기 차단은 미구성 상태다.
 4. 별도 운영 반영 승인 후에만 점검·쓰기 중단, 최종 DB/파일 백업, 재검증, DB 전환, 새 앱 배포, 비교, 서비스 재개를 진행한다. 구체적인 순서와 복구 기준은 `docs/single-club-cutover.md`를 따른다.
 
+Google 로그인 후속: 로컬 설정을 확인하고 실패/취소 안내와 내부 목적지 보존, 위험한 이동 주소 차단을 보완했다. 전체 단위 66개·타입 검사·분리된 운영용 빌드 통과. 계정 소유자의 실제 Google 인증 결과는 아직 대기 중이다. `docs/google-oauth-check.md`를 따른다.
+
 참고: [Supabase 읽기 전용 옵션](https://supabase.com/docs/reference/api/v1-run-a-query), [DB 백업과 Storage 백업 범위](https://supabase.com/docs/guides/platform/backups).

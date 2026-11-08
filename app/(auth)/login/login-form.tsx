@@ -22,6 +22,12 @@ function LoginContent({ clubName }: { clubName: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = sanitizeNext(searchParams.get('next'));
+  const oauthError = searchParams.get('error');
+  const oauthMessage = oauthError === 'oauth_cancelled'
+    ? 'Google 로그인이 취소되었습니다. 다시 로그인해주세요.'
+    : oauthError === 'oauth_callback_failed'
+      ? '로그인을 완료하지 못했습니다. 다시 시도해주세요.'
+      : null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -61,6 +67,11 @@ function LoginContent({ clubName }: { clubName: string }) {
 
         {/* 폼 카드 */}
         <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 space-y-5">
+          {oauthMessage && (
+            <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              {oauthMessage}
+            </p>
+          )}
           <form onSubmit={signInEmail} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-stone-700">이메일</Label>
