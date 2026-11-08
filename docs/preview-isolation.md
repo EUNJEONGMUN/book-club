@@ -1,6 +1,24 @@
 # Preview 전용 DB 준비 — 2026-11-08
 
-**테스트 DB 준비는 완료했고 Vercel 연결 분리는 아직 완료하지 않았다.** 운영 DB 연결·기록은 유지했고 운영 배포/push/merge는 하지 않았다. Vercel 기존 공용 Secret의 적용 환경을 UI에서 편집할 수 없어 계정 소유자의 API 인증 단계가 남아 있다. 이 단계가 끝나기 전에는 작업 브랜치를 push하지 않는다.
+**테스트 DB 준비는 완료했고 Vercel 연결 분리는 아직 완료하지 않았다.** 사용자가 API 도구를 실행해 메일 키의 Preview 적용만 제외한 뒤 보존 검사에서 중단됐다. DB 연결 세 변수는 아직 공용이다. 읽기 전용 진단으로 표시 정보의 자동 보완을 확인했고, 수정한 `--resume`의 소유자 실행 단계가 남아 있다. 운영 배포/push/merge는 하지 않았다. 이 단계가 끝나기 전에는 작업 브랜치를 push하지 않는다.
+
+## 환경 분리 중단 진단과 수정
+
+첫 실행 보고서는 `vercel-env-20261108T121218703902Z.json`이다. 완료된 요청은 `RESEND_API_KEY`의 `target`을 `[production]`으로 바꾼 PATCH 한 건이다. 값·유형·키 이름을 요청 본문에 보내지 않았다. Supabase 세 변수나 Google 키에는 변경 요청을 보내지 않았다. 관리 화면에서도 메일 키는 Production에 남고 Preview 목록에서만 제외된 것을 확인했다.
+
+사용자가 읽기 전용 `--inspect`를 실행했다. `vercel-inspection-20261108T121648466560Z.json`에서 차이는 해당 메일 키의 **`visibility: null → secret` 한 건**뿐이었다. ID·type·그 밖의 비교 정보는 같다. 원래 10개 Production 변수 모두 API의 `value`가 빈 문자열로 가려져 있었다. 이전 도구가 이 표시 정보와 빈 값의 지문을 묶어 비교해 중단했다. **빈 표시값의 동일함은 실제 비밀값이 동일하다는 검증이 아니다.** 이 한계와 원래 검사 오류를 명시하고 실제 값 검증 완료를 주장하지 않는다.
+
+수정 도구는 직접 scope PATCH를 성공시킨 ID에 대해서만 `type=sensitive`가 유지된 상태의 `visibility: null → secret`을 허용한다. 다른 ID의 표시 변경, 키·유형·ID·불투명 값 지문 변경 등은 계속 거절한다. 검사 조건을 통째로 끄지 않았다. `--inspect`는 HTTP GET만 허용하며, `--apply`는 미해결 실패 보고서가 있으면 인증 전에 거절한다.
+
+현재 이어하기 명령:
+
+```bash
+python3 scripts/separate-preview-env.py --resume
+```
+
+`--resume`은 같은 실패 보고서의 실제 읽기 전용 진단이 존재하고, 현재 Production 정보 및 완료된 범위 변경이 그 진단과 일치할 때만 실행한다. 기존 메일 키 작업은 반복하지 않고 원래 계획의 남은 범위 변경과 테스트 키 생성만 한다. 다른 부분 적용/오류는 자동으로 덮어쓰거나 복구하지 않는다. 실제 실패 형태를 재현해 5건의 남은 scope PATCH와 Preview 전용 생성만 나가는 것을 시험했다. Python 전체 **26개 검사 통과**. 아직 이어하기 실제 API 실행 결과는 대기 중이다.
+
+중단 후 운영 DB의 8개 테이블 전체 행도 첫 기준과 동일했고, 계정 23개·Storage 14개·운영 최신 버전01과 아카이브 해시가 유지됐다. 추가 운영 쓰기/배포는 하지 않았다. 근거는 같은 비공개 폴더의 `production-preservation-after-stop.json`, `visibility-diagnosis-review.json`이다.
 
 ## 준비한 테스트 환경
 
@@ -33,9 +51,9 @@
 
 ## 계정 소유자가 실행할 환경변수 전용 도구
 
-`scripts/separate-preview-env.py`를 준비했다. 계정 소유자가 [Vercel 토큰 관리](https://vercel.com/account/settings/tokens)에서 `scone’s projects` 범위의 짧은 만료 기간을 가진 임시 API 토큰을 직접 생성해 사용한다. 토큰 자체는 팀의 다른 리소스를 관리할 권한을 가질 수 있으므로 이 도구에만 숨김 입력하고 작업 후 본인이 폐기한다. 토큰을 채팅에 보내거나 파일/셸 인자에 넣지 않는다.
+`scripts/separate-preview-env.py`를 준비했다. 계정 소유자가 [Vercel 토큰 관리](https://vercel.com/account/settings/tokens)에서 `scone’s projects` 안의 `book-club` 프로젝트 범위와 짧은 만료 기간을 가진 임시 API 토큰을 직접 생성해 사용한다. 토큰 자체는 해당 프로젝트의 다른 자원을 관리할 권한을 가질 수 있으므로 이 도구에만 숨김 입력하고 작업 후 본인이 폐기한다. 토큰을 채팅에 보내거나 파일/셸 인자에 넣지 않는다.
 
-프로젝트 폴더에서 본인 터미널로 실행한다:
+아래는 실패 이력이 없는 최초 실행용 명령이다. **현재 중단 건에는 위의 `--resume`을 사용한다.** 프로젝트 폴더에서 본인 터미널로 실행한다:
 
 ```bash
 python3 scripts/separate-preview-env.py --apply
@@ -46,11 +64,11 @@ python3 scripts/separate-preview-env.py --apply
 1. 고정 Vercel 프로젝트 `prj_hKx77tEnplZb6H7gZuvCMKjRyiDE` (`book-club`)인지 확인한다.
 2. 공용 Supabase 세 변수 및 메일/Google Secret에서 **Preview 적용만** 제외한다. 기존 Production 항목의 ID·값·유형은 교체하지 않는다. PATCH 요청에는 `target`만 허용한다.
 3. 검증된 테스트 프로젝트의 주소·anon·service-role 세 값을 **Preview 전용**으로 추가한다. 키의 JWT 프로젝트/역할도 확인한다. 메일 발송 키와 기존 Google Secret은 Preview에 새로 넣지 않는다.
-4. Production 변수들의 ID·유형·불투명 값 지문과 최종 환경 범위를 전후 대조한다. 원문 값을 출력/저장하지 않는다. Secret이 API에서 완전히 가려진 경우 원문 대조 대신 기존 항목 식별 및 값 쓰기 금지 조건을 유지한다.
+4. Production 변수들의 ID·유형·표시 정보와 최종 환경 범위를 전후 대조한다. 관측한 Secret 표시 정보 자동 보완만 해당 요청의 ID에 한해 허용한다. 원문 값을 출력/저장하지 않는다. API 응답의 빈 Secret 표시값은 원문 대조로 취급하지 않고, 기존 항목 식별 및 Production 값 쓰기 금지 조건을 유지한다.
 
-삭제·프로젝트 설정·배포 API는 도구에서 거절한다. 인증서는 검증하고 리다이렉트를 따라 토큰을 전달하지 않는다. 토큰은 메모리에서만 사용하며 보고서는 같은 비공개 폴더에 저장한다. 안전 가드 6개를 포함한 Python 검사 전체 21개 통과. **실제 Vercel API 실행은 아직 인증 정보가 없어 미실행**이다.
+삭제·프로젝트 설정·배포 API는 도구에서 거절한다. 인증서는 검증하고 리다이렉트를 따라 토큰을 전달하지 않는다. 토큰은 메모리에서만 사용하며 보고서는 같은 비공개 폴더에 저장한다. 안전 가드·부분 재개 시험을 포함한 Python 전체 26개 통과. 실제 첫 실행과 읽기 전용 진단은 수행했고 이어하기는 아직 대기 중이다.
 
-성공 시 `Preview settings separated; Production variable records/fingerprints preserved. No deployment created.`와 보고서 경로가 표시된다. 실패하면 보고서를 먼저 확인하고 임의 재실행/공용 변수 삭제/키 재발급을 하지 않는다. 부분 적용 시에도 운영 키를 Preview에 다시 연결해 오류를 숨기지 않는다.
+성공 시 `Preview settings separated; Production variable records preserved. No deployment created.`와 보고서 경로가 표시된다. Production 값 쓰기 요청은 0건이며 Secret 원문은 가려져 별도 값 대조를 하지 못했다는 안내도 표시한다. 실패하면 보고서를 먼저 확인하고 임의 재실행/공용 변수 삭제/키 재발급을 하지 않는다. 부분 적용 시에도 운영 키를 Preview에 다시 연결해 오류를 숨기지 않는다.
 
 ## 연결 분리 후 검증
 
