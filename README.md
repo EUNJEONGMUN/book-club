@@ -200,9 +200,10 @@ pnpm dlx supabase start           # 로컬 컨테이너 기동
 pnpm dlx supabase stop
 pnpm exec supabase migration up --local  # 기존 데이터 보존하며 변경 적용
 pnpm dlx supabase migration up --local
-pnpm dlx supabase db push --linked
 pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 ```
+
+운영 DB 적용은 일반 개발 명령에 포함하지 않는다. 단일 모임 전환은 `docs/single-club-cutover.md`의 백업·쓰기 중단·검증 순서를 따른다.
 
 ---
 
@@ -235,7 +236,9 @@ pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Google OAuth | server only |
 | `SENTRY_AUTH_TOKEN` | Source map 업로드 (Vercel 빌드 전용) | server only |
 
-Vercel 콘솔에서는 Production / Preview / Development 환경에 모두 동일하게 설정.
+Vercel의 Production / Preview / Development는 환경별로 분리한다. Production의 Supabase 주소·anon 키·service-role 키를 Preview/Development에 복사하지 않는다. Preview에는 별도 검증 DB의 같은 프로젝트에 속한 세 값을 함께 설정하고, 실회원 없는 시험 데이터를 사용한다. 로컬은 로컬 Supabase만 사용한다.
+
+2026-11-08 읽기 전용 점검에서는 기존 Supabase 세 변수가 **Production and Preview 공용**이었다. 아직 원격 설정을 변경하지 않았으므로 새 브랜치를 push하기 전에 분리해야 한다. Preview의 실제 메일 발송도 분리/중지하고 시험 주소·OAuth 반환 주소를 별도로 지정한다. 확인 결과와 구체적인 변경안은 `docs/deployment-readiness-audit.md`를 따른다.
 `SENTRY_AUTH_TOKEN` 은 로컬에 두지 않고 (`.env.sentry-build-plugin` 은 wizard 생성 시 자동으로 gitignored) Vercel 환경변수로만 관리.
 
 ---
@@ -259,12 +262,10 @@ pnpm test:integration
 - **GitHub** — 푸시 → Vercel 자동 빌드
 
 ### 배포 파이프라인
-```
-git push origin main
-  └→ Vercel 자동 빌드/배포 (icn1)
-DB 마이그레이션이 있을 때:
-  pnpm dlx supabase db push --linked   # 클라우드 DB에 증분 적용
-```
+
+현재 Vercel은 main 변경 시 운영 배포와 운영 도메인 자동 연결이 켜져 있다. 다른 브랜치는 자동 Preview를 만든다. GitHub CI는 타입·단위 검사만 수행하며 DB 전환을 실행하지 않는다.
+
+단일 모임 앱은 기존 운영 DB 구조와 호환되지 않으므로 단순 push/merge를 운영 전환 절차로 사용하지 않는다. Preview의 운영 연결을 먼저 분리하고, 구 앱 호환 점검 브리지 → 외부 쓰기 차단 → 최종 백업/복원 검증 → DB 전환 → 보호된 새 앱 확인 → 재개 순서로 진행한다. 상세는 `docs/single-club-cutover.md`를 따른다. 실제 원격 설정·DB 변경·push·배포는 별도 승인 범위다.
 
 ---
 

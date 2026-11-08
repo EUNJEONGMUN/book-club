@@ -74,6 +74,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backup", required=True, help="Production dump directory under .local-backups")
     parser.add_argument("--records", required=True, help="Earlier read-only records/file copy directory")
+    parser.add_argument("--postgres-rehearsal", action="store_true",
+                        help="Rehearse as non-superuser postgres with the hosted Storage policy grant")
     args = parser.parse_args()
     os.umask(0o077)
     backup = private_path(args.backup)
@@ -152,6 +154,13 @@ def main():
         init = ("(initdb -D /tmp/restore-data -U supabase_admin --auth=trust --encoding=UTF8 --locale=C >/tmp/initdb.log 2>&1 || "
                 "{ cat /tmp/initdb.log; exit 1; }) && "
                 "exec postgres -D /tmp/restore-data -c listen_addresses= -c unix_socket_directories=/tmp -c shared_preload_libraries=")
+        if args.postgres_rehearsal:
+            # This offline clone gets only the policy grant required by migration 03.
+            # The hosted catalog was inspected read-only; never change managed owners.
+            init += (" -c session_preload_libraries=supautils"
+                     " -c supautils.superuser=supabase_admin"
+                     " -c supautils.privileged_role=supabase_privileged_role"
+                     " -c 'supautils.policy_grants={\"postgres\":[\"storage.objects\"]}'")
         started = run(["docker", "run", "--detach", "--pull", "never", "--network", "none", "--name", container_name,
                        "--label", "book-club.restore-verification=true", "--user", "postgres",
                        "--tmpfs", "/tmp:rw,mode=1777,size=536870912", "--entrypoint", "/bin/sh", image, "-c", init], "start-container")
@@ -261,7 +270,16 @@ def main():
             actual = inside(["sha256sum", "--", path], "restored-file-checksum").stdout.split()[0].decode()
             require(actual == item["sha256"], "restored file bytes match " + item["id"])
         print("Archive records, accounts, policies, sequences and all file bytes match. Rehearsing conversion on a second copy.", flush=True)
-        sql("CREATE DATABASE " + MIGRATION_DB + " WITH TEMPLATE " + BASE_DB + " OWNER supabase_admin;", "postgres", BOOTSTRAP_USER)
+        migration_role = "postgres" if args.postgres_rehearsal else "supabase_admin"
+        sql("CREATE DATABASE " + MIGRATION_DB + " WITH TEMPLATE " + BASE_DB + " OWNER " + migration_role + ";", "postgres", BOOTSTRAP_USER)
+        if args.postgres_rehearsal:
+            role_state = json.loads(sql("SELECT jsonb_build_object('user',current_user,'superuser',current_setting('is_superuser'),'database_create',has_database_privilege(current_database(),'CREATE'),'storage_owner',pg_get_userbyid((SELECT relowner FROM pg_class WHERE oid='storage.objects'::regclass)),'owns_storage',pg_has_role((SELECT relowner FROM pg_class WHERE oid='storage.objects'::regclass),'USAGE'),'policy_grants',current_setting('supautils.policy_grants')::jsonb);", MIGRATION_DB, migration_role).stdout)
+            require(role_state == {"user": "postgres", "superuser": "off", "database_create": True,
+                                   "storage_owner": "supabase_storage_admin", "owns_storage": False,
+                                   "policy_grants": {"postgres": ["storage.objects"]}},
+                    "non-superuser postgres uses managed Storage policy grant without ownership")
+            require(all(row["owner"] == "postgres" for row in json.loads(sql("SELECT jsonb_agg(jsonb_build_object('owner',tableowner)) FROM pg_tables WHERE schemaname='public';", MIGRATION_DB).stdout)),
+                    "application table owners match hosted postgres role")
         migrations = []
         for version in ("20261108000002", "20261108000003", "20261108000004"):
             paths = list((ROOT / "supabase/migrations").glob(version + "_*.sql"))
@@ -269,7 +287,7 @@ def main():
                 raise RuntimeError("Unexpected migration file set.")
             body = paths[0].read_bytes()
             migrations.append({"name": paths[0].name, "sha256": digest(body)})
-            sql(body.decode(), MIGRATION_DB, "supabase_admin")
+            sql(body.decode(), MIGRATION_DB, migration_role)
         after = snapshot(MIGRATION_DB)
         save(folder, "converted-records.json", after)
         project = lambda rs, omit: [{k: v for k, v in row.items() if k not in omit} for row in rs]
@@ -299,7 +317,7 @@ def main():
             "restored_files_verified": len(files), "public_counts": {k: len(v) for k, v in before.items() if k.startswith("public.")},
             "auth_users": len(before["auth.users"]), "auth_identities": len(before["auth.identities"]),
             "migrations": migrations, "checks": checks,
-            "schema_rehearsal_role": "supabase_admin",
+            "schema_rehearsal_role": migration_role,
             "limitations": ["cluster roles bootstrapped from password-free local role definitions, not a production roles backup",
                             "online DB and file copies were taken at different times; final write-frozen backup is still required",
                             "file bytes restored offline; Auth service/OAuth providers and Storage HTTP API were not started"],
