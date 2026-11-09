@@ -205,6 +205,8 @@ pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 
 운영 DB 적용은 일반 개발 명령에 포함하지 않는다. 단일 모임 전환은 `docs/single-club-cutover.md`의 백업·쓰기 중단·검증 순서를 따른다. 현재 단계·중단 기준과 로컬 사전 검사 사용법은 [운영 실행 체크리스트](docs/production-execution-checklist.md)를 참조한다. 사전 검사 성공은 운영 실행 승인이 아니다.
 
+2026-11-09 별도 관리형 테스트에서 실제 실행 도구의 전환·쓰기 차단·백업 복원·복구·해제 **337개 검사**와 안전 검사44개를 통과했다. 기존 테스트 계정·기록·파일은 보존했고 이번 작업에서 운영 연결·배포는 하지 않았다. [검증 범위와 남은 조건](docs/hosted-cutover-verification.md)을 따른다. 도구는 테스트 전용이며 운영 대상으로 사용할 수 없다.
+
 ---
 
 ## 외부 API 키 발급 가이드
