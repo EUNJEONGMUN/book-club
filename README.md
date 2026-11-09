@@ -209,6 +209,8 @@ pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 
 이후 [배포·복구 후보 소스](docs/release-candidate-preparation.md) 3개의 고정 패키지와 Node24/기본 Next 빌드3개·로컬 응답23개·안전 검사48개를 확인했다. 실제 Vercel 후보 배포는 아직 생성하지 않았고 main 병합·운영 DB 변경도 보류한다.
 
+2026-11-10 [운영 실행·최종 백업·실제 복원 연결](docs/operational-backup-linkage.md) 4흐름67개·복원390개·안전59개를 통과했다. 전체 Auth 차단 중 갱신 HTTP500에 현재 SDK가 로그인 정보를 지울 수 있음을 확인해 **실제 운영 실행은 코드에서 차단**했다. 운영 DB·배포에는 적용하지 않았으며 기존 로그인 보존 방식을 보완하기 전 실행하지 않는다.
+
 ---
 
 ## 외부 API 키 발급 가이드
