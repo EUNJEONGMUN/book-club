@@ -207,6 +207,8 @@ pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 
 2026-11-09 별도 관리형 테스트에서 실제 실행 도구의 전환·쓰기 차단·백업 복원·복구·해제 **337개 검사**와 안전 검사44개를 통과했다. 기존 테스트 계정·기록·파일은 보존했고 이번 작업에서 운영 연결·배포는 하지 않았다. [검증 범위와 남은 조건](docs/hosted-cutover-verification.md)을 따른다. 도구는 테스트 전용이며 운영 대상으로 사용할 수 없다.
 
+이후 [배포·복구 후보 소스](docs/release-candidate-preparation.md) 3개의 고정 패키지와 Node24/기본 Next 빌드3개·로컬 응답23개·안전 검사48개를 확인했다. 실제 Vercel 후보 배포는 아직 생성하지 않았고 main 병합·운영 DB 변경도 보류한다.
+
 ---
 
 ## 외부 API 키 발급 가이드
