@@ -14,8 +14,8 @@ export function LogoutButton() {
     router.refresh();
   }
   return (
-    <Button variant="outline" className="w-full" onClick={onClick}>
-      <LogOut className="w-4 h-4 mr-2" /> 로그아웃
+    <Button variant="outline" className="h-12 w-full gap-2 rounded-xl border-stone-200 bg-stone-50 text-sm font-medium text-stone-800 hover:bg-stone-100" onClick={onClick}>
+      <LogOut className="size-4" /> 로그아웃
     </Button>
   );
 }
