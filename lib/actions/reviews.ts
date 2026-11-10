@@ -62,6 +62,8 @@ export async function upsertMyReview(
 
 export async function deleteMyReview(meetingId: string): Promise<ActionResult> {
   const supabase = await getSupabaseServer();
+  const { data: meeting } = await supabase.from('meetings').select('id').eq('id', meetingId).maybeSingle();
+  if (!meeting) return { ok: false, error: '모임을 찾을 수 없습니다.' };
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: '로그인이 필요합니다.' };
 

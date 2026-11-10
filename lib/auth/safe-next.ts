@@ -3,5 +3,8 @@
 // (protocol-relative) or `/\` (Windows path that some routers misinterpret).
 export function sanitizeNext(raw: string | null | undefined): string {
   if (!raw) return '/';
-  return raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/\\') ? raw : '/';
+  // URL parsing removes tabs/newlines before resolving the destination. Reject
+  // controls and backslashes first so `/\t/example.com` cannot become `//...`.
+  if (/[\u0000-\u001f\u007f\\]/.test(raw)) return '/';
+  return raw.startsWith('/') && !raw.startsWith('//') ? raw : '/';
 }

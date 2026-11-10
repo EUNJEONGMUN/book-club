@@ -1,8 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/lib/database.types';
+import { maintenanceResponse } from '@/lib/maintenance';
 
 export async function updateSession(req: NextRequest) {
+  const maintenance = maintenanceResponse(req);
+  if (maintenance) return maintenance;
   let res = NextResponse.next({ request: req });
 
   const supabase = createServerClient<Database>(

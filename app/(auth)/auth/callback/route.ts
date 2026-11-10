@@ -6,10 +6,22 @@ export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url);
   const code = searchParams.get('code');
   const safeNext = sanitizeNext(searchParams.get('next'));
+  const failed = (error: 'oauth_cancelled' | 'oauth_callback_failed') => {
+    const url = new URL('/login', origin);
+    url.searchParams.set('error', error);
+    if (safeNext !== '/') url.searchParams.set('next', safeNext);
+    return NextResponse.redirect(url);
+  };
 
-  if (code) {
+  if (searchParams.has('error') || !code) {
+    return failed(searchParams.get('error') === 'access_denied' ? 'oauth_cancelled' : 'oauth_callback_failed');
+  }
+  try {
     const supabase = await getSupabaseServer();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) return failed('oauth_callback_failed');
+  } catch {
+    return failed('oauth_callback_failed');
   }
   return NextResponse.redirect(new URL(safeNext, origin));
 }

@@ -4,17 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Crown, Loader2 } from 'lucide-react';
-import { transferAdmin } from '@/lib/actions/club-members';
+import { transferAdmin } from '@/lib/actions/club';
 import { Button } from '@/components/ui/button';
-import type { ClubActiveMember } from '@/lib/queries/clubs';
+import type { ActiveMember } from '@/lib/queries/club';
 
 export function AdminTransferSection({
-  clubId,
   activeMembers,
   currentUserId,
 }: {
-  clubId: string;
-  activeMembers: ClubActiveMember[];
+  activeMembers: ActiveMember[];
   currentUserId: string;
 }) {
   const router = useRouter();
@@ -28,7 +26,7 @@ export function AdminTransferSection({
     if (!target) return;
     if (!confirm(`${target.display_name} 님에게 관리자 권한을 이양할까요? 이양 후엔 본인이 일반 멤버가 됩니다.`)) return;
     setTransferring(true);
-    const result = await transferAdmin(clubId, selected);
+    const result = await transferAdmin(selected);
     setTransferring(false);
     if (!result.ok) {
       toast.error(result.error);

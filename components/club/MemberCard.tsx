@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import type { ClubMemberWithStats, MemberHistoryItem } from '@/lib/queries/clubs';
+import type { MemberWithStats, MemberHistoryItem } from '@/lib/queries/club';
 
 type Props = {
-  member: ClubMemberWithStats;
+  member: MemberWithStats;
   /** undefined = 권한 없음(토글 안 보임). 빈 배열 = 권한 있지만 이력 없음. */
   history?: MemberHistoryItem[];
   defaultExpanded?: boolean;

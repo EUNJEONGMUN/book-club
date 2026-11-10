@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
 import { Resend } from 'resend';
-import { getSupabaseServer } from '@/lib/supabase/server';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 const FROM_ADDRESS = process.env.RESEND_FROM ?? 'onboarding@resend.dev';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://book-club-five-nu.vercel.app';
@@ -8,12 +8,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://book-club-five-nu.
 /**
  * 가입 신청이 들어오면 클럽 admin들에게 이메일로 알림.
  * - RESEND_API_KEY 없으면 조용히 no-op (개발 환경 등)
- * - 발송 실패해도 호출자(applyToClub 등) 흐름은 깨지지 않게 — 호출은 fire-and-forget
+ * - 발송 실패해도 호출자(applyForMembership 등) 흐름은 깨지지 않게 — 호출은 fire-and-forget
  * - 무료 Resend onboarding 도메인(`onboarding@resend.dev`)은 Resend 계정 본인 이메일에만
  *   발송 가능. 그 외 수신자 보내려면 RESEND_FROM 에 검증된 도메인 주소 설정 필요.
  */
 export async function notifyAdminsOnApply(opts: {
-  clubId: string;
   clubName: string;
   applicantDisplayName: string;
 }): Promise<void> {
@@ -21,10 +20,8 @@ export async function notifyAdminsOnApply(opts: {
   if (!apiKey) return; // 환경 미설정 — 조용히 skip
 
   try {
-    const supabase = await getSupabaseServer();
-    const { data: rows, error } = await supabase.rpc('get_club_admin_emails', {
-      target_club_id: opts.clubId,
-    });
+    const supabase = getSupabaseAdmin();
+    const { data: rows, error } = await supabase.rpc('get_admin_emails');
     if (error) {
       console.error('[notifyAdminsOnApply] rpc error', error);
       Sentry.captureException(error, { tags: { notification: 'admin-apply' } });
@@ -36,7 +33,7 @@ export async function notifyAdminsOnApply(opts: {
     if (emails.length === 0) return;
 
     const resend = new Resend(apiKey);
-    const applicantsUrl = `${SITE_URL}/clubs/${opts.clubId}/applicants`;
+    const applicantsUrl = `${SITE_URL}/more/applicants`;
     const subject = `[부글부글] ${opts.clubName}에 새 가입 신청`;
 
     // 개별 발송 (admin들끼리 서로 이메일 노출 방지)

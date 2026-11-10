@@ -65,12 +65,11 @@ async function fetchBookCoverDataUri(url: string): Promise<string | null> {
   return null;
 }
 
-async function isClubMember(clubId: string, userId: string): Promise<boolean> {
+async function isMember(userId: string): Promise<boolean> {
   const supabase = await getSupabaseServer();
   const { data } = await supabase
-    .from('club_members')
+    .from('members')
     .select('role')
-    .eq('club_id', clubId)
     .eq('user_id', userId)
     .maybeSingle();
   return data?.role === 'admin' || data?.role === 'member';
@@ -95,7 +94,7 @@ export async function GET(
     const meeting = await getMeetingDetail(id);
     if (!meeting) return new Response('Not found', { status: 404 });
 
-    const allowed = await isClubMember(meeting.club_id, user.id);
+    const allowed = await isMember(user.id);
     if (!allowed) return new Response('Forbidden', { status: 403 });
 
     // 폰트 — import.meta.url 기반 (각자 독립 try, 실패해도 진행)

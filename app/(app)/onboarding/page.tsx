@@ -1,82 +1,11 @@
-'use client';
-
-import { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
-import { Plus, Key, Loader2 } from 'lucide-react';
-import { applyToClub } from '@/lib/actions/club-members';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-
-export default function OnboardingPage() {
-  const router = useRouter();
-  const [code, setCode] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  async function handleCodeSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    const result = await applyToClub(code);
-    if (!result.ok) {
-      setSubmitting(false);
-      toast.error(result.error);
-      return;
-    }
-    toast.success(`${result.clubName}에 가입 신청을 보냈어요. 관리자 승인을 기다려주세요.`);
-    setSubmitting(false);
-    router.push('/clubs');
-    router.refresh();
-  }
-
-  return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center space-y-2">
-          <div className="text-4xl">📖</div>
-          <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">시작하기</h1>
-          <p className="text-sm text-stone-500">새 그룹을 만들거나 초대코드로 가입할 수 있어요</p>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 space-y-5">
-          <Link href="/clubs/new" className="block">
-            <Button className="w-full bg-stone-800 hover:bg-stone-700 text-white gap-2">
-              <Plus className="w-4 h-4" />
-              새 그룹 만들기
-            </Button>
-          </Link>
-
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-stone-100" />
-            <span className="text-xs text-stone-400">또는</span>
-            <div className="flex-1 h-px bg-stone-100" />
-          </div>
-
-          <form onSubmit={handleCodeSubmit} className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="code" className="text-stone-700">초대코드 또는 링크</Label>
-              <Input
-                id="code"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                placeholder="ABC-XYZ-123 또는 초대 URL 전체"
-                className="bg-stone-50 border-stone-200 focus:bg-white"
-              />
-            </div>
-            <Button
-              type="submit"
-              variant="outline"
-              disabled={submitting || code.trim().length === 0}
-              className="w-full gap-2"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
-              초대코드로 가입
-            </Button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
+import { getClubName } from '@/lib/club-name';
+import { redirect } from 'next/navigation';
+import { getMembership } from '@/lib/auth/membership';
+import OnboardingForm from './onboarding-form';
+export default async function OnboardingPage() {
+  const membership = await getMembership();
+  if (!membership) redirect('/login');
+  if (membership.role === 'admin' || membership.role === 'member') redirect('/');
+  if (membership.role === 'pending') redirect('/pending');
+  return <OnboardingForm clubName={await getClubName()} />;
 }

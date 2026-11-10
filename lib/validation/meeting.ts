@@ -12,7 +12,6 @@ const optionalWithPlaceholder = (placeholder: string, max: number) =>
     .transform((v) => (v && v.length > 0 ? v : placeholder));
 
 export const meetingFormSchema = z.object({
-  club_id: z.string().uuid('잘못된 그룹 id'),
   book_title: optionalWithPlaceholder('미정', 200),
   // 저자는 비어도 됨 (책 자체가 미정이면 저자도 자연스럽게 비움)
   book_author: z.string().trim().max(100).optional().default(''),

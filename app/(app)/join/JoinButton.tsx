@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2, Check } from 'lucide-react';
-import { applyToClub } from '@/lib/actions/club-members';
+import { applyForMembership } from '@/lib/actions/club';
 import { Button } from '@/components/ui/button';
 
 export function JoinButton({ token }: { token: string }) {
@@ -17,7 +17,7 @@ export function JoinButton({ token }: { token: string }) {
   async function submit() {
     if (submitting || submitted) return;
     setSubmitting(true);
-    const result = await applyToClub(token);
+    const result = await applyForMembership(token);
     if (!result.ok) {
       setSubmitting(false);
       toast.error(result.error);

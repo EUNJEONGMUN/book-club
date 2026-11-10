@@ -1,6 +1,12 @@
 # 부글부글 — 독서모임 이벤트 관리 웹
 
-소규모 독서모임을 위한 **모바일 우선** 웹 앱. 모임 일정과 참석, 책 정보, 발제문(질문 + 자료 PDF), 멤버 관리를 한 곳에서 처리한다. 호스트는 PDF 발제 자료를 올려두고 AI가 추출한 토론 질문 초안을 검수해 등록할 수 있다.
+독서모임 **부글부글 전용 모바일 우선** 웹 앱. 모임 일정과 참석, 책 정보, 발제문(질문 + 자료 PDF), 멤버 관리를 한 곳에서 처리한다. 호스트는 PDF 발제 자료를 올려두고 AI가 추출한 토론 질문 초안을 검수해 등록할 수 있다.
+
+현재 로컬 DB는 단일 모임 구조로 전환되었다. 홈 `/`, 일정 `/meetings`, 멤버 `/members`, 설정 `/more`, 가입 신청 관리 `/more/applicants`, 승인 대기 `/pending`을 사용한다. 기존 부글부글 주소는 유지된 `legacy_club_id`로 새 주소에 연결한다. `BOOK_CLUB_ID` 환경변수는 더 이상 필요하지 않다.
+
+DB는 `club_settings`(한 행), `members`(사용자당 한 행), `invites`와 기존 일정·발제·참석·한줄 평 테이블을 사용한다. 기존 일정 ID·파일 경로·사용자 계정·초대코드는 보존한다. 이전 그룹 테이블과 변경 전 프로필·일정은 외부 API에서 접근할 수 없는 `legacy_multiclub` 스키마에 보관한다. 회원 자격·관리자 권한은 `members.role`이 기준이며, 예전 `profiles.is_admin` 값은 보관본에만 남는다.
+
+**운영에는 아직 2단계를 적용하지 않았다.** 적용 전 전체 DB·Storage 백업, 대상 부글부글과 관리자 확인, 마이그레이션 전후 보존 검사 및 권한 시험이 필요하다. 다른 그룹에 일정이 있거나 검증된 부글부글 UUID가 유일하게 식별되지 않으면 마이그레이션이 중단된다. 복수 그룹의 멤버십을 합치지 않는다. 상세 검증·백업 절차는 `docs/bootstrap.md`를 참고한다.
 
 > 운영 도메인 외에 로컬에서도 동일하게 구동되도록 Supabase CLI 기반의 마이그레이션·시드 흐름을 갖춘다. 운영은 Vercel(서울 리전) + Supabase Cloud.
 
@@ -48,7 +54,7 @@
 | 외부 API | Kakao Book Search, Kakao Local Search, **Google Gemini 2.5 Flash** |
 | 알림 | sonner (toast) |
 | 날짜 | date-fns (한국어 로케일) |
-| 테스트 | Vitest (단위) + Playwright (E2E) |
+| 테스트 | Vitest (단위·로컬 Postgres/RLS) + Playwright (조회 전용 E2E) |
 | 패키지 매니저 | pnpm |
 | 호스팅 | Vercel (icn1·서울) + Supabase Cloud |
 
@@ -58,16 +64,19 @@
 
 ```
 app/
-  (auth)/                      로그인·회원가입·승인 대기·OAuth 콜백
+  (auth)/                      로그인·회원가입·OAuth 콜백
   (app)/                       인증 필수 영역
     page.tsx                   홈 (다음 모임 카드 + 참석 토글/현황)
     meetings/
       page.tsx                 모임 목록 (다가오는·지난)
       new/page.tsx             신규 모임 등록
-      [id]/
+      [meetingId]/
         page.tsx               모임 상세 (발제문 중심)
         edit/                  모임 정보 수정
-    more/                      설정 (멤버/내 발제/프로필)
+    members/                   멤버·참여 이력
+    pending/                   가입 승인 대기
+    more/                      모임 설정·관리자 기능·내 프로필
+    clubs/                     예전 주소 연결 전용
 components/
   ui/                          shadcn/ui 기본 컴포넌트 (button, dialog, dropdown-menu...)
   layout/                      BottomNav 등 레이아웃
@@ -77,7 +86,7 @@ components/
                                DiscussionFileUploader / CandidateQuestionsEditor /
                                DiscussionQuestionForm / DiscussionQuestionList /
                                MarkdownEditor
-  member/                      MemberCard (이력 펼침)
+  club/                        모임 정보·멤버 카드·초대·가입 신청·관리자 이양
   profile/                     AvatarUploader
 lib/
   supabase/                    클라이언트 4종 (client/server/middleware/admin)
@@ -89,8 +98,11 @@ lib/
     book-search.ts             Kakao 책 검색
     location-search.ts         Kakao 로컬 검색
     profile.ts                 프로필 수정, 아바타 업로드
-    admin.ts                   관리자 승인
-  queries/                     조회 (getNextMeeting / getMeetingDetail / 멤버 이력 등)
+    club.ts                    가입 신청·승인·초대·모임 설정·관리자 이양
+  auth/membership.ts           단일 모임의 가입 상태·접근 권한
+  services/                    내부 멤버십·설정·초대 처리
+  queries/club.ts              단일 모임·멤버·이력 조회
+  legacy-club-url.ts           예전 주소 연결에만 사용하는 ID 조회
   validation/                  Zod 스키마
   types.ts                     도메인 타입
   database.types.ts            Supabase 자동 생성 타입
@@ -99,7 +111,8 @@ supabase/
   config.toml                  로컬 Supabase 설정
   seed.sql                     로컬 개발용 시드 (admin 계정)
 scripts/
-  test-gemini-extract.mjs      Gemini 프롬프트 반복 테스트용 스탠드얼론 스크립트
+  test-gemini-extract.mjs      Gemini 프롬프트 반복 테스트
+  check-local-records.mjs     현재/보관 기록의 전후 보존 비교
 tests/
   e2e/                         Playwright 시나리오
 middleware.ts                  인증·승인 가드
@@ -109,32 +122,14 @@ vercel.json                    리전 icn1 고정
 
 ---
 
-## DB 스키마 (Supabase, multi-tenant)
+## DB 스키마 (단일 모임)
 
-```
-auth.users  (Supabase 내장)
-   │ 1:1
-   ▼
-profiles                clubs                       club_invites
-─ id (=auth.users)      ─ id                        ─ id
-─ display_name          ─ name, description         ─ club_id  ─ FK clubs
-─ avatar_url            ─ created_by ─ FK profiles  ─ token (unique)
-                                                    ─ created_by, expires_at, revoked_at
-club_members (composite PK: club_id+user_id)
-─ club_id    ─ FK clubs
-─ user_id    ─ FK profiles
-─ role       enum: admin / member / pending
-─ joined_at
-
-meetings                    discussion_questions      attendances
-─ id                        ─ id                       ─ meeting_id  ─ FK meetings
-─ club_id  ─ FK clubs       ─ meeting_id  ─ FK meetings ─ user_id     ─ FK profiles
-─ host_id  ─ FK profiles    ─ order_idx, content       ─ status (attending/not_attending/undecided)
-─ book_title, book_author                              UNIQUE(meeting_id, user_id)
-─ book_cover_url, scheduled_at
-─ location_name/url/address
-─ discussion_file_url, discussion_file_name
-```
+- `auth.users` → `profiles` → `members(user_id PK, role, joined_at)`
+- `club_settings(id=1, legacy_club_id, name, description, created_by, created_at, updated_at)`
+- `invites(id, token, created_by, created_at, expires_at, revoked_at)`
+- `meetings(id, host_id, 책·일시·장소·발제 파일 정보)` — `club_id` 없음
+- `discussion_questions`, `attendances`, `meeting_reviews` — 기존 `meeting_id`·`user_id` 관계 유지
+- `legacy_multiclub` — 이전 그룹·멤버십·초대 및 프로필·일정 원본. public API에 노출하지 않음
 
 ### Storage 버킷
 
@@ -145,37 +140,27 @@ meetings                    discussion_questions      attendances
 | `discussion-files` | 발제 PDF/이미지 | 20MB | ✅ |
 
 ### RLS 정책 요약
-- 모든 테이블 `authenticated` 만 접근. 권한 강제는 RLS + 일부 SECURITY DEFINER 함수 조합
-- `clubs`/`club_members`/`club_invites`: `is_club_member(club_id)` / `is_club_admin(club_id)` 헬퍼로 스코핑 (자세한 정책은 `supabase/migrations/20260609000001_multi_tenant_schema.sql` 및 `20260611000003_phase_a_cleanup.sql`)
-- `meetings`/`attendances`/`discussion_questions`: 클럽 멤버만 조회. 작성·수정·삭제는 host (RLS) + Server Action 레벨 `assertHost` 이중 가드
-- 가입 신청은 `apply_to_club(token)` SECURITY DEFINER 함수가 token 검증 후 `club_members(role='pending')` row 생성 (RLS 우회)
-- 관리자 승인은 server action `approveMember`가 RLS만 의지 (admin이 아니면 update 0 rows로 차단, action에서 row count 체크해 false로 응답)
-- 발제 파일 업로드 액션은 호출자 검증 후에만 storage 객체 생성·삭제
+- 승인된 `members`의 `admin`·`member`만 모임·발제·참석을 조회한다. 승인 대기자는 본인의 신청 상태만 확인한다.
+- `is_member()`·`is_admin()`으로 자격을 검사한다. 일정 수정·삭제와 발제 자료 변경은 해당 일정의 호스트만 가능하다.
+- 참석은 본인 또는 호스트·관리자가 변경할 수 있다. 지난 참석의 일반 멤버 변경 제한은 서버에서도 검사한다.
+- `apply_for_membership(token)`은 유효한 초대코드만 받아 pending 멤버십을 생성한다. 중복 신청은 기존 역할·가입 시각을 유지한다.
+- 관리자는 pending → member 승인과 거절, 초대 발급, 관리자 이양을 수행한다. 사용자 ID·이전 모임 ID는 API로 수정할 수 없다.
+- `club_settings`는 한 행이며 일반 API에 생성·전체 삭제 권한이 없다. `legacy_multiclub` 보관 스키마도 외부 API에 노출하지 않는다.
+- 비공개 한줄 평은 작성자만 조회한다. 익명 표시의 작성자 마스킹은 현재 앱 서버에서 수행한다.
+- 발제 파일 경로와 공개 다운로드 URL은 유지하며, 저장소의 쓰기·수정·삭제도 멤버인 호스트로 제한한다.
 
 ---
 
 ## 인증 & 권한 흐름
 
-```
-가입 (이메일 or Google)
-  └→ profiles 생성 (display_name 등 입력)
-     └→ 두 가지 경로
-        │
-        ├→ A. 초대링크로 들어옴 (/join?token=...)
-        │      └→ apply_to_club(token) → club_members(role='pending')
-        │         └→ /clubs 에 "승인 대기 중" 섹션으로 표시
-        │            └→ admin 승인 → role='member' → 클럽 진입
-        │
-        └→ B. 새 그룹 만들기 (/clubs/new)
-               └→ create_club() → clubs row + club_members(role='admin')
-                  └→ /clubs/[id] 클럽 홈 진입
-```
+가입 → 프로필 생성 → 초대코드로 신청 → `members.role='pending'` → 관리자 승인 → `member`.
+로그인 상태와 멤버 자격을 구분하며 승인 전 사용자는 `/pending`, 미가입 사용자는 `/onboarding`으로 이동한다. 그룹 생성·전체 삭제는 제공하지 않는다.
 
 권한 가드:
 - 모임 작성/수정/삭제: `host_id = auth.uid()` (RLS) + Server Action 가드
 - 발제문 업로드/추출/일괄 저장: 서버에서 `assertHost(meetingId)` 1차 가드
-- 일반 멤버: 클럽 내 조회 + 참석 토글 + 자기 프로필 수정
-- 관리자: 위 + 가입 신청 승인/거절, 초대링크 발급/revoke, 그룹 정보 수정/삭제, 다른 admin에게 이양
+- 일반 멤버: 모임 기록 조회 + 참석 토글 + 자기 프로필 수정
+- 관리자: 위 + 가입 신청 승인/거절, 초대링크 발급/revoke, 모임 소개 수정, 다른 멤버에게 관리자 이양
 
 `assertHost(meetingId)`는 `lib/actions/discussion-files.ts`에 정의된 헬퍼로, 모든 변형 Server Action 첫 줄에서 호출되어 미인증/타인의 모임을 차단한다. SSRF 방지를 위해 Gemini 호출은 PDF URL이 **해당 모임의 Supabase storage 경로**로 시작하는지도 검증한다.
 
@@ -192,7 +177,7 @@ meetings                    discussion_questions      attendances
 ```bash
 pnpm install
 pnpm dlx supabase start           # 로컬 Supabase 기동 (Postgres + Studio + Storage)
-pnpm dlx supabase db reset        # 마이그레이션 + seed 적용
+pnpm exec supabase migration up --local  # 기존 데이터 보존하며 변경 적용
 cp .env.example .env.local        # 환경변수 템플릿 복사
 # .env.local 값 채우기: supabase status 출력으로 SUPABASE_URL/ANON_KEY/SERVICE_ROLE 채움
 # KAKAO_REST_API_KEY, GEMINI_API_KEY 는 각 콘솔에서 발급
@@ -213,11 +198,20 @@ pnpm test:e2e                     # Playwright E2E
 
 pnpm dlx supabase start           # 로컬 컨테이너 기동
 pnpm dlx supabase stop
-pnpm dlx supabase db reset        # 마이그레이션 + seed 재적용
+pnpm exec supabase migration up --local  # 기존 데이터 보존하며 변경 적용
 pnpm dlx supabase migration up --local
-pnpm dlx supabase db push --linked
 pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 ```
+
+운영 DB 적용은 일반 개발 명령에 포함하지 않는다. 단일 모임 전환은 `docs/single-club-cutover.md`의 백업·쓰기 중단·검증 순서를 따른다. 현재 단계·중단 기준과 로컬 사전 검사 사용법은 [운영 실행 체크리스트](docs/production-execution-checklist.md)를 참조한다. 사전 검사 성공은 운영 실행 승인이 아니다.
+
+2026-11-09 별도 관리형 테스트에서 실제 실행 도구의 전환·쓰기 차단·백업 복원·복구·해제 **337개 검사**와 안전 검사44개를 통과했다. 기존 테스트 계정·기록·파일은 보존했고 이번 작업에서 운영 연결·배포는 하지 않았다. [검증 범위와 남은 조건](docs/hosted-cutover-verification.md)을 따른다. 도구는 테스트 전용이며 운영 대상으로 사용할 수 없다.
+
+이후 [배포·복구 후보 소스](docs/release-candidate-preparation.md) 3개의 고정 패키지와 Node24/기본 Next 빌드3개·로컬 응답23개·안전 검사48개를 확인했다. 실제 Vercel 후보 배포는 아직 생성하지 않았고 main 병합·운영 DB 변경도 보류한다.
+
+2026-11-10 [운영 실행·최종 백업·실제 복원 연결](docs/operational-backup-linkage.md) 4흐름67개·복원390개·안전59개를 통과했다. 전체 Auth 차단 중 갱신 HTTP500에 현재 SDK가 로그인 정보를 지울 수 있음을 확인해 **실제 운영 실행은 코드에서 차단**했다. 운영 DB·배포에는 적용하지 않았으며 기존 로그인 보존 방식을 보완하기 전 실행하지 않는다.
+
+후속 결정: 사용자가 로그아웃을 허용하고 운영 반영을 승인한 뒤 **소유자 단계별 수동 실행**으로 전환했다. 후보3개·새 사전 백업 및 수동 SQL의 로컬 리허설을 완료했고 아직 실제 점검/DB 전환은 시작하지 않았다. [현재 수동 전환 상태](docs/manual-production-cutover.md)를 따른다.
 
 ---
 
@@ -250,26 +244,21 @@ pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 | `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET` | Google OAuth | server only |
 | `SENTRY_AUTH_TOKEN` | Source map 업로드 (Vercel 빌드 전용) | server only |
 
-Vercel 콘솔에서는 Production / Preview / Development 환경에 모두 동일하게 설정.
+Vercel의 Production / Preview / Development는 환경별로 분리한다. Production의 Supabase 주소·anon 키·service-role 키를 Preview/Development에 복사하지 않는다. Preview에는 별도 검증 DB의 같은 프로젝트에 속한 세 값을 함께 설정하고, 실회원 없는 시험 데이터를 사용한다. 로컬은 로컬 Supabase만 사용한다.
+
+2026-11-08 Supabase 세 변수의 Production/Preview 분리를 완료했다. Production 기존 항목은 유지하고 Preview에만 별도 `book-club-preview` 프로젝트의 세 값을 등록했다. 새 Preview에서 실제 이메일 로그인·권한·다운로드 22개 확인과 운영/테스트 기록 보존 비교를 통과했다. Preview Google/Kakao/Gemini 설정과 운영 반영은 별도 범위로 남아 있다. 기존 Preview 배포에는 옛 값이 남아 있을 수 있다. 최신 결과는 `docs/hosted-preview-verification.md`, 연결 분리 기록은 `docs/preview-isolation.md`를 따른다.
 `SENTRY_AUTH_TOKEN` 은 로컬에 두지 않고 (`.env.sentry-build-plugin` 은 wizard 생성 시 자동으로 gitignored) Vercel 환경변수로만 관리.
 
 ---
 
-## 통합 테스트 (Server Action)
-
-로컬 Supabase 도커에 진짜로 쿼리하는 통합 테스트. RLS·SECURITY DEFINER 함수까지 검증.
+## 통합 테스트 (실제 로컬 Postgres/RLS)
 
 ```bash
-# 한 번만 셋업
-cp .env.test.example .env.test
-pnpm supabase status   # 출력의 anon key / service_role key를 .env.test에 채움
-pnpm supabase start    # 도커 부팅
-
-# 실행
+pnpm test
 pnpm test:integration
 ```
 
-CI는 통합 테스트를 실행하지 않음 (도커 부팅 비용 회피). PR 직전 로컬에서 1회 실행이 표준 절차.
+새 통합 테스트는 고정된 로컬 Docker 컨테이너 `supabase_db_book-club`에만 연결한다. 각 시험의 사용자·일정·파일 메타데이터 생성과 변경은 한 트랜잭션에서 **항상 롤백**하며, 전체 기존 데이터 지문을 실행 전후 비교한다. 운영 URL·키·`.env.test`를 사용하지 않고 DB를 초기화하지 않는다. 과거 여러 그룹용 테스트는 `tests/legacy-multiclub`에 실행되지 않는 원본으로 보관했다.
 
 ---
 
@@ -281,12 +270,10 @@ CI는 통합 테스트를 실행하지 않음 (도커 부팅 비용 회피). PR 
 - **GitHub** — 푸시 → Vercel 자동 빌드
 
 ### 배포 파이프라인
-```
-git push origin main
-  └→ Vercel 자동 빌드/배포 (icn1)
-DB 마이그레이션이 있을 때:
-  pnpm dlx supabase db push --linked   # 클라우드 DB에 증분 적용
-```
+
+현재 Vercel은 main 변경 시 운영 배포와 운영 도메인 자동 연결이 켜져 있다. 다른 브랜치는 자동 Preview를 만든다. GitHub CI는 타입·단위 검사만 수행하며 DB 전환을 실행하지 않는다.
+
+단일 모임 앱은 기존 운영 DB 구조와 호환되지 않으므로 단순 push/merge를 운영 전환 절차로 사용하지 않는다. Preview의 운영 연결을 먼저 분리하고, 구 앱 호환 점검 브리지 → 외부 쓰기 차단 → 최종 백업/복원 검증 → DB 전환 → 보호된 새 앱 확인 → 재개 순서로 진행한다. 상세는 `docs/single-club-cutover.md`를 따른다. 실제 원격 설정·DB 변경·push·배포는 별도 승인 범위다.
 
 ---
 
@@ -307,3 +294,9 @@ DB 마이그레이션이 있을 때:
 - IA 리팩터링 의사결정: `.omc/specs/deep-interview-meeting-detail-ia.md`
 - 부트스트랩: `docs/bootstrap.md`
 - 테스트 시나리오: `docs/test-scenarios.md`
+
+## 현재 남은 검토 항목
+
+단일 모임 전환과 별도로, 업로드 요청 용량과 Storage 제한의 불일치, 익명 한줄 평의 DB 직접 조회 시 작성자 보호, 프로필 생성의 계정 소유자 검증, 실험 중인 이미지 공유는 추가 검토 대상이다. 위 전환 검증이 이 항목들의 해결을 의미하지는 않는다.
+
+운영 전환·복구 계획: `docs/single-club-cutover.md`. 보완 마이그레이션 04는 과거 참석 보호와 보관본의 독립성/읽기 전용을 강제한다. 운영 반영과 외부 쓰기 차단 설정은 아직 수행하지 않았다.

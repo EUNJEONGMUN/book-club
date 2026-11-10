@@ -3,7 +3,6 @@ import { meetingFormSchema } from '@/lib/validation/meeting';
 
 describe('meetingFormSchema', () => {
   const valid = {
-    club_id: '12345678-1234-4567-89ab-cdef01234567',
     book_title: '미움받을 용기',
     book_author: '기시미 이치로',
     scheduled_at: '2026-06-15T19:00',
@@ -15,6 +14,11 @@ describe('meetingFormSchema', () => {
 
   it('유효한 입력 통과', () => {
     expect(meetingFormSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('브라우저에서 전달한 다른 그룹 ID는 입력에서 제거한다', () => {
+    const parsed = meetingFormSchema.parse({ ...valid, club_id: 'another-club' });
+    expect(parsed).not.toHaveProperty('club_id');
   });
 
   it('빈 책 제목 → "미정"으로 채워짐', () => {
