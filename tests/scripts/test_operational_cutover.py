@@ -18,6 +18,9 @@ core, io = operator.core, operator.io
 
 
 class OperationalBoundaries(unittest.TestCase):
+    def test_production_pooler_is_the_verified_original_cluster(self):
+        self.assertEqual(io.HOST, 'aws-1-ap-northeast-2.pooler.supabase.com')
+
     def test_target_and_run_sql_are_not_user_supplied_identifiers(self):
         for run in ('bad', "a'; DROP SCHEMA public;--", 'g' * 32):
             with self.subTest(run=run), self.assertRaises(RuntimeError):
@@ -110,13 +113,17 @@ class OperationalBoundaries(unittest.TestCase):
                 operator.session(Path('/not-read'), allow_writes=False)
             terminal.assert_not_called(); connect.assert_not_called()
 
-    def test_known_session_loss_blocks_even_explicit_production_session_before_credentials(self):
-        self.assertFalse(operator.PRODUCTION_EXECUTION_ENABLED)
+    def test_known_session_loss_requires_separate_acceptance_before_credentials(self):
         with patch.object(operator.sys.stdin, 'isatty') as terminal, patch.object(operator.io, 'ProductionConnection') as connect, \
                 patch.object(operator.getpass, 'getpass') as password:
-            with self.assertRaisesRegex(RuntimeError, 'session-loss'):
+            with self.assertRaisesRegex(RuntimeError, 'session logout'):
                 operator.session(Path('/not-read'), allow_writes=True)
             terminal.assert_not_called(); connect.assert_not_called(); password.assert_not_called()
+
+    def test_owner_logout_acceptance_does_not_remove_explicit_write_gate(self):
+        with self.assertRaises(RuntimeError):
+            operator.execution_gate(allow_writes=False, accept_session_logout=True)
+        operator.execution_gate(allow_writes=True, accept_session_logout=True)
 
 
 if __name__ == '__main__':

@@ -24,9 +24,8 @@ spec.loader.exec_module(io)
 core = io.core
 ORIGIN = 'https://book-club-five-nu.vercel.app'
 DEFAULT_RELEASE = ROOT / '.local-backups/release-candidates-20261109T143843928389Z'
-# Full Auth freeze returns HTTP500 on refresh; current SDK can clear a user's session.
-# Do not enable real execution until a session-preserving design is implemented/rehearsed.
-PRODUCTION_EXECUTION_ENABLED = False
+# Full Auth freeze can clear a browser session. Owner explicitly accepted this on
+# 2026-11-10; require that acceptance on each mutating invocation. Data gates stay.
 
 
 def release_state(folder):
@@ -86,10 +85,14 @@ def http_check(maintenance):
             core.require(status == 200 and '기존 기록을 안전하게 보존'.encode() not in body, 'Canonical domain still in maintenance or unavailable.')
 
 
-def session(run_folder, allow_writes=False, inspect=False):
-    # Reject missing explicit mutation mode before credentials, network or DB access.
+def execution_gate(allow_writes=False, accept_session_logout=False, inspect=False):
     core.require(inspect or allow_writes, 'An explicitly approved Production session flag is required.')
-    core.require(inspect or PRODUCTION_EXECUTION_ENABLED, 'Production execution blocked: Auth refresh HTTP500 session-loss mitigation must be verified first.')
+    core.require(inspect or accept_session_logout, 'Production execution blocked: explicit acceptance of possible session logout is required.')
+
+
+def session(run_folder, allow_writes=False, inspect=False, accept_session_logout=False):
+    # Reject missing explicit mutation mode before credentials, network or DB access.
+    execution_gate(allow_writes, accept_session_logout, inspect)
     core.require(sys.stdin.isatty(), 'Run in the owner terminal; never enter passwords into chat.')
     folder = Path(run_folder).resolve()
     core.require(folder.parent == ROOT / '.local-backups' and folder.name.startswith('operation-run-'), 'Unexpected run folder.')
@@ -176,6 +179,7 @@ def main():
     mode.add_argument('--inspect', action='store_true', help='Owner terminal, read-only Production inspection')
     mode.add_argument('--session', action='store_true', help='Owner terminal, separately approved operational window only')
     parser.add_argument('--allow-production-writes', action='store_true', help='Explicit mutation capability; never an approval substitute')
+    parser.add_argument('--accept-session-logout', action='store_true', help='Owner accepts that maintenance may require users to log in again; data gates stay enabled')
     parser.add_argument('--release-folder', type=Path, default=DEFAULT_RELEASE)
     parser.add_argument('--run-folder', type=Path)
     args = parser.parse_args()
@@ -185,7 +189,7 @@ def main():
         print('Offline run prepared. No DB connection or deployment. Folder: ' + str(prepare_run(args.release_folder)))
     elif args.inspect or args.session:
         core.require(args.run_folder is not None, 'An offline-prepared run folder is required.')
-        session(args.run_folder, allow_writes=args.allow_production_writes, inspect=args.inspect)
+        session(args.run_folder, allow_writes=args.allow_production_writes, inspect=args.inspect, accept_session_logout=args.accept_session_logout)
     else:
         core.require(not args.allow_production_writes, 'Choose an explicit session first.')
         print('Preparation only. --prepare-run makes offline files; Production is not contacted. No deployment commands exist.')

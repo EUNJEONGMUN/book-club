@@ -21,7 +21,9 @@ def load(name, filename):
 core = load('cutover_io_core', 'cutover-engine.py')
 dump = load('cutover_io_dump', 'production-db-dump.py')
 ro = load('cutover_io_read', 'production-readonly-backup.py')
-HOST = 'aws-0-ap-northeast-2.pooler.supabase.com'
+# Production cluster verified via GET /config/database/pooler on 2026-11-10.
+# Preview uses aws-0; it is deliberately a different fixed endpoint.
+HOST = 'aws-1-ap-northeast-2.pooler.supabase.com'
 
 
 class ArchiveTools:

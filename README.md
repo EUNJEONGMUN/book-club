@@ -211,6 +211,8 @@ pnpm dlx supabase gen types typescript --local > lib/database.types.ts
 
 2026-11-10 [운영 실행·최종 백업·실제 복원 연결](docs/operational-backup-linkage.md) 4흐름67개·복원390개·안전59개를 통과했다. 전체 Auth 차단 중 갱신 HTTP500에 현재 SDK가 로그인 정보를 지울 수 있음을 확인해 **실제 운영 실행은 코드에서 차단**했다. 운영 DB·배포에는 적용하지 않았으며 기존 로그인 보존 방식을 보완하기 전 실행하지 않는다.
 
+후속 결정: 사용자가 로그아웃을 허용하고 운영 반영을 승인한 뒤 **소유자 단계별 수동 실행**으로 전환했다. 후보3개·새 사전 백업 및 수동 SQL의 로컬 리허설을 완료했고 아직 실제 점검/DB 전환은 시작하지 않았다. [현재 수동 전환 상태](docs/manual-production-cutover.md)를 따른다.
+
 ---
 
 ## 외부 API 키 발급 가이드
