@@ -7,7 +7,7 @@ import { updateClubSettings as update } from '@/lib/services/club-settings';
 import { revalidatePath } from 'next/cache';
 
 function refreshMembership() {
-  for (const path of ['/', '/members', '/more', '/more/applicants', '/pending']) revalidatePath(path);
+  for (const path of ['/', '/members', '/more', '/more/info', '/more/applicants', '/pending']) revalidatePath(path);
 }
 
 export async function approveMember(userId: string) {
