@@ -22,10 +22,13 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
   const [fileUrl, setFileUrl] = useState(currentFileUrl);
   const [displayName, setDisplayName] = useState<string | null>(currentFileName);
   const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileBusy = uploading || removing;
+  const fileControlsDisabled = fileBusy || extracting || saving;
 
   const isPdf = fileUrl ? /\.pdf(\?|$)/i.test(fileUrl) : false;
   const hasStoredName = displayName != null && displayName.length > 0;
@@ -42,23 +45,23 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || fileControlsDisabled) return;
+    e.target.value = '';
     setUploading(true);
     const fd = new FormData();
     fd.append('file', file);
-    const r = await uploadDiscussionFile(meetingId, fd);
-    setUploading(false);
+    const r = await uploadDiscussionFile(meetingId, fd, fileUrl).finally(() => setUploading(false));
     if (!r.ok) return toast.error(r.error);
     setFileUrl(r.url);
     setDisplayName(r.fileName);
     setCandidates([]);
     toast.success('파일이 업로드되었습니다.');
-    if (inputRef.current) inputRef.current.value = '';
   }
 
   async function handleRemove() {
-    if (!confirm('파일을 삭제할까요?')) return;
-    const r = await removeDiscussionFile(meetingId);
+    if (fileControlsDisabled || !confirm('파일을 삭제할까요?')) return;
+    setRemoving(true);
+    const r = await removeDiscussionFile(meetingId, fileUrl).finally(() => setRemoving(false));
     if (!r.ok) return toast.error(r.error);
     setFileUrl(null);
     setDisplayName(null);
@@ -91,6 +94,13 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
 
   return (
     <div className="space-y-3">
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
       {/* 현재 파일 */}
       {fileUrl ? (
         <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl border border-stone-200">
@@ -107,24 +117,32 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
           >
             {fileName}
           </a>
-          <button onClick={handleRemove} className="text-stone-400 hover:text-red-500 transition-colors">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={fileControlsDisabled}
+            onClick={() => inputRef.current?.click()}
+          >
+            {uploading ? '교체 중...' : '파일 교체'}
+          </Button>
+          <button
+            type="button"
+            aria-label="발제 파일 삭제"
+            disabled={fileControlsDisabled}
+            onClick={handleRemove}
+            className="text-stone-400 hover:text-red-500 transition-colors disabled:opacity-50"
+          >
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       ) : (
         <div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".pdf,image/*"
-            className="hidden"
-            onChange={handleFileChange}
-          />
           <Button
             type="button"
             variant="outline"
             className="w-full border-stone-200 text-stone-600"
-            disabled={uploading}
+            disabled={fileControlsDisabled}
             onClick={() => inputRef.current?.click()}
           >
             {uploading ? (
@@ -143,7 +161,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
             type="button"
             variant="outline"
             className="w-full border-stone-200 text-stone-600"
-            disabled={extracting}
+            disabled={extracting || fileBusy}
             onClick={handleExtract}
           >
             {extracting ? (

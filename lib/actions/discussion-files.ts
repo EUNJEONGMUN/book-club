@@ -1,11 +1,15 @@
 'use server';
 
+import { randomUUID } from 'node:crypto';
 import * as Sentry from '@sentry/nextjs';
+import type { PostgrestError } from '@supabase/supabase-js';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { revalidateMeetingPaths } from './_revalidate-meeting';
 
 const STORAGE_BUCKET = 'discussion-files';
 const MAX_PDF_BYTES = 20 * 1024 * 1024; // 20MB
+const FILE_CHANGED = '모임 정보가 변경되었습니다. 페이지를 새로고침한 뒤 다시 시도해주세요.';
+const UPDATE_UNCONFIRMED = '파일 변경 결과를 확인하지 못했습니다. 페이지를 새로고침해 확인해주세요.';
 
 /**
  * Gemini 출력의 흔한 정렬 오류를 보정. prompt를 강화해도 가끔 발생.
@@ -26,94 +30,140 @@ async function assertHost(meetingId: string) {
 
   const { data: meeting, error } = await supabase
     .from('meetings')
-    .select('host_id')
+    .select('host_id, discussion_file_url, updated_at')
     .eq('id', meetingId)
     .maybeSingle();
   if (error || !meeting) return { ok: false as const, error: '모임을 찾을 수 없습니다.', supabase: null };
   if (meeting.host_id !== user.id) return { ok: false as const, error: '발제자만 사용할 수 있습니다.', supabase: null };
 
-  return { ok: true as const, supabase, user };
+  return { ok: true as const, supabase, meeting };
 }
 
-function publicUrlToPath(url: string): string | null {
+function publicUrlToPath(url: string | null, meetingId: string): string | null {
+  if (!url) return null;
   const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
-  const idx = url.indexOf(marker);
-  if (idx === -1) return null;
-  const tail = url.slice(idx + marker.length);
-  return tail.split('?')[0] || null;
+  try {
+    const { pathname } = new URL(url);
+    if (!pathname.startsWith(marker)) return null;
+    const path = decodeURIComponent(pathname.slice(marker.length));
+    return path.startsWith(`${meetingId}/`) ? path : null;
+  } catch {
+    return null;
+  }
 }
 
-export async function uploadDiscussionFile(meetingId: string, formData: FormData) {
+type HostAccess = Extract<Awaited<ReturnType<typeof assertHost>>, { ok: true }>;
+
+async function updateDiscussionFile(
+  { supabase, meeting }: HostAccess,
+  meetingId: string,
+  url: string | null,
+  fileName: string | null,
+) {
+  const update = supabase
+    .from('meetings')
+    .update({ discussion_file_url: url, discussion_file_name: fileName })
+    .eq('id', meetingId)
+    // Detect a file added and removed since a request read an empty slot.
+    .eq('updated_at', meeting.updated_at);
+
+  return (meeting.discussion_file_url === null
+    ? update.is('discussion_file_url', null)
+    : update.eq('discussion_file_url', meeting.discussion_file_url)
+  ).select('id');
+}
+
+function isConfirmedRejection(error: PostgrestError | null, status: number): error is PostgrestError {
+  // A structured client error from PostgREST confirms the write was rejected.
+  return !!error && status >= 400 && status < 500 && /^(?:[A-Z0-9]{5}|PGRST\d{3})$/.test(error.code);
+}
+
+async function cleanupDiscussionFile(
+  supabase: HostAccess['supabase'],
+  path: string | null,
+  mayBeMissing = false,
+) {
+  if (!path) return;
+  try {
+    const { data, error } = await supabase.storage.from(STORAGE_BUCKET).remove([path]);
+    if (error || (!mayBeMissing && !data?.length)) {
+      console.error('[discussion-files] Storage cleanup failed', { path, error });
+    }
+  } catch (error) {
+    console.error('[discussion-files] Storage cleanup failed', { path, error });
+  }
+}
+
+export async function uploadDiscussionFile(meetingId: string, formData: FormData, expectedUrl?: string | null) {
   const auth = await assertHost(meetingId);
   if (!auth.ok) return { ok: false as const, error: auth.error };
+  if (expectedUrl !== undefined && expectedUrl !== auth.meeting.discussion_file_url) {
+    return { ok: false as const, error: FILE_CHANGED };
+  }
   const supabase = auth.supabase;
 
-  const file = formData.get('file') as File | null;
-  if (!file) return { ok: false as const, error: '파일이 없습니다.' };
+  const file = formData.get('file');
+  if (!(file instanceof File)) return { ok: false as const, error: '파일이 없습니다.' };
 
   if (file.size > MAX_PDF_BYTES) return { ok: false as const, error: '파일 크기는 20MB 이하여야 합니다.' };
 
   const ext = file.name.split('.').pop()?.toLowerCase();
   const safeName = file.name.replace(/[^a-zA-Z0-9._\-]/g, '_') || 'file';
-  // Unique path prevents Korean-name collisions and CDN cache reuse
-  const path = `${meetingId}/${Date.now()}-${safeName}`;
+  const path = `${meetingId}/${randomUUID()}-${safeName}`;
+  const bucket = supabase.storage.from(STORAGE_BUCKET);
 
-  const { error: uploadError } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .upload(path, file, { upsert: false });
-  if (uploadError) return { ok: false as const, error: uploadError.message };
-
-  const { data: { publicUrl } } = supabase.storage
-    .from(STORAGE_BUCKET)
-    .getPublicUrl(path);
-
-  // Clean up previous file (if any) to avoid orphans
-  const { data: prev } = await supabase
-    .from('meetings')
-    .select('discussion_file_url')
-    .eq('id', meetingId)
-    .maybeSingle();
-  const prevPath = prev?.discussion_file_url ? publicUrlToPath(prev.discussion_file_url) : null;
-  if (prevPath && prevPath !== path) {
-    await supabase.storage.from(STORAGE_BUCKET).remove([prevPath]);
+  const { error: uploadError } = await bucket.upload(path, file, { upsert: false });
+  if (uploadError) {
+    // A lost upload response can leave an object even though no DB write was attempted.
+    await cleanupDiscussionFile(supabase, path, true);
+    return { ok: false as const, error: uploadError.message };
   }
 
-  const { error: updateError } = await supabase
-    .from('meetings')
-    .update({ discussion_file_url: publicUrl, discussion_file_name: file.name })
-    .eq('id', meetingId);
-  if (updateError) {
-    // Roll back the new storage object on failed DB update
-    await supabase.storage.from(STORAGE_BUCKET).remove([path]);
-    return { ok: false as const, error: updateError.message };
+  const { data: { publicUrl } } = bucket.getPublicUrl(path);
+  const { data: updated, error, status } = await updateDiscussionFile(auth, meetingId, publicUrl, file.name);
+  if (updated?.length === 0) {
+    await cleanupDiscussionFile(supabase, path);
+    return { ok: false as const, error: FILE_CHANGED };
   }
 
+  if (!updated?.length) {
+    if (isConfirmedRejection(error, status)) {
+      await cleanupDiscussionFile(supabase, path);
+      return { ok: false as const, error: error.message };
+    }
+
+    const { data: current, error: readError } = await supabase
+      .from('meetings')
+      .select('discussion_file_url')
+      .eq('id', meetingId)
+      .maybeSingle();
+    if (current?.discussion_file_url !== publicUrl) {
+      // The write may still be in flight when the follow-up read runs.
+      console.error('[discussion-files] Upload update unconfirmed', { path, error, readError });
+      return { ok: false as const, error: UPDATE_UNCONFIRMED };
+    }
+  }
+
+  await cleanupDiscussionFile(supabase, publicUrlToPath(auth.meeting.discussion_file_url, meetingId));
   await revalidateMeetingPaths(meetingId);
   return { ok: true as const, url: publicUrl, fileName: file.name, isPdf: ext === 'pdf' };
 }
 
-export async function removeDiscussionFile(meetingId: string) {
+export async function removeDiscussionFile(meetingId: string, expectedUrl?: string | null) {
   const auth = await assertHost(meetingId);
   if (!auth.ok) return { ok: false as const, error: auth.error };
-  const supabase = auth.supabase;
-
-  const { data: row } = await supabase
-    .from('meetings')
-    .select('discussion_file_url')
-    .eq('id', meetingId)
-    .maybeSingle();
-  const path = row?.discussion_file_url ? publicUrlToPath(row.discussion_file_url) : null;
-
-  const { error } = await supabase
-    .from('meetings')
-    .update({ discussion_file_url: null, discussion_file_name: null })
-    .eq('id', meetingId);
-  if (error) return { ok: false as const, error: error.message };
-
-  if (path) {
-    await supabase.storage.from(STORAGE_BUCKET).remove([path]);
+  if (expectedUrl !== undefined && expectedUrl !== auth.meeting.discussion_file_url) {
+    return { ok: false as const, error: FILE_CHANGED };
+  }
+  const { data: updated, error, status } = await updateDiscussionFile(auth, meetingId, null, null);
+  if (updated?.length === 0) return { ok: false as const, error: FILE_CHANGED };
+  if (!updated?.length) {
+    if (isConfirmedRejection(error, status)) return { ok: false as const, error: error.message };
+    console.error('[discussion-files] Delete update unconfirmed', { meetingId, error });
+    return { ok: false as const, error: UPDATE_UNCONFIRMED };
   }
 
+  await cleanupDiscussionFile(auth.supabase, publicUrlToPath(auth.meeting.discussion_file_url, meetingId));
   await revalidateMeetingPaths(meetingId);
   return { ok: true as const };
 }
