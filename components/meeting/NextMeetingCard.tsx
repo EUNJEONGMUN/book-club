@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { format, differenceInDays } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { differenceInDays } from 'date-fns';
+import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AttendanceSection } from './AttendanceSection';
@@ -16,8 +16,9 @@ type Props = {
 };
 
 export function NextMeetingCard({ meeting, viewerProfile }: Props) {
-  const date = new Date(meeting.scheduled_at);
-  const diff = differenceInDays(date, new Date());
+  const { date, time, weekday } = getKoreanMeetingDateTime(meeting.scheduled_at);
+  const [, month, day] = date.split('-');
+  const diff = differenceInDays(new Date(meeting.scheduled_at), new Date());
   const dDay = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : `D+${-diff}`;
 
   return (
@@ -36,7 +37,7 @@ export function NextMeetingCard({ meeting, viewerProfile }: Props) {
             <h2 className="text-lg font-bold">{meeting.book_title}</h2>
             <p className="text-sm text-slate-600">{meeting.book_author}</p>
             <p className="text-sm text-slate-700 mt-1">
-              {format(date, 'MM월 dd일 (EEE) HH:mm', { locale: ko })}
+              {month}월 {day}일 ({weekday}) {time}
             </p>
             <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
             <p className="text-xs text-slate-500">📍 {meeting.location_name}</p>

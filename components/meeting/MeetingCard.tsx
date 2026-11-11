@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Meeting, Profile } from '@/lib/types';
 
 export function MeetingCard({ meeting }: { meeting: Meeting & { host: Profile } }) {
-  const date = new Date(meeting.scheduled_at);
+  const { date, time, weekday } = getKoreanMeetingDateTime(meeting.scheduled_at);
   return (
     <Link href={`/meetings/${meeting.id}`} className="block">
       <Card className="hover:bg-slate-50 transition">
@@ -19,7 +18,7 @@ export function MeetingCard({ meeting }: { meeting: Meeting & { host: Profile } 
             <h3 className="font-semibold truncate">{meeting.book_title}</h3>
             <p className="text-sm text-slate-500 truncate">{meeting.book_author}</p>
             <p className="text-xs text-slate-600 mt-1">
-              {format(date, 'yyyy.MM.dd (EEE) HH:mm', { locale: ko })}
+              {date.replaceAll('-', '.')} ({weekday}) {time}
             </p>
             <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
             <p className="text-xs text-slate-500 truncate">📍 {meeting.location_name}</p>

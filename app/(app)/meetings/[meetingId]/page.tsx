@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { getMeetingReviews } from '@/lib/queries/reviews';
+import { hasMeetingStarted } from '@/lib/meeting-time';
 import { getActiveMembers } from '@/lib/queries/club';
 import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
 import { ShareMeetingButton } from '@/components/meeting/ShareMeetingButton';
@@ -23,7 +24,7 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
   const isHost = me?.id === meeting.host_id;
   const isAdmin = myRole === 'admin';
   const reviews = await getMeetingReviews(meeting.id);
-  const isPastMeeting = new Date(meeting.scheduled_at) <= new Date();
+  const isPastMeeting = hasMeetingStarted(meeting.scheduled_at);
 
   // 지난 모임이면 host/admin만 정정 가능 (수정 모드)
   const canEditAttendance = isPastMeeting && (isHost || isAdmin);

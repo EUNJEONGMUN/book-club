@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { BookOpen, CalendarDays, ChevronDown, MapPin } from 'lucide-react';
+import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { meetingFormSchema, type MeetingFormInput } from '@/lib/validation/meeting';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,20 +27,6 @@ const TIME_OPTIONS = Array.from({ length: 36 }, (_, i) => {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 });
 
-function splitScheduledAt(iso: string): { date: string; time: string } {
-  if (!iso) return { date: '', time: '' };
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const totalMin = d.getHours() * 60 + d.getMinutes();
-  const rounded = Math.round(totalMin / 30) * 30;
-  const rh = Math.floor(rounded / 60) % 24;
-  const rm = rounded % 60;
-  const time = `${String(rh).padStart(2, '0')}:${String(rm).padStart(2, '0')}`;
-  const rawTime = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  return { date, time: TIME_OPTIONS.includes(time) ? time : rawTime };
-}
-
 type Props = {
   defaultValues?: Partial<MeetingFormInput>;
   onSubmit: (
@@ -53,11 +40,11 @@ type Props = {
 export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSuccess, cancelHref }: Props) {
   const router = useRouter();
 
-  const { date: initDate, time: initTime } = splitScheduledAt(defaultValues?.scheduled_at ?? '');
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const initialDate = initDate || todayStr;
-  const initialTime = initTime || '13:00';
+  const existingSchedule = defaultValues?.scheduled_at
+    ? getKoreanMeetingDateTime(defaultValues.scheduled_at)
+    : null;
+  const initialDate = existingSchedule?.date ?? getKoreanMeetingDateTime(new Date()).date;
+  const initialTime = existingSchedule?.time ?? '13:00';
   const [scheduledDate, setScheduledDate] = useState(initialDate);
   const [scheduledTime, setScheduledTime] = useState(initialTime);
 
@@ -146,7 +133,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
       </Section>
 
       {/* 일정 */}
-      <Section icon={<CalendarDays className="w-4 h-4" />} title="일정">
+      <Section icon={<CalendarDays className="w-4 h-4" />} title="일정 (한국 시간)">
         <div className="flex items-start justify-start gap-3">
           <FormField
             label="날짜"
@@ -176,6 +163,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
                 className="block w-[120px] h-10 box-border appearance-none rounded-md border border-stone-200 bg-stone-50 pl-3 pr-8 text-sm text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
               >
                 <option value="" disabled>선택</option>
+                {!TIME_OPTIONS.includes(initialTime) && <option value={initialTime}>{initialTime}</option>}
                 {TIME_OPTIONS.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}

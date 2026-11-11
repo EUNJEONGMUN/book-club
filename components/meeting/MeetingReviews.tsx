@@ -83,7 +83,7 @@ export function MeetingReviews({ meetingId, initialOwn, others, isPastMeeting }:
       {/* 본인 영역 */}
       {!isPastMeeting ? (
         <p className="text-sm text-stone-500 px-3 py-2 bg-stone-50 rounded-lg">
-          모임이 끝난 후에 한줄 평을 남길 수 있어요.
+          모임 시작 시각부터 한줄 평을 남길 수 있어요.
         </p>
       ) : editing ? (
         <div className="space-y-2 p-3 border border-stone-200 rounded-xl bg-stone-50">

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { getKoreanMeetingDateTime, hasMeetingStarted } from '@/lib/meeting-time';
 import { meetingFormSchema } from '@/lib/validation/meeting';
 
 describe('meetingFormSchema', () => {
@@ -12,8 +13,21 @@ describe('meetingFormSchema', () => {
     book_cover_url: '',
   };
 
-  it('유효한 입력 통과', () => {
-    expect(meetingFormSchema.safeParse(valid).success).toBe(true);
+  it('모임 입력 시각을 한국 시간으로 저장하고 시작 시각부터 한줄 평을 허용한다', () => {
+    const { scheduled_at } = meetingFormSchema.parse(valid);
+    expect(new Date(scheduled_at).toISOString()).toBe('2026-06-15T10:00:00.000Z');
+    expect(hasMeetingStarted(scheduled_at, Date.parse('2026-06-15T09:59:59.999Z'))).toBe(false);
+    expect(hasMeetingStarted(scheduled_at, Date.parse('2026-06-15T10:00:00.000Z'))).toBe(true);
+  });
+
+  it('기존 일시는 한국 시간으로 표시하되 일정 입력을 수정하지 않으면 그대로 저장한다', () => {
+    const stored = '2026-06-15T15:00:01.123456+00:00';
+    expect(getKoreanMeetingDateTime(stored)).toEqual({ date: '2026-06-16', time: '00:00', weekday: '화' });
+    expect(meetingFormSchema.parse({ ...valid, scheduled_at: stored }).scheduled_at).toBe(stored);
+  });
+
+  it('존재하지 않는 날짜는 거부한다', () => {
+    expect(meetingFormSchema.safeParse({ ...valid, scheduled_at: '2026-02-30T19:00' }).success).toBe(false);
   });
 
   it('브라우저에서 전달한 다른 그룹 ID는 입력에서 제거한다', () => {
