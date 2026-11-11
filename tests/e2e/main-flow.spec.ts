@@ -22,7 +22,8 @@ test('기존 지난 모임을 새 주소에서 읽을 수 있다', async ({ page
   await expect(page).toHaveURL('/meetings');
   const past = page.locator('section').filter({ has: page.getByRole('heading', { name: '지난 모임', exact: true }) });
   await past.getByRole('link').first().click();
-  await expect(page).toHaveURL(/\/meetings\/[a-f0-9-]+$/);
+  // The local dev server compiles the detail route on its first visit.
+  await expect(page).toHaveURL(/\/meetings\/[a-f0-9-]+$/, { timeout: 15_000 });
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await expect(page.getByRole('heading', { name: '한줄 평', exact: true })).toBeVisible();
 });
@@ -32,9 +33,11 @@ test('멤버·설정·프로필을 조회하며 전체 삭제 기능은 제공�
   await expect(page).toHaveURL('/members');
   await expect(page.getByText(/멤버 \d+명/)).toBeVisible();
   await page.getByRole('navigation').getByRole('link', { name: '설정', exact: true }).click();
+  await expect(page).toHaveURL('/more');
   await expect(page.getByRole('button', { name: '그룹 삭제', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: '가입 신청자 관리', exact: true })).toBeVisible();
-  await page.getByRole('link', { name: '내 프로필 수정', exact: true }).click();
+  const links = page.getByRole('link');
+  await expect(links.and(page.locator('[href="/more/applicants"]'))).toBeVisible();
+  await links.and(page.locator('[href="/more/profile"]')).click();
   await expect(page).toHaveURL('/more/profile');
   await expect(page.getByLabel('이름')).not.toHaveValue('');
 });
