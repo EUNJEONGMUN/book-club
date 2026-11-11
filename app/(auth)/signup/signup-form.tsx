@@ -1,21 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
-import { sanitizeNext } from '@/lib/auth/safe-next';
+import { authPath } from '@/lib/auth/safe-next';
 import { createProfile } from '@/lib/actions/profile';
 import { profileFormSchema } from '@/lib/validation/profile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
-export function SignupForm() {
+export function SignupForm({ next }: { next: string }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = sanitizeNext(searchParams.get('next'));
-  const loginPath = next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login';
+  const loginPath = authPath('/login', next);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -27,7 +25,13 @@ export function SignupForm() {
     const parsed = profileFormSchema.safeParse({ display_name: displayName });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: next === '/' ? undefined : {
+        emailRedirectTo: new URL(authPath('/auth/callback', next), window.location.origin).toString(),
+      },
+    });
     if (error || !data.user) {
       setLoading(false);
       return toast.error(error?.message ?? '가입 실패');
@@ -36,7 +40,7 @@ export function SignupForm() {
     // 이메일 인증이 필요한 경우 session이 null — 인증 후 /signup에서 이름 입력
     if (!data.session) {
       setLoading(false);
-      toast.success('가입 신청 완료! 이메일 인증 후 로그인해주세요.');
+      toast.success('확인 메일을 보냈어요. 이메일 인증을 완료해주세요.');
       router.push(loginPath);
       return;
     }

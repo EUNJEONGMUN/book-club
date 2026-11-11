@@ -8,3 +8,7 @@ export function sanitizeNext(raw: string | null | undefined): string {
   if (/[\u0000-\u001f\u007f\\]/.test(raw)) return '/';
   return raw.startsWith('/') && !raw.startsWith('//') ? raw : '/';
 }
+
+export function authPath(path: '/login' | '/signup' | '/auth/callback', next: string) {
+  return next === '/' ? path : `${path}?next=${encodeURIComponent(next)}`;
+}

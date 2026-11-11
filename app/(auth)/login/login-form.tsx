@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
-import { sanitizeNext } from '@/lib/auth/safe-next';
+import { authPath, sanitizeNext } from '@/lib/auth/safe-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,8 +45,7 @@ function LoginContent({ clubName }: { clubName: string }) {
   }
 
   async function signInOAuth(provider: 'google') {
-    const callbackUrl = new URL('/auth/callback', window.location.origin);
-    if (next !== '/') callbackUrl.searchParams.set('next', next);
+    const callbackUrl = new URL(authPath('/auth/callback', next), window.location.origin);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
       options: { redirectTo: callbackUrl.toString() },
@@ -129,7 +128,7 @@ function LoginContent({ clubName }: { clubName: string }) {
 
         <p className="text-sm text-center text-stone-500">
           처음이신가요?{' '}
-          <Link href="/signup" className="text-stone-800 font-medium underline underline-offset-4">
+          <Link href={authPath('/signup', next)} className="text-stone-800 font-medium underline underline-offset-4">
             회원가입
           </Link>
         </p>
