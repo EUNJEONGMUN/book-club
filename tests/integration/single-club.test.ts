@@ -59,6 +59,16 @@ beforeAll(() => { before = fingerprint(); });
 afterAll(() => { expect(fingerprint()).toBe(before); });
 
 const cases: Array<[string, string | null, string, string?]> = [
+ ['profile creation permits only the authenticated account and preserves its original name on retry', member, `
+    RESET ROLE;
+    DELETE FROM public.profiles WHERE id='${outsider}';
+    SET LOCAL ROLE authenticated;
+    ${fails(`INSERT INTO public.profiles(id,display_name) VALUES ('${outsider}','spoofed') ON CONFLICT(id) DO NOTHING`)}
+    SELECT set_config('request.jwt.claim.sub','${outsider}',true);
+    INSERT INTO public.profiles(id,display_name) VALUES ('${outsider}','first') ON CONFLICT(id) DO NOTHING;
+    INSERT INTO public.profiles(id,display_name) VALUES ('${outsider}','retry') ON CONFLICT(id) DO NOTHING;
+    ${is(`(SELECT display_name FROM public.profiles WHERE id='${outsider}')='first'`)}
+ `],
  ['approved member can read existing meetings and questions', member, is(`(SELECT count(*) FROM public.meetings WHERE id='${future}')=1 AND (SELECT count(*) FROM public.discussion_questions WHERE id='${id(12)}')=1`)],
  ['pending user cannot read meetings', pending, is(`(SELECT count(*) FROM public.meetings)=0`)],
  ['outsider cannot read meetings', outsider, is(`(SELECT count(*) FROM public.meetings)=0`)],

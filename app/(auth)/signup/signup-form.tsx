@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 import { sanitizeNext } from '@/lib/auth/safe-next';
 import { createProfile } from '@/lib/actions/profile';
+import { profileFormSchema } from '@/lib/validation/profile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ export function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = sanitizeNext(searchParams.get('next'));
+  const loginPath = next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -22,6 +24,8 @@ export function SignupForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    const parsed = profileFormSchema.safeParse({ display_name: displayName });
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error || !data.user) {
@@ -33,14 +37,17 @@ export function SignupForm() {
     if (!data.session) {
       setLoading(false);
       toast.success('가입 신청 완료! 이메일 인증 후 로그인해주세요.');
-      router.push(next !== '/' ? `/login?next=${encodeURIComponent(next)}` : '/login');
+      router.push(loginPath);
       return;
     }
 
-    // user.id를 직접 전달해 세션 쿠키 의존 없이 프로필 생성
-    const profile = await createProfile(displayName, data.user.id);
+    const profile = await createProfile(parsed.data.display_name);
     setLoading(false);
-    if (!profile.ok) return toast.error(profile.error);
+    if (!profile.ok) {
+      toast.error('계정은 생성됐어요. 로그인 후 이름 등록을 완료해주세요.');
+      router.push(loginPath);
+      return;
+    }
 
     toast.success('가입 완료!');
     router.push(next);
