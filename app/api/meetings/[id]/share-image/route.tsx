@@ -1,7 +1,6 @@
 import { ImageResponse } from 'next/og';
 import * as Sentry from '@sentry/nextjs';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getSupabaseServer } from '@/lib/supabase/server';
 
@@ -107,8 +106,8 @@ export async function GET(
     if (boldFont) fonts.push({ name: 'Pretendard', data: boldFont, weight: 700, style: 'normal' });
     const fontFamilyValue = fonts.length > 0 ? 'Pretendard, sans-serif' : undefined;
 
-    const date = new Date(meeting.scheduled_at);
-    const dateStr = format(date, 'yyyy.MM.dd EEE HH:mm', { locale: ko }).toUpperCase();
+    const { date, time, weekday } = getKoreanMeetingDateTime(meeting.scheduled_at);
+    const dateStr = `${date.replaceAll('-', '.')} ${weekday} ${time}`;
     const locationLine =
       meeting.location_address && meeting.location_name !== '미정'
         ? `<${meeting.location_name}> ${meeting.location_address}`

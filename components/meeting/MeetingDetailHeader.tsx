@@ -1,5 +1,5 @@
-import { format, differenceInDays } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { differenceInDays } from 'date-fns';
+import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { MeetingHeaderMenu } from './MeetingHeaderMenu';
 import type { Meeting, Profile } from '@/lib/types';
 
@@ -10,8 +10,8 @@ export function MeetingDetailHeader({
   meeting: Meeting & { host: Profile };
   isHost: boolean;
 }) {
-  const date = new Date(meeting.scheduled_at);
-  const diff = differenceInDays(date, new Date());
+  const { date, time, weekday } = getKoreanMeetingDateTime(meeting.scheduled_at);
+  const diff = differenceInDays(new Date(meeting.scheduled_at), new Date());
   const isUpcoming = diff >= 0;
   const dDay = diff > 0 ? `D-${diff}` : 'D-Day';
 
@@ -35,7 +35,7 @@ export function MeetingDetailHeader({
           <h1 className="text-xl font-bold leading-tight pr-10">{meeting.book_title}</h1>
           <p className="text-sm text-slate-600">{meeting.book_author}</p>
           <p className="text-sm text-slate-700 pt-1">
-            {format(date, 'yyyy.MM.dd (EEE) HH:mm', { locale: ko })}
+            {date.replaceAll('-', '.')} ({weekday}) {time}
           </p>
           <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
         </div>

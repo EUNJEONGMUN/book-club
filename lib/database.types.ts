@@ -313,6 +313,19 @@ export type Database = {
           email: string
         }[]
       }
+      get_meeting_reviews: {
+        Args: { target_meeting_id: string }
+        Returns: {
+          id: string
+          user_id: string | null
+          display_name: string
+          avatar_url: string | null
+          content: string
+          visibility: Database["public"]["Enums"]["review_visibility"]
+          created_at: string
+          updated_at: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_member: { Args: never; Returns: boolean }
       rotate_invite: { Args: never; Returns: string }

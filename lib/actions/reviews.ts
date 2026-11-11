@@ -1,6 +1,7 @@
 'use server';
 
 import * as Sentry from '@sentry/nextjs';
+import { hasMeetingStarted } from '@/lib/meeting-time';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { reviewFormSchema } from '@/lib/validation/review';
 import { revalidateMeetingPaths } from './_revalidate-meeting';
@@ -8,7 +9,7 @@ import { revalidateMeetingPaths } from './_revalidate-meeting';
 type ActionResult = { ok: true } | { ok: false; error: string };
 
 /**
- * 한줄 평 작성/수정 (upsert). 모임이 끝난 후만 허용.
+ * 한줄 평 작성/수정 (upsert). 모임 시작 시각부터 허용.
  * RLS가 본인+클럽멤버 체크 — 비인가 호출이면 0 rows.
  */
 export async function upsertMyReview(
@@ -24,15 +25,15 @@ export async function upsertMyReview(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: '로그인이 필요합니다.' };
 
-  // 모임이 이미 끝났는지 확인 — UI에서도 막지만 서버 가드
+  // 화면과 같은 모임 시작 시각을 서버에서도 검사한다.
   const { data: meeting } = await supabase
     .from('meetings')
     .select('scheduled_at')
     .eq('id', meetingId)
     .maybeSingle();
   if (!meeting) return { ok: false, error: '모임을 찾을 수 없습니다.' };
-  if (new Date(meeting.scheduled_at) > new Date()) {
-    return { ok: false, error: '모임이 끝난 후에 한줄 평을 남길 수 있어요.' };
+  if (!hasMeetingStarted(meeting.scheduled_at)) {
+    return { ok: false, error: '모임 시작 시각부터 한줄 평을 남길 수 있어요.' };
   }
 
   const { data, error } = await supabase
