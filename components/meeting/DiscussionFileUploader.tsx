@@ -6,11 +6,14 @@ import { FileText, ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CandidateQuestionsEditor, newCandidate, type Candidate } from '@/components/meeting/CandidateQuestionsEditor';
 import {
-  uploadDiscussionFile,
+  prepareDiscussionFileUpload,
+  finishDiscussionFileUpload,
   removeDiscussionFile,
   extractQuestionsFromPdf,
   addQuestionsInBulk,
 } from '@/lib/actions/discussion-files';
+import { DISCUSSION_FILE_SIZE_ERROR, DISCUSSION_FILE_TYPES, MAX_DISCUSSION_FILE_BYTES } from '@/lib/discussion-file';
+import { uploadDiscussionFileToStorage } from '@/lib/supabase/discussion-file-upload';
 
 type Props = {
   meetingId: string;
@@ -22,6 +25,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
   const [fileUrl, setFileUrl] = useState(currentFileUrl);
   const [displayName, setDisplayName] = useState<string | null>(currentFileName);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [removing, setRemoving] = useState(false);
   const [extracting, setExtracting] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -47,15 +51,31 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
     const file = e.target.files?.[0];
     if (!file || fileControlsDisabled) return;
     e.target.value = '';
+    if (file.size > MAX_DISCUSSION_FILE_BYTES) return toast.error(DISCUSSION_FILE_SIZE_ERROR);
     setUploading(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    const r = await uploadDiscussionFile(meetingId, fd, fileUrl).finally(() => setUploading(false));
-    if (!r.ok) return toast.error(r.error);
-    setFileUrl(r.url);
-    setDisplayName(r.fileName);
-    setCandidates([]);
-    toast.success('파일이 업로드되었습니다.');
+    try {
+      const prepared = await prepareDiscussionFileUpload(meetingId, {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+      }, fileUrl);
+      if (!prepared.ok) return toast.error(prepared.error);
+
+      await uploadDiscussionFileToStorage(file, prepared, setUploadProgress);
+      setUploadProgress(100);
+      const result = await finishDiscussionFileUpload(meetingId, prepared.ticket)
+        .catch(() => finishDiscussionFileUpload(meetingId, prepared.ticket));
+      if (!result.ok) return toast.error(result.error);
+      setFileUrl(result.url);
+      setDisplayName(result.fileName);
+      setCandidates([]);
+      toast.success('파일이 업로드되었습니다.');
+    } catch {
+      toast.error('파일 변경 결과를 확인하지 못했습니다. 페이지를 새로고침해 확인해주세요.');
+    } finally {
+      setUploading(false);
+      setUploadProgress(null);
+    }
   }
 
   async function handleRemove() {
@@ -97,7 +117,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
       <input
         ref={inputRef}
         type="file"
-        accept=".pdf,image/*"
+        accept={DISCUSSION_FILE_TYPES.join(',')}
         className="hidden"
         onChange={handleFileChange}
       />
@@ -148,10 +168,15 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
             {uploading ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" />업로드 중...</>
             ) : (
-              '+ PDF 또는 이미지 업로드'
+              '+ PDF 또는 이미지 업로드 (최대 20MB)'
             )}
           </Button>
         </div>
+      )}
+      {uploadProgress !== null && (
+        <p role="status" className="text-sm text-stone-600">
+          {uploadProgress === 100 ? '업로드한 파일 확인 중…' : `파일 업로드 중 ${uploadProgress}%`}
+        </p>
       )}
 
       {/* PDF → 발제문 생성 */}
