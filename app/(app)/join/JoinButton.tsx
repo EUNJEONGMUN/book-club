@@ -1,41 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Loader2, Check } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { applyForMembership } from '@/lib/actions/club';
 import { Button } from '@/components/ui/button';
 
 export function JoinButton({ token }: { token: string }) {
-  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  // server refresh가 끝나기 전까지 inline "신청 완료" 표시용.
-  // refresh 완료되면 부모 page가 already_pending 패널로 통째로 바꿈 (이 컴포넌트 unmount).
-  const [submitted, setSubmitted] = useState(false);
 
   async function submit() {
-    if (submitting || submitted) return;
+    if (submitting) return;
     setSubmitting(true);
-    const result = await applyForMembership(token);
-    if (!result.ok) {
-      setSubmitting(false);
+    try {
+      const result = await applyForMembership(token);
+      if (result.ok) {
+        window.location.replace('/pending');
+        return;
+      }
       toast.error(result.error);
-      return;
+    } catch {
+      toast.error('가입 신청을 확인하지 못했어요. 잠시 후 다시 시도해주세요.');
     }
-    toast.success('가입 신청을 보냈어요. 관리자 승인을 기다려주세요.');
     setSubmitting(false);
-    setSubmitted(true);
-    router.refresh();
-  }
-
-  if (submitted) {
-    return (
-      <Button disabled className="w-full bg-stone-300 text-stone-600 hover:bg-stone-300">
-        <Check className="w-4 h-4 mr-2" />
-        신청 완료 — 관리자 승인 대기 중
-      </Button>
-    );
   }
 
   return (

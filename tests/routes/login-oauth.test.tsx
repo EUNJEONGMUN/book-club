@@ -18,8 +18,11 @@ describe('Google 로그인 시작과 재시도 안내', () => {
     mocks.oauth.mockResolvedValue({ error: null });
   });
 
-  it('Google 로그인 요청에 현재 앱의 콜백과 원래 모임 주소를 전달한다', async () => {
-    mocks.search = new URLSearchParams({ next: '/meetings/original-id?tab=questions' }).toString();
+  it.each([
+    '/meetings/original-id?tab=questions',
+    '/join?token=sample-invite',
+  ])('Google 로그인 요청에 원래 목적지 %s를 전달한다', async (next) => {
+    mocks.search = new URLSearchParams({ next }).toString();
     render(<LoginForm clubName="부글부글" />);
     fireEvent.click(screen.getByRole('button', { name: 'Google로 계속하기' }));
     await waitFor(() => expect(mocks.oauth).toHaveBeenCalledOnce());
@@ -28,7 +31,17 @@ describe('Google 로그인 시작과 재시도 안내', () => {
     const callback = new URL(args.options.redirectTo);
     expect(callback.origin).toBe(window.location.origin);
     expect(callback.pathname).toBe('/auth/callback');
-    expect(callback.searchParams.get('next')).toBe('/meetings/original-id?tab=questions');
+    expect(callback.searchParams.get('next')).toBe(next);
+  });
+
+  it('초대받은 사람이 이메일 회원가입을 선택해도 원래 초대 링크를 유지한다', () => {
+    const next = '/join?token=sample-invite';
+    mocks.search = new URLSearchParams({ next }).toString();
+    render(<LoginForm clubName="부글부글" />);
+    const href = screen.getByRole('link', { name: '회원가입' }).getAttribute('href')!;
+    const signup = new URL(href, window.location.origin);
+    expect(signup.pathname).toBe('/signup');
+    expect(signup.searchParams.get('next')).toBe(next);
   });
 
   it('취소 후 같은 모임에 다시 로그인할 수 있다', async () => {

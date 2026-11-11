@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { getMembership } from '@/lib/auth/membership';
 import { Button } from '@/components/ui/button';
 import { JoinButton } from './JoinButton';
 
@@ -13,19 +14,14 @@ type ValidationResult =
 export default async function JoinPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string | string[] }>;
 }) {
-  const { token } = await searchParams;
+  const membership = await getMembership();
+  if (membership?.role === 'admin' || membership?.role === 'member') redirect('/');
+  if (membership?.role === 'pending') redirect('/pending');
 
-  if (!token) {
-    return (
-      <div className="space-y-4 max-w-sm mx-auto">
-        <h1 className="text-xl font-bold">초대코드가 없어요</h1>
-        <p className="text-sm text-stone-500">초대링크의 token이 누락됐어요. 새 링크를 받아주세요.</p>
-        <Link href="/"><Button variant="outline" className="w-full">홈으로</Button></Link>
-      </div>
-    );
-  }
+  const { token } = await searchParams;
+  if (typeof token !== 'string' || !token.trim()) redirect('/onboarding');
 
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase.rpc('validate_invite_token', { invite_token: token });
@@ -34,7 +30,7 @@ export default async function JoinPage({
     return (
       <div className="space-y-4 max-w-sm mx-auto">
         <h1 className="text-xl font-bold">확인할 수 없어요</h1>
-        <p className="text-sm text-stone-500">초대코드 검증 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.</p>
+        <p className="text-sm text-stone-500">초대 링크를 확인하는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.</p>
         <Link href="/"><Button variant="outline" className="w-full">홈으로</Button></Link>
       </div>
     );
@@ -46,23 +42,13 @@ export default async function JoinPage({
     redirect('/');
   }
 
-  if (result.status === 'already_pending') {
-    return (
-      <div className="space-y-4 max-w-sm mx-auto">
-        <h1 className="text-xl font-bold">신청 완료</h1>
-        <p className="text-sm text-stone-500">
-          <strong>{result.club_name}</strong>에 이미 가입 신청을 보냈어요. 관리자 승인을 기다려주세요.
-        </p>
-        <Link href="/"><Button variant="outline" className="w-full">홈으로</Button></Link>
-      </div>
-    );
-  }
+  if (result.status === 'already_pending') redirect('/pending');
 
   if (result.status === 'not_found') {
     return (
       <div className="space-y-4 max-w-sm mx-auto">
-        <h1 className="text-xl font-bold">잘못된 초대코드예요</h1>
-        <p className="text-sm text-stone-500">코드가 올바른지 확인해주세요.</p>
+        <h1 className="text-xl font-bold">잘못된 초대 링크예요</h1>
+        <p className="text-sm text-stone-500">관리자에게 초대 링크를 다시 요청해주세요.</p>
         <Link href="/"><Button variant="outline" className="w-full">홈으로</Button></Link>
       </div>
     );
