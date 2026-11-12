@@ -5,7 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { meetingFormSchema } from '@/lib/validation/meeting';
-import { cleanupDiscussionFile, publicUrlToPath } from './_discussion-file-cleanup';
+import { publicUrlToPath } from './_discussion-file-access';
+import { cleanupDiscussionFile } from './_discussion-file-cleanup';
 import { revalidateMeetingPaths } from './_revalidate-meeting';
 
 type ActionResult<T = void> = { ok: true; data?: T } | { ok: false; error: string };

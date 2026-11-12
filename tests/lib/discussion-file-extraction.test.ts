@@ -20,7 +20,7 @@ vi.mock('@google/genai', () => ({
   Type: { OBJECT: 'OBJECT', ARRAY: 'ARRAY', STRING: 'STRING' },
 }));
 
-import { extractQuestionsFromPdf } from '@/lib/actions/discussion-files';
+import { extractQuestionsFromPdf } from '@/lib/actions/discussion-file-extraction';
 
 const origin = 'https://storage.example.test';
 const bucketUrl = `${origin}/storage/v1/object/public/discussion-files`;
