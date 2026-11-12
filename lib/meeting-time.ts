@@ -20,6 +20,13 @@ export function getKoreanMeetingDateTime(value: string | Date) {
   };
 }
 
+export function getKoreanMeetingDayDifference(scheduledAt: string, now = new Date()): number {
+  const meetingDate = getKoreanMeetingDateTime(scheduledAt).date;
+  const currentDate = getKoreanMeetingDateTime(now).date;
+  // Treat the Seoul date labels as UTC midnights to subtract calendar days.
+  return (Date.parse(`${meetingDate}T00:00:00Z`) - Date.parse(`${currentDate}T00:00:00Z`)) / 86_400_000;
+}
+
 export function hasMeetingStarted(scheduledAt: string, now = Date.now()): boolean {
   return Date.parse(scheduledAt) <= now;
 }

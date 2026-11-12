@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { getUpcomingMeetings, getPastMeetings } from '@/lib/queries/club';
 import { MeetingCard } from '@/components/meeting/MeetingCard';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export default async function MeetingsPage() {
   await requireMember();
@@ -16,11 +17,9 @@ export default async function MeetingsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">모임</h1>
-        <Link href={'/meetings/new'}>
-          <Button className="gap-1">
-            <Plus className="w-4 h-4" />
-            신규 생성
-          </Button>
+        <Link href="/meetings/new" className={cn(buttonVariants(), 'gap-1')}>
+          <Plus aria-hidden="true" className="w-4 h-4" />
+          신규 생성
         </Link>
       </div>
 

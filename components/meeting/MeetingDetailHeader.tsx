@@ -1,5 +1,4 @@
-import { differenceInDays } from 'date-fns';
-import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
+import { getKoreanMeetingDateTime, getKoreanMeetingDayDifference } from '@/lib/meeting-time';
 import { MeetingHeaderMenu } from './MeetingHeaderMenu';
 import type { Meeting, Profile } from '@/lib/types';
 
@@ -11,9 +10,8 @@ export function MeetingDetailHeader({
   isHost: boolean;
 }) {
   const { date, time, weekday } = getKoreanMeetingDateTime(meeting.scheduled_at);
-  const diff = differenceInDays(new Date(meeting.scheduled_at), new Date());
-  const isUpcoming = diff >= 0;
-  const dDay = diff > 0 ? `D-${diff}` : 'D-Day';
+  const diff = getKoreanMeetingDayDifference(meeting.scheduled_at);
+  const dDay = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : null;
 
   return (
     <div className="space-y-3">
@@ -29,7 +27,7 @@ export function MeetingDetailHeader({
           <div className="absolute top-0 right-0 z-10">
             <MeetingHeaderMenu meetingId={meeting.id} isHost={isHost} />
           </div>
-          {isUpcoming && (
+          {dDay && (
             <p className="text-xs font-bold text-blue-600">{dDay}</p>
           )}
           <h1 className="text-xl font-bold leading-tight pr-10">{meeting.book_title}</h1>

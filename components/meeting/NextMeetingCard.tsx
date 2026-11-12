@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { differenceInDays } from 'date-fns';
-import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
+import { getKoreanMeetingDateTime, getKoreanMeetingDayDifference } from '@/lib/meeting-time';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { AttendanceSection } from './AttendanceSection';
 import type { Meeting, Profile, Attendance } from '@/lib/types';
 
@@ -18,7 +17,7 @@ type Props = {
 export function NextMeetingCard({ meeting, viewerProfile }: Props) {
   const { date, time, weekday } = getKoreanMeetingDateTime(meeting.scheduled_at);
   const [, month, day] = date.split('-');
-  const diff = differenceInDays(new Date(meeting.scheduled_at), new Date());
+  const diff = getKoreanMeetingDayDifference(meeting.scheduled_at);
   const dDay = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : `D+${-diff}`;
 
   return (
@@ -50,10 +49,8 @@ export function NextMeetingCard({ meeting, viewerProfile }: Props) {
           viewerProfile={viewerProfile}
         />
 
-        <Link href={`/meetings/${meeting.id}`}>
-          <Button variant="outline" className="w-full">
-            상세 정보 →
-          </Button>
+        <Link href={`/meetings/${meeting.id}`} className={buttonVariants({ variant: 'outline', className: 'w-full' })}>
+          상세 정보 →
         </Link>
       </CardContent>
     </Card>

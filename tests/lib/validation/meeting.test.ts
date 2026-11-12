@@ -1,6 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { getKoreanMeetingDateTime, hasMeetingStarted } from '@/lib/meeting-time';
+import { getKoreanMeetingDateTime, getKoreanMeetingDayDifference, hasMeetingStarted } from '@/lib/meeting-time';
 import { meetingFormSchema } from '@/lib/validation/meeting';
+
+describe('한국 시간 기준 D-Day', () => {
+  it.each([
+    ['2026-11-13T00:00:00+09:00', '2026-11-12T23:50:00+09:00', 1],
+    ['2026-11-15T01:15:00+09:00', '2026-11-12T21:00:00+09:00', 3],
+    ['2026-11-12T10:00:00+09:00', '2026-11-12T23:50:00+09:00', 0],
+    ['2026-11-12T23:50:00+09:00', '2026-11-13T00:00:00+09:00', -1],
+    ['2027-01-01T00:10:00+09:00', '2026-12-31T23:50:00+09:00', 1],
+  ])('%s 일정과 기준 시각 %s의 날짜 차이는 %i일이다', (scheduledAt, now, expected) => {
+    expect(getKoreanMeetingDayDifference(scheduledAt, new Date(now))).toBe(expected);
+  });
+});
 
 describe('meetingFormSchema', () => {
   const valid = {

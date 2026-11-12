@@ -105,10 +105,10 @@ function QuestionItem({
       </div>
       {editable && (
         <div className="flex gap-1 shrink-0">
-          <Button size="icon" variant="ghost" onClick={() => setEditing(true)}>
+          <Button size="icon" variant="ghost" aria-label={`질문 ${index} 수정`} onClick={() => setEditing(true)}>
             <Pencil className="w-4 h-4" />
           </Button>
-          <Button size="icon" variant="ghost" onClick={remove}>
+          <Button size="icon" variant="ghost" aria-label={`질문 ${index} 삭제`} onClick={remove}>
             <Trash2 className="w-4 h-4 text-red-500" />
           </Button>
         </div>

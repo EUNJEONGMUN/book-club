@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { getNextMeeting } from '@/lib/queries/club';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { NextMeetingCard } from '@/components/meeting/NextMeetingCard';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 
 export default async function HomePage() {
   await requireMember();
@@ -18,8 +18,8 @@ export default async function HomePage() {
         <div className="text-center py-12 space-y-3 border-2 border-dashed rounded">
           <p className="text-3xl">📚</p>
           <p className="text-slate-600">아직 예정된 모임이 없어요</p>
-          <Link href={'/meetings/new'}>
-            <Button>모임 만들기</Button>
+          <Link href="/meetings/new" className={buttonVariants()}>
+            모임 만들기
           </Link>
         </div>
       ) : null}
