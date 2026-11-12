@@ -1,4 +1,5 @@
 export const DISCUSSION_FILE_BUCKET = 'discussion-files';
+export const DISCUSSION_FILE_PUBLIC_PATH = `/storage/v1/object/public/${DISCUSSION_FILE_BUCKET}/`;
 export const MAX_DISCUSSION_FILE_BYTES = 20 * 1024 * 1024;
 export const DISCUSSION_FILE_CHUNK_BYTES = 6 * 1024 * 1024;
 export const DISCUSSION_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/gif'];

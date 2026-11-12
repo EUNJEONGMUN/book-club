@@ -1,17 +1,16 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
-import { DISCUSSION_FILE_BUCKET } from '@/lib/discussion-file';
+import { DISCUSSION_FILE_BUCKET, DISCUSSION_FILE_PUBLIC_PATH } from '@/lib/discussion-file';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
 
 export function publicUrlToPath(url: string | null, meetingId: string): string | null {
   if (!url) return null;
-  const marker = `/storage/v1/object/public/${DISCUSSION_FILE_BUCKET}/`;
   try {
     const { origin, pathname } = new URL(url);
-    if (origin !== new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin || !pathname.startsWith(marker)) {
+    if (origin !== new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).origin || !pathname.startsWith(DISCUSSION_FILE_PUBLIC_PATH)) {
       return null;
     }
-    const path = decodeURIComponent(pathname.slice(marker.length));
+    const path = decodeURIComponent(pathname.slice(DISCUSSION_FILE_PUBLIC_PATH.length));
     if (!path.startsWith(`${meetingId}/`) || path.split('/').some(part => !part || part === '.' || part === '..')) {
       return null;
     }
