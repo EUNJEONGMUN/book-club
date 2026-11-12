@@ -426,32 +426,3 @@ PDF에 나온 순서대로 questions 배열에 담아주세요. 각 항목 안�
     return { ok: false, error: '발제문 추출에 실패했습니다.' };
   }
 }
-
-export async function addQuestionsInBulk(meetingId: string, contents: string[]) {
-  const auth = await assertHost(meetingId);
-  if (!auth.ok) return { ok: false as const, error: auth.error };
-  const supabase = auth.supabase;
-
-  const cleaned = contents.map((c) => c.trim()).filter((c) => c.length > 0);
-  if (cleaned.length === 0) return { ok: false as const, error: '저장할 질문이 없습니다.' };
-
-  const { data: existing } = await supabase
-    .from('discussion_questions')
-    .select('order_idx')
-    .eq('meeting_id', meetingId)
-    .order('order_idx', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const startIdx = (existing?.order_idx ?? -1) + 1;
-  const rows = cleaned.map((content, i) => ({
-    meeting_id: meetingId,
-    order_idx: startIdx + i,
-    content,
-  }));
-
-  const { error } = await supabase.from('discussion_questions').insert(rows);
-  if (error) return { ok: false as const, error: error.message };
-  await revalidateMeetingPaths(meetingId);
-  return { ok: true as const };
-}

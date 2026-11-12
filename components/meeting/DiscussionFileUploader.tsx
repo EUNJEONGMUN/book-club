@@ -10,8 +10,8 @@ import {
   finishDiscussionFileUpload,
   removeDiscussionFile,
   extractQuestionsFromPdf,
-  addQuestionsInBulk,
 } from '@/lib/actions/discussion-files';
+import { addQuestionsInBulk } from '@/lib/actions/questions';
 import { DISCUSSION_FILE_SIZE_ERROR, DISCUSSION_FILE_TYPES, MAX_DISCUSSION_FILE_BYTES } from '@/lib/discussion-file';
 import { uploadDiscussionFileToStorage } from '@/lib/supabase/discussion-file-upload';
 

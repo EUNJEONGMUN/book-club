@@ -1,9 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 
 // Fixed local Docker container, never a URL or linked/production project.
+const psqlArgs = ['exec', '-i', 'supabase_db_book-club', 'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', 'postgres'];
 function sql(query: string): string {
-  return execFileSync('docker', ['exec', '-i', 'supabase_db_book-club', 'psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-U', 'postgres', '-d', 'postgres'], {
+  return execFileSync('docker', psqlArgs, {
     input: query, encoding: 'utf8', timeout: 15_000, stdio: ['pipe', 'pipe', 'pipe'],
   }).trim();
 }
@@ -58,6 +60,65 @@ let before: string;
 beforeAll(() => { before = fingerprint(); });
 afterAll(() => { expect(fingerprint()).toBe(before); });
 
+it('allocates distinct positions for concurrent single and bulk appends', async () => {
+  const hostId = randomUUID();
+  const meetingId = randomUUID();
+  sql(`BEGIN;
+    INSERT INTO auth.users(id,email,aud,role,created_at,updated_at)
+      VALUES ('${hostId}','${hostId}@question-test.local','authenticated','authenticated',now(),now());
+    INSERT INTO public.profiles(id,display_name) VALUES ('${hostId}','Question test host');
+    INSERT INTO public.members(user_id,role) VALUES ('${hostId}','member');
+    INSERT INTO public.meetings(id,host_id,book_title,book_author,scheduled_at,location_name)
+      VALUES ('${meetingId}','${hostId}','Concurrent append test','test',now(),'local');
+    INSERT INTO public.discussion_questions(meeting_id,order_idx,content)
+      VALUES ('${meetingId}',0,'existing');
+    COMMIT;`);
+
+  const batches = Array.from({ length: 4 }, (_, i) => [
+    [`single-${i}`], [`bulk-${i}-first`, `bulk-${i}-second`],
+  ]).flat();
+
+  try {
+    const results = await Promise.allSettled(batches.map((contents) => new Promise<void>((resolve, reject) => {
+      const client = spawn('docker', psqlArgs, { stdio: ['pipe', 'ignore', 'pipe'] });
+      let errors = '';
+      client.stderr.on('data', (chunk) => { errors += chunk; });
+      client.on('error', reject);
+      client.stdin.on('error', reject);
+      client.on('close', (code) => code === 0 ? resolve() : reject(new Error(errors)));
+      client.stdin.end(`BEGIN;
+        SET LOCAL statement_timeout='8s';
+        SELECT set_config('request.jwt.claim.sub','${hostId}',true);
+        SET LOCAL ROLE authenticated;
+        SELECT public.append_discussion_questions(
+          '${meetingId}', ARRAY[${contents.map((content) => `'${content}'`).join(',')}]
+        );
+        SELECT pg_sleep(0.25);
+        COMMIT;`);
+    })));
+    expect(results).toEqual(batches.map(() => ({ status: 'fulfilled', value: undefined })));
+
+    const rows: Array<{ order_idx: number; content: string }> = JSON.parse(sql(`
+      SELECT json_agg(q ORDER BY order_idx) FROM (
+        SELECT order_idx, content FROM public.discussion_questions WHERE meeting_id='${meetingId}'
+      ) q;`));
+    expect(rows.map((row) => row.order_idx)).toEqual(Array.from({ length: 13 }, (_, i) => i));
+    expect(rows[0].content).toBe('existing');
+    for (const batch of batches) {
+      const first = rows.findIndex(({ content }) => content === batch[0]);
+      expect(first).toBeGreaterThan(0);
+      expect(rows.slice(first, first + batch.length).map(({ content }) => content)).toEqual(batch);
+    }
+  } finally {
+    sql(`BEGIN;
+      DELETE FROM public.meetings WHERE id='${meetingId}';
+      DELETE FROM public.members WHERE user_id='${hostId}';
+      DELETE FROM public.profiles WHERE id='${hostId}';
+      DELETE FROM auth.users WHERE id='${hostId}';
+      COMMIT;`);
+  }
+});
+
 const cases: Array<[string, string | null, string, string?]> = [
  ['profile creation permits only the authenticated account and preserves its original name on retry', member, `
     RESET ROLE;
@@ -80,7 +141,20 @@ const cases: Array<[string, string | null, string, string?]> = [
  ['administrator retains host-only meeting edits', admin, `UPDATE public.meetings SET book_title='bad' WHERE id='${future}'; ${is(`(SELECT book_title FROM public.meetings WHERE id='${future}')='phase2 future'`)}`],
  ['host can append discussion question', host, `INSERT INTO public.discussion_questions(meeting_id,order_idx,content) VALUES ('${future}',1,'allowed');`],
  ['other member cannot append discussion question', member, fails(`INSERT INTO public.discussion_questions(meeting_id,order_idx,content) VALUES ('${future}',1,'denied')`)],
+ ['other member cannot use the append RPC', member, fails(`PERFORM public.append_discussion_questions('${future}', ARRAY['denied'])`)],
+ ['duplicate positions are rejected by the DB even on direct insert', host, fails(
+   `INSERT INTO public.discussion_questions(meeting_id,order_idx,content) VALUES ('${future}',0,'duplicate')`,
+   'unique_violation',
+ )],
  ['other member cannot change question content', member, `UPDATE public.discussion_questions SET content='bad' WHERE id='${id(12)}'; ${is(`(SELECT content FROM public.discussion_questions WHERE id='${id(12)}')='phase2 question'`)}`],
+ ['RLS returns no affected question rows to a non-host', member, `
+    WITH changed AS (
+      UPDATE public.discussion_questions SET content='denied' WHERE id='${id(12)}' RETURNING id
+    ) SELECT pg_temp.check_true(NOT EXISTS(SELECT 1 FROM changed));
+    WITH deleted AS (
+      DELETE FROM public.discussion_questions WHERE id='${id(12)}' RETURNING id
+    ) SELECT pg_temp.check_true(NOT EXISTS(SELECT 1 FROM deleted));
+ `],
  ['member can change own attendance', member, `UPDATE public.attendances SET status='undecided' WHERE id='${id(13)}'; ${is(`(SELECT status FROM public.attendances WHERE id='${id(13)}')='undecided'`)}`],
  ['host can correct another members attendance', host, `UPDATE public.attendances SET status='undecided' WHERE id='${id(13)}'; ${is(`(SELECT status FROM public.attendances WHERE id='${id(13)}')='undecided'`)}`],
  ['another non-host member cannot change attendance', id(6), `UPDATE public.attendances SET status='undecided' WHERE id='${id(13)}'; ${is(`(SELECT status FROM public.attendances WHERE id='${id(13)}')='attending'`)}`],
