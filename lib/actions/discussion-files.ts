@@ -6,6 +6,7 @@ import type { PostgrestError } from '@supabase/supabase-js';
 import { z } from 'zod';
 import {
   DISCUSSION_FILE_BUCKET as STORAGE_BUCKET,
+  DISCUSSION_FILE_PUBLIC_PATH,
   DISCUSSION_FILE_SIZE_ERROR,
   DISCUSSION_FILE_TYPES,
   MAX_DISCUSSION_FILE_BYTES,
@@ -228,35 +229,38 @@ export async function removeDiscussionFile(meetingId: string, expectedUrl?: stri
   return { ok: true as const };
 }
 
-export async function extractQuestionsFromPdf(meetingId: string, pdfUrl: string): Promise<
+export async function extractQuestionsFromPdf(meetingId: string, expectedUrl: string): Promise<
   { ok: true; questions: string[] } | { ok: false; error: string }
 > {
   const auth = await assertHost(meetingId);
   if (!auth.ok) return { ok: false, error: auth.error };
 
-  // SSRF guard: URL must be inside our Supabase storage bucket for THIS meeting
-  const expectedPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${meetingId}/`;
-  if (!pdfUrl.startsWith(expectedPrefix)) {
+  const registeredUrl = auth.meeting.discussion_file_url;
+  if (expectedUrl !== registeredUrl) return { ok: false, error: FILE_CHANGED };
+  const path = publicUrlToPath(registeredUrl, meetingId);
+  if (!path || !/\.pdf$/i.test(path)) {
     return { ok: false, error: '잘못된 파일 경로입니다.' };
   }
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  const pdfUrl = new URL(DISCUSSION_FILE_PUBLIC_PATH + encodedPath, process.env.NEXT_PUBLIC_SUPABASE_URL);
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return { ok: false, error: 'Gemini API 키가 설정되지 않았습니다.' };
 
   try {
-    // Pre-check size via HEAD to avoid OOM on huge files
-    const head = await fetch(pdfUrl, { method: 'HEAD' });
-    if (!head.ok) return { ok: false, error: 'PDF를 가져오지 못했습니다.' };
-    const contentLength = Number(head.headers.get('content-length') ?? '0');
-    if (contentLength > MAX_DISCUSSION_FILE_BYTES) {
-      return { ok: false, error: 'PDF가 너무 큽니다 (20MB 초과).' };
-    }
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60_000); // 60s timeout
+    const fetchOptions = { signal: controller.signal, redirect: 'error' as const };
     let pdfBase64: string;
     try {
-      const res = await fetch(pdfUrl, { signal: controller.signal });
+      const head = await fetch(pdfUrl, { ...fetchOptions, method: 'HEAD' });
+      if (!head.ok) return { ok: false, error: 'PDF를 가져오지 못했습니다.' };
+      const contentLength = Number(head.headers.get('content-length') ?? '0');
+      if (contentLength > MAX_DISCUSSION_FILE_BYTES) {
+        return { ok: false, error: 'PDF가 너무 큽니다 (20MB 초과).' };
+      }
+
+      const res = await fetch(pdfUrl, fetchOptions);
       if (!res.ok) return { ok: false, error: 'PDF를 가져오지 못했습니다.' };
       const buf = await res.arrayBuffer();
       if (buf.byteLength > MAX_DISCUSSION_FILE_BYTES) {
