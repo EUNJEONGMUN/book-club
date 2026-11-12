@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { meetingFormSchema } from '@/lib/validation/meeting';
+import { cleanupDiscussionFile, publicUrlToPath } from './_discussion-file-cleanup';
 import { revalidateMeetingPaths } from './_revalidate-meeting';
 
 type ActionResult<T = void> = { ok: true; data?: T } | { ok: false; error: string };
@@ -68,9 +69,12 @@ export async function updateMeeting(id: string, input: unknown): Promise<ActionR
 export async function deleteMeeting(id: string): Promise<ActionResult> {
   await requireMember();
   const supabase = await getSupabaseServer();
-  const { data, error } = await supabase.from('meetings').delete().eq('id', id).select('id');
+  const { data, error } = await supabase.from('meetings').delete().eq('id', id).select('id, discussion_file_url');
   if (error) return { ok: false, error: error.message };
   if (!data?.length) return { ok: false, error: '발제자만 모임을 삭제할 수 있어요.' };
+  const deleted = data[0];
+  const path = publicUrlToPath(deleted.discussion_file_url, deleted.id);
+  if (path) await cleanupDiscussionFile(path);
   revalidatePath('/meetings');
   revalidatePath('/');
   redirect('/meetings');
