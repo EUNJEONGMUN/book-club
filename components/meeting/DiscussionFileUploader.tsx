@@ -9,8 +9,8 @@ import {
   prepareDiscussionFileUpload,
   finishDiscussionFileUpload,
   removeDiscussionFile,
-  extractQuestionsFromPdf,
 } from '@/lib/actions/discussion-files';
+import { extractQuestionsFromPdf } from '@/lib/actions/discussion-file-extraction';
 import { addQuestionsInBulk } from '@/lib/actions/questions';
 import { DISCUSSION_FILE_SIZE_ERROR, DISCUSSION_FILE_TYPES, MAX_DISCUSSION_FILE_BYTES } from '@/lib/discussion-file';
 import { uploadDiscussionFileToStorage } from '@/lib/supabase/discussion-file-upload';
@@ -91,11 +91,16 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
   async function handleExtract() {
     if (!fileUrl || extracting) return;
     setExtracting(true);
-    const r = await extractQuestionsFromPdf(meetingId, fileUrl);
-    setExtracting(false);
-    if (!r.ok) return toast.error(r.error);
-    setCandidates(r.questions.map((content) => newCandidate(content)));
-    toast.success(`${r.questions.length}개의 질문을 추출했습니다.`);
+    try {
+      const result = await extractQuestionsFromPdf(meetingId, fileUrl);
+      if (!result.ok) return toast.error(result.error);
+      setCandidates(result.questions.map((content) => newCandidate(content)));
+      toast.success(`${result.questions.length}개의 질문을 추출했습니다.`);
+    } catch {
+      toast.error('발제문을 추출하지 못했습니다. 다시 시도해주세요.');
+    } finally {
+      setExtracting(false);
+    }
   }
 
   async function handleSaveCandidates() {
@@ -105,11 +110,16 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
       .filter((content) => content.length > 0);
     if (filtered.length === 0) return;
     setSaving(true);
-    const r = await addQuestionsInBulk(meetingId, filtered);
-    setSaving(false);
-    if (!r.ok) return toast.error(r.error);
-    toast.success(`${filtered.length}개의 질문이 추가되었습니다.`);
-    setCandidates([]);
+    try {
+      const result = await addQuestionsInBulk(meetingId, filtered);
+      if (!result.ok) return toast.error(result.error);
+      toast.success(`${filtered.length}개의 질문이 추가되었습니다.`);
+      setCandidates([]);
+    } catch {
+      toast.error('저장 결과를 확인하지 못했습니다. 발제문 목록을 확인한 뒤 다시 시도해주세요.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
