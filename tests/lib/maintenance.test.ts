@@ -20,7 +20,7 @@ describe('운영 전환용 앱 점검 응답', () => {
     expect(response.headers.get('Retry-After')).toBe('60');
     expect(await response.text()).toContain('기존 기록을 안전하게 보존');
   });
-  it.each([['GET','/api/meetings/id/share-image'],['POST','/meetings'],['POST','/more']])('%s %s 요청도 중단한다', async (method, pathname) => {
+  it.each([['GET','/api/preflight'],['POST','/meetings'],['POST','/more']])('%s %s 요청도 중단한다', async (method, pathname) => {
     vi.stubEnv('MAINTENANCE_MODE', '1');
     const response = maintenanceResponse(new NextRequest(`http://localhost:3000${pathname}`, { method }))!;
     expect(response.status).toBe(503);
