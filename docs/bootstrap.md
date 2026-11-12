@@ -2,11 +2,15 @@
 
 ## 로컬 실행
 
-Docker Desktop을 실행한 뒤:
+Node.js, pnpm과 Docker가 필요하다. GitHub CI의 Node.js 버전은 22다. Docker를 실행한 뒤 아래 명령을 사용한다.
 
 ```bash
+pnpm install
 pnpm exec supabase start
 pnpm exec supabase migration up --local
+cp -n .env.example .env.local
+pnpm exec supabase status
+# .env.local에 로컬 URL과 키를 입력한 뒤
 pnpm dev
 ```
 
@@ -14,6 +18,17 @@ pnpm dev
 신규 로컬 DB의 시드는 부글부글 설정·관리자 멤버십·미래/과거 일정 2건·질문 1건을 만든다. 기존 DB에서 시드를 추가할 때만 `pnpm exec supabase db query --local --file supabase/seed.sql`을 사용한다. DB 초기화는 필요하지 않다.
 
 로컬 초대코드: `bugeul-local-invite` (시드 실행일부터 30일). 운영 계정·기록과는 별개의 환경이다.
+
+## 환경변수
+
+`supabase status`에 나온 로컬 API URL, anon 또는 publishable 키, service-role 또는 secret 키를 각각 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`에 설정한다. 마지막 키는 서버 전용이다. OAuth 리다이렉션에 사용하는 `NEXT_PUBLIC_SITE_URL`은 로컬에서 `http://localhost:3000`이다.
+
+- 책·장소 검색은 `KAKAO_REST_API_KEY`를 사용한다. [Kakao Developers](https://developers.kakao.com)에서 앱과 REST API 키를 준비하고 카카오맵 기능을 활성화한다.
+- PDF 질문 추출은 `GEMINI_API_KEY`를 사용한다. [Google AI Studio](https://aistudio.google.com/)에서 키를 발급한다.
+- Google OAuth는 Supabase Auth에서 설정한다. 로컬 설정은 `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID`와 `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`을 사용한다. [로컬 Google OAuth 검증](google-oauth-check.md)
+- 가입 신청 알림을 시험할 때는 `RESEND_API_KEY`와 선택값 `RESEND_FROM`을 설정한다. 배포 빌드의 소스맵 업로드는 Vercel에 설정한 `SENTRY_AUTH_TOKEN`을 사용한다. [환경변수 템플릿](../.env.example)
+
+Vercel Preview는 별도 `book-club-preview` 프로젝트의 Supabase URL과 키를 사용한다. Production, Preview, 로컬은 각각의 프로젝트 값으로 구성한다. [Preview 환경 분리 기록](preview-isolation.md) · [실제 Preview 검증 기록](hosted-preview-verification.md)
 
 ## 2단계 데이터 보존
 
@@ -38,15 +53,18 @@ pnpm dev
 ```bash
 pnpm test
 pnpm test:integration
+pnpm test:e2e
 pnpm exec tsc --noEmit
 pnpm build
 ```
 
 통합 테스트는 고정된 로컬 Docker 컨테이너만 사용하고 각 시험의 변경을 항상 롤백한다. 데이터 전체를 삭제하던 이전 테스트는 실행 경로에서 분리했다.
 
-## 운영 반영 전
+Playwright E2E는 위 시드 관리자와 지난 모임을 사용한다. 처음 실행할 때는 `pnpm exec playwright install chromium`으로 브라우저를 설치한다. 로그인·홈 메뉴, 지난 모임 상세, 멤버·설정·프로필, 예전 모임 주소 이동을 확인한다. [테스트 시나리오](test-scenarios.md)
 
-운영 DB에는 아직 이 전환을 적용하지 않았다. 운영 반영은 별도 작업이다. 반영 전에 새 전체 DB/Storage 백업을 만들고 실제 복원 가능 여부를 확인하며, 보존 대상을 검증한다. 적용 시 구 앱과 신 스키마가 혼용되지 않도록 유지보수 시간과 배포 순서를 준비해야 한다. 보관 스키마는 즉시 삭제하지 않는다.
+## 운영 전환 완료
+
+운영 DB는 2026-11-11 단일 모임 구조로 전환했고, 보존 검증 후 임시 쓰기 차단을 해제했다. 적용 순서와 최종 전체 DB·Storage 백업 및 복원 증거는 [운영 전환 완료 기록](manual-production-cutover.md)에 있다.
 
 ## 3단계 정리 및 회귀 검증
 
@@ -70,4 +88,4 @@ node scripts/check-local-records.mjs compare .local-backups/새-검증-전.json
 
 대표 데이터 리허설은 `scripts/rehearse-single-club.mjs`로 반복할 수 있다. 새 임시 로컬 DB에 기존 백업을 복원하고, 한글 PDF 파일명·질문·공개/비공개/익명 평·탈퇴/대기 사용자·초대 만료/취소·Google identity 기록을 넣어 전환을 검증한다. 실제 로컬 Storage의 생성한 랜덤 PDF만 다운로드하여 전후 해시를 비교한 뒤 정리한다. 기존 데이터는 사용하지 않는다.
 
-운영 준비/복구 순서는 `docs/single-club-cutover.md`에 있다. 앱용 점검 모드와 구 버전 호환 브리지 패치를 준비했지만, Supabase 직접 Auth/REST/Storage 쓰기를 막는 운영 게이트웨이 설정은 아직 적용하지 않았다. 이 외부 차단 검증 전에는 운영 전환하지 않는다.
+구 버전 호환 점검 브리지와 임시 DB 쓰기 차단의 준비·리허설은 [운영 전환·복구 절차서](single-club-cutover.md)에 보관한다. 실제 운영 전환에서 사용한 차단 설치·해제 결과는 [운영 전환 완료 기록](manual-production-cutover.md)에 있다.
