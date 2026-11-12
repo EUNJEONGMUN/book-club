@@ -22,10 +22,11 @@ pnpm exec supabase status
 - 로컬 DB 통합 테스트 `pnpm test:integration`
 - 로컬 브라우저 조회 테스트 `pnpm test:e2e`
 
-PR에서 GitHub CI의 타입 검사·단위 테스트와 Vercel 프리뷰 빌드를 확인한다. `main` 변경은 Vercel 운영 배포로 이어지며, DB 마이그레이션은 별도로 적용한다.
+PR에서 GitHub CI의 타입 검사·단위 테스트와 Vercel 프리뷰 빌드를 확인한다. `main` 변경은 Vercel 운영 배포로 이어진다. 앱이 새 DB 함수나 제약 조건에 의존하는 변경은 기존 운영 Supabase에 마이그레이션을 적용하고 확인한 뒤 병합한다.
 
 ## 상세 문서
 
 - [앱 기능과 권한](docs/application.md)
 - [로컬 설정과 검증](docs/bootstrap.md) · [테스트 시나리오](docs/test-scenarios.md)
+- [운영 모니터링](OPERATIONS.md)
 - [운영 전환 완료 및 백업 증거](docs/manual-production-cutover.md) · [전환 리허설과 복구 절차](docs/single-club-cutover.md)
