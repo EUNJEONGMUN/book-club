@@ -306,6 +306,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      append_discussion_questions: {
+        Args: { question_contents: string[]; target_meeting_id: string }
+        Returns: undefined
+      }
       apply_for_membership: { Args: { invite_token: string }; Returns: Json }
       get_admin_emails: {
         Args: never
