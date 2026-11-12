@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,8 +8,9 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { BookOpen, CalendarDays, ChevronDown, MapPin } from 'lucide-react';
 import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
+import { cn } from '@/lib/utils';
 import { meetingFormSchema, type MeetingFormInput } from '@/lib/validation/meeting';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BookSearch } from '@/components/meeting/BookSearch';
@@ -112,18 +113,24 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
           {/* 제목 / 저자 */}
           <div className="flex-1 space-y-3 min-w-0">
             <FormField label="책 제목" error={form.formState.errors.book_title?.message}>
-              <Input
-                {...form.register('book_title')}
-                placeholder="예: 데미안 — 비우면 '미정'"
-                className="bg-stone-50 border-stone-200"
-              />
+              {(field) => (
+                <Input
+                  {...field}
+                  {...form.register('book_title')}
+                  placeholder="예: 데미안 — 비우면 '미정'"
+                  className="bg-stone-50 border-stone-200"
+                />
+              )}
             </FormField>
             <FormField label="저자" error={form.formState.errors.book_author?.message}>
-              <Input
-                {...form.register('book_author')}
-                placeholder="예: 헤르만 헤세"
-                className="bg-stone-50 border-stone-200"
-              />
+              {(field) => (
+                <Input
+                  {...field}
+                  {...form.register('book_author')}
+                  placeholder="예: 헤르만 헤세"
+                  className="bg-stone-50 border-stone-200"
+                />
+              )}
             </FormField>
           </div>
         </div>
@@ -137,39 +144,47 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
         <div className="flex items-start justify-start gap-3">
           <FormField
             label="날짜"
-            error={form.formState.isSubmitted && !scheduledDate ? '날짜를 선택해주세요' : undefined}
+            error={scheduledTime && form.formState.errors.scheduled_at
+              ? (scheduledDate ? form.formState.errors.scheduled_at.message : '날짜를 선택해주세요')
+              : undefined}
           >
-            <input
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => {
-                setScheduledDate(e.target.value);
-                updateScheduledAt(e.target.value, scheduledTime);
-              }}
-              className="block w-[160px] h-10 box-border rounded-md border border-stone-200 bg-stone-50 px-3 py-0 text-sm leading-10 text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
-            />
+            {(field) => (
+              <input
+                {...field}
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => {
+                  setScheduledDate(e.target.value);
+                  updateScheduledAt(e.target.value, scheduledTime);
+                }}
+                className="block w-[160px] h-10 box-border rounded-md border border-stone-200 bg-stone-50 px-3 py-0 text-sm leading-10 text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
+              />
+            )}
           </FormField>
           <FormField
             label="시간"
             error={form.formState.isSubmitted && !scheduledTime ? '시간을 선택해주세요' : undefined}
           >
-            <div className="relative">
-              <select
-                value={scheduledTime}
-                onChange={(e) => {
-                  setScheduledTime(e.target.value);
-                  updateScheduledAt(scheduledDate, e.target.value);
-                }}
-                className="block w-[120px] h-10 box-border appearance-none rounded-md border border-stone-200 bg-stone-50 pl-3 pr-8 text-sm text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
-              >
-                <option value="" disabled>선택</option>
-                {!TIME_OPTIONS.includes(initialTime) && <option value={initialTime}>{initialTime}</option>}
-                {TIME_OPTIONS.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-            </div>
+            {(field) => (
+              <div className="relative">
+                <select
+                  {...field}
+                  value={scheduledTime}
+                  onChange={(e) => {
+                    setScheduledTime(e.target.value);
+                    updateScheduledAt(scheduledDate, e.target.value);
+                  }}
+                  className="block w-[120px] h-10 box-border appearance-none rounded-md border border-stone-200 bg-stone-50 pl-3 pr-8 text-sm text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
+                >
+                  <option value="" disabled>선택</option>
+                  {!TIME_OPTIONS.includes(initialTime) && <option value={initialTime}>{initialTime}</option>}
+                  {TIME_OPTIONS.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <ChevronDown aria-hidden="true" className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+              </div>
+            )}
           </FormField>
         </div>
       </Section>
@@ -184,11 +199,14 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
           }}
         />
         <FormField label="장소 이름" error={form.formState.errors.location_name?.message}>
-          <Input
-            {...form.register('location_name')}
-            placeholder="예: 아마츄어 작업실 — 비우면 '미정'"
-            className="bg-stone-50 border-stone-200"
-          />
+          {(field) => (
+            <Input
+              {...field}
+              {...form.register('location_name')}
+              placeholder="예: 아마츄어 작업실 — 비우면 '미정'"
+              className="bg-stone-50 border-stone-200"
+            />
+          )}
         </FormField>
         {/* 지도 링크는 장소 검색으로 자동 입력 */}
         <input type="hidden" {...form.register('location_url')} />
@@ -196,10 +214,8 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
       <div className={cancelHref ? 'flex gap-2' : ''}>
         {cancelHref && (
-          <Link href={cancelHref} className="flex-1">
-            <Button type="button" variant="outline" className="w-full border-stone-200 text-stone-600">
-              취소
-            </Button>
+          <Link href={cancelHref} className={cn(buttonVariants({ variant: 'outline' }), 'flex-1 border-stone-200 text-stone-600')}>
+            취소
           </Link>
         )}
         <Button
@@ -241,13 +257,15 @@ function FormField({
 }: {
   label: string;
   error?: string;
-  children: React.ReactNode;
+  children: (field: { id: string; 'aria-invalid'?: true; 'aria-describedby'?: string }) => React.ReactNode;
 }) {
+  const id = useId();
+  const errorId = error ? `${id}-error` : undefined;
   return (
     <div className="space-y-1.5 min-w-0">
-      <Label className="text-stone-700">{label}</Label>
-      {children}
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      <Label htmlFor={id} className="text-stone-700">{label}</Label>
+      {children({ id, 'aria-invalid': error ? true : undefined, 'aria-describedby': errorId })}
+      {error && <p id={errorId} className="text-xs text-red-500">{error}</p>}
     </div>
   );
 }

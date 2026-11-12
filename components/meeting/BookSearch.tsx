@@ -53,6 +53,7 @@ export function BookSearch({ onSelect }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
+            aria-label="책 제목으로 검색"
             placeholder="책 제목으로 검색"
             className="h-10 pl-9 bg-stone-50 border-stone-200"
           />

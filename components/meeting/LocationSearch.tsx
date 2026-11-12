@@ -55,6 +55,7 @@ export function LocationSearch({ onSelect }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
+            aria-label="장소명으로 검색"
             placeholder="장소명으로 검색"
             className="h-10 pl-9 bg-stone-50 border-stone-200"
           />

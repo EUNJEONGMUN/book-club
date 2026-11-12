@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { format } from 'date-fns';
+import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { MemberWithStats, MemberHistoryItem } from '@/lib/queries/club';
@@ -61,7 +61,7 @@ export function MemberCard({ member, history, defaultExpanded = true }: Props) {
             {history!.map((h) => (
               <li key={h.meeting_id} className="flex items-center gap-3 text-sm">
                 <span className="text-stone-400 tabular-nums shrink-0 w-14">
-                  {format(new Date(h.scheduled_at), 'yyyy.MM')}
+                  {getKoreanMeetingDateTime(h.scheduled_at).date.slice(0, 7).replace('-', '.')}
                 </span>
                 <span className="text-stone-700 truncate flex-1">{h.book_title}</span>
                 {h.is_host && (
