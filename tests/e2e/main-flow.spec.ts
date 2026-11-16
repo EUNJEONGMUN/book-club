@@ -55,15 +55,16 @@ test('테마를 즉시 적용하고 새로고침 뒤에도 선택을 복원한�
   const defaultTheme = page.getByRole('radio', { name: '기본', exact: true });
   const christmas = page.getByRole('radio', { name: '크리스마스', exact: true });
   const header = page.getByRole('banner');
+  const body = page.locator('body');
   await expect(defaultTheme).toBeChecked();
   await expect(header).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-  await expect(page.locator('body')).toHaveCSS('background-color', 'oklch(1 0 0)');
+  const defaultBackground = await body.evaluate((element) => getComputedStyle(element).backgroundColor);
 
   await defaultTheme.focus();
   await defaultTheme.press('ArrowRight');
   await expect(christmas).toBeChecked();
   await expect(header).toHaveCSS('background-color', 'rgb(25, 87, 62)');
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(255, 250, 240)');
+  await expect(body).toHaveCSS('background-color', 'rgb(255, 250, 240)');
 
   await nav.getByRole('link', { name: '홈', exact: true }).press('Enter');
   await expect(page).toHaveURL('/');
@@ -79,4 +80,5 @@ test('테마를 즉시 적용하고 새로고침 뒤에도 선택을 복원한�
   await page.reload();
   await expect(defaultTheme).toBeChecked();
   await expect(header).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(body).toHaveCSS('background-color', defaultBackground);
 });
