@@ -42,7 +42,7 @@ export function ProfileForm({
         <Link href="/more" className="flex-1">
           <Button type="button" variant="outline" className="w-full">취소</Button>
         </Link>
-        <Button type="submit" disabled={loading} className="flex-1 bg-stone-800 hover:bg-stone-700 text-white">
+        <Button type="submit" disabled={loading} className="app-primary-action flex-1 bg-stone-800 hover:bg-stone-700 text-white">
           저장
         </Button>
       </div>

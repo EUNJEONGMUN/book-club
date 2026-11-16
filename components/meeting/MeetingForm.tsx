@@ -221,7 +221,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
         <Button
           type="submit"
           disabled={form.formState.isSubmitting}
-          className={`bg-stone-800 hover:bg-stone-700 text-white ${cancelHref ? 'flex-1' : 'w-full'}`}
+          className={`app-primary-action bg-stone-800 hover:bg-stone-700 text-white ${cancelHref ? 'flex-1' : 'w-full'}`}
         >
           {form.formState.isSubmitting ? '저장 중...' : submitLabel}
         </Button>

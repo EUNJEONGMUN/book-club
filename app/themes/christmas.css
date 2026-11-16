@@ -1,0 +1,52 @@
+html[data-theme="christmas"] {
+  --background: #fffaf0;
+  --foreground: #23382e;
+  --card: #fffdf8;
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --primary: #19573e;
+  --primary-foreground: #ffffff;
+  --secondary: #e7f0e7;
+  --secondary-foreground: #23382e;
+  --muted: #f0eee3;
+  --muted-foreground: #526459;
+  --accent: #e7f0e7;
+  --accent-foreground: #23382e;
+  --border: #dddcc9;
+  --input: #a3ab98;
+  --ring: #39785b;
+}
+
+[data-theme="christmas"] .app-header {
+  background-color: var(--primary);
+  border-color: #154431;
+  color: var(--primary-foreground);
+}
+
+[data-theme="christmas"] .app-bottom-nav {
+  background-color: var(--card);
+  border-color: var(--border);
+}
+
+[data-theme="christmas"] .app-bottom-nav a[aria-current="page"] {
+  color: var(--primary);
+}
+
+[data-theme="christmas"] .settings-card {
+  background-color: var(--card);
+  border-color: var(--border);
+}
+
+[data-theme="christmas"] a.settings-card:hover {
+  background-color: var(--accent);
+}
+
+[data-theme="christmas"] .app-primary-action {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+[data-theme="christmas"] .app-primary-action:hover {
+  background-color: #12432f;
+}

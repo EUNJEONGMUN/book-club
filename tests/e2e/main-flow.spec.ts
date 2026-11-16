@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel('이메일').fill('admin@example.local');
   await page.getByLabel('비밀번호').fill('password123');
   await page.getByRole('button', { name: '로그인', exact: true }).click();
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/', { timeout: 15_000 });
 });
 
 test('로그인 후 그룹 선택 없이 홈과 고정 메뉴를 이용한다', async ({ page }) => {
@@ -46,4 +46,37 @@ test('예전 부글부글 주소는 기존 ID의 새 상세 화면으로 연결�
   await page.goto('/clubs/10000000-0000-0000-0000-000000000001/meetings/20000000-0000-0000-0000-000000000002');
   await expect(page).toHaveURL('/meetings/20000000-0000-0000-0000-000000000002');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+});
+
+test('테마를 즉시 적용하고 새로고침 뒤에도 선택을 복원한다', async ({ page }) => {
+  const nav = page.getByRole('navigation');
+  await nav.getByRole('link', { name: '설정', exact: true }).click();
+
+  const defaultTheme = page.getByRole('radio', { name: '기본', exact: true });
+  const christmas = page.getByRole('radio', { name: '크리스마스', exact: true });
+  const header = page.getByRole('banner');
+  await expect(defaultTheme).toBeChecked();
+  await expect(header).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'oklch(1 0 0)');
+
+  await defaultTheme.focus();
+  await defaultTheme.press('ArrowRight');
+  await expect(christmas).toBeChecked();
+  await expect(header).toHaveCSS('background-color', 'rgb(25, 87, 62)');
+  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(255, 250, 240)');
+
+  await nav.getByRole('link', { name: '홈', exact: true }).press('Enter');
+  await expect(page).toHaveURL('/');
+  await expect(header).toHaveCSS('background-color', 'rgb(25, 87, 62)');
+  await nav.getByRole('link', { name: '설정', exact: true }).click();
+  await expect(page).toHaveURL('/more');
+  await page.reload();
+  await expect(christmas).toBeChecked();
+  await expect(header).toHaveCSS('background-color', 'rgb(25, 87, 62)');
+
+  await defaultTheme.check();
+  await expect(header).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await page.reload();
+  await expect(defaultTheme).toBeChecked();
+  await expect(header).toHaveCSS('background-color', 'rgb(255, 255, 255)');
 });

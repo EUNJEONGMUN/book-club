@@ -3,6 +3,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Toaster } from 'sonner';
 import { ServerActionErrorBoundary } from '@/components/layout/ServerActionErrorBoundary';
+import { AppThemeProvider } from '@/components/theme/AppThemeProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -22,9 +23,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <body>
-        {children}
+        <AppThemeProvider>{children}</AppThemeProvider>
         <Toaster position="top-center" richColors />
         <ServerActionErrorBoundary />
         <Analytics />

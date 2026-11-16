@@ -66,7 +66,7 @@ export function ClubInfoPanel({ club }: { club: ClubSettings }) {
           />
           <p className="text-xs text-stone-400 text-right">{description.length}/500</p>
         </div>
-        <Button type="submit" disabled={saving || !dirty} className="gap-1 bg-stone-800 hover:bg-stone-700 text-white">
+        <Button type="submit" disabled={saving || !dirty} className="app-primary-action gap-1 bg-stone-800 hover:bg-stone-700 text-white">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           저장
         </Button>
