@@ -1,5 +1,6 @@
 import { getKoreanMeetingDateTime, getKoreanMeetingDayDifference } from '@/lib/meeting-time';
 import { MeetingHeaderMenu } from './MeetingHeaderMenu';
+import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 import type { Meeting, Profile } from '@/lib/types';
 
 export function MeetingDetailHeader({
@@ -16,11 +17,11 @@ export function MeetingDetailHeader({
   return (
     <div className="space-y-3">
       <div className="flex gap-3">
-        <div className="w-20 h-28 bg-slate-200 rounded shrink-0 flex items-center justify-center overflow-hidden">
+        <div className="book-cover w-20 h-28 bg-slate-200 rounded shrink-0 flex items-center justify-center overflow-hidden">
           {meeting.book_cover_url ? (
             <img src={meeting.book_cover_url} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-3xl">📚</span>
+            <span className="text-3xl"><SeasonalIcon kind="book">📚</SeasonalIcon></span>
           )}
         </div>
         <div className="flex-1 min-w-0 space-y-0.5 relative">
@@ -39,7 +40,7 @@ export function MeetingDetailHeader({
         </div>
       </div>
       <div className="bg-slate-50 p-3 rounded space-y-1">
-        <p className="text-sm font-medium">📍 {meeting.location_name}</p>
+        <p className="text-sm font-medium"><SeasonalIcon kind="location">📍</SeasonalIcon> {meeting.location_name}</p>
         {meeting.location_url && (
           <a
             href={meeting.location_url}

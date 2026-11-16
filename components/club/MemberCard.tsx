@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { SeasonalMemberIcon } from '@/components/theme/SeasonalIcon';
 import type { MemberWithStats, MemberHistoryItem } from '@/lib/queries/club';
 
 type Props = {
@@ -21,8 +22,10 @@ export function MemberCard({ member, history, defaultExpanded = true }: Props) {
     <div className="px-4 py-4 flex gap-3">
       <Avatar className="w-12 h-12 shrink-0">
         <AvatarImage src={member.avatar_url ?? undefined} alt={member.display_name} />
-        <AvatarFallback className="bg-stone-100 text-stone-600 text-base font-medium">
-          {member.display_name.slice(0, 1)}
+        <AvatarFallback className="theme-member-avatar bg-stone-100 text-stone-600 text-base font-medium">
+          <SeasonalMemberIcon memberId={member.user_id}>
+            {member.display_name.slice(0, 1)}
+          </SeasonalMemberIcon>
         </AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">

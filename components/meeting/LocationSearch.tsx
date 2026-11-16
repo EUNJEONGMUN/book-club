@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { MapPin, Search, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
+import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 import { searchPlaces, type KakaoPlace } from '@/lib/actions/location-search';
 
 type Props = {
@@ -101,7 +102,7 @@ export function LocationSearch({ onSelect }: Props) {
                     onClick={() => handleSelect(place)}
                     className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-stone-50 text-left transition-colors"
                   >
-                    <MapPin className="w-4 h-4 text-stone-400 mt-0.5 shrink-0" />
+                    <SeasonalIcon kind="location" className="mt-0.5 size-4 shrink-0"><MapPin className="mt-0.5 size-4 shrink-0 text-stone-400" /></SeasonalIcon>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-stone-800 truncate">{place.place_name}</p>
                       <p className="text-xs text-stone-400 truncate">

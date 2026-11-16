@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronRight, Settings, Users } from 'lucide-react';
+import { ChevronRight, Palette, Settings, Users } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { LogoutButton } from './logout-button';
 import { requireMember } from '@/lib/auth/membership';
@@ -26,7 +26,7 @@ export default async function SettingsPage() {
       <Link
         href="/more/profile"
         aria-label={`${displayName} 프로필 수정`}
-        className="flex items-center gap-4 rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
+        className="settings-card flex items-center gap-4 rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400"
       >
         <Avatar className="size-14">
           {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="" />}
@@ -40,7 +40,7 @@ export default async function SettingsPage() {
 
       <section aria-labelledby="my-group-heading" className="space-y-3">
         <h2 id="my-group-heading" className="px-1 text-sm font-semibold text-stone-600">내 그룹</h2>
-        <div className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
+        <div className="settings-card overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
           <div className="flex items-center gap-2 px-5 pb-2 pt-5">
             <h3 className="min-w-0 break-words text-lg font-bold text-stone-900">{club.name}</h3>
             <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${role === 'admin' ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-600'}`}>
@@ -59,6 +59,11 @@ export default async function SettingsPage() {
               <ChevronRight aria-hidden="true" className="size-5 text-stone-300" />
             </Link>
           )}
+          <Link href="/more/theme" className={`${rowClassName} border-t border-stone-100`}>
+            <Palette aria-hidden="true" className="size-5 shrink-0 text-stone-500" />
+            <span className="flex-1">테마 변경</span>
+            <ChevronRight aria-hidden="true" className="size-5 text-stone-300" />
+          </Link>
         </div>
       </section>
 

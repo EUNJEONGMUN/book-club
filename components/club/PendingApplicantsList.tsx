@@ -85,7 +85,7 @@ export function PendingApplicantsList({
                   size="sm"
                   onClick={() => handleApprove(a.user_id)}
                   disabled={isPending}
-                  className="gap-1 bg-stone-800 hover:bg-stone-700 text-white"
+                  className="app-primary-action gap-1 bg-stone-800 hover:bg-stone-700 text-white"
                 >
                   {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                   승인

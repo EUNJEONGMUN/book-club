@@ -86,7 +86,7 @@ function QuestionItem({
             <Button size="sm" variant="ghost" onClick={() => { setText(question.content); setMode('text'); setEditing(false); }}>
               취소
             </Button>
-            <Button size="sm" className="bg-stone-800 hover:bg-stone-700 text-white" onClick={save}>
+            <Button size="sm" className="app-primary-action bg-stone-800 hover:bg-stone-700 text-white" onClick={save}>
               저장
             </Button>
           </div>

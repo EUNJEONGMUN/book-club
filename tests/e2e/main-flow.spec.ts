@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await page.getByLabel('이메일').fill('admin@example.local');
   await page.getByLabel('비밀번호').fill('password123');
   await page.getByRole('button', { name: '로그인', exact: true }).click();
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/', { timeout: 15_000 });
 });
 
 test('로그인 후 그룹 선택 없이 홈과 고정 메뉴를 이용한다', async ({ page }) => {
@@ -46,4 +46,75 @@ test('예전 부글부글 주소는 기존 ID의 새 상세 화면으로 연결�
   await page.goto('/clubs/10000000-0000-0000-0000-000000000001/meetings/20000000-0000-0000-0000-000000000002');
   await expect(page).toHaveURL('/meetings/20000000-0000-0000-0000-000000000002');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+});
+
+test('테마를 즉시 적용하고 새로고침 뒤에도 선택을 복원한다', async ({ page }) => {
+  test.slow();
+  const nav = page.getByRole('navigation');
+  const homeDecoration = page.locator('.home-christmas-decoration');
+  await expect(homeDecoration).toBeHidden();
+  await nav.getByRole('link', { name: '설정', exact: true }).click();
+  await page.getByRole('link', { name: '테마 변경' }).click();
+  await expect(page).toHaveURL('/more/theme', { timeout: 15_000 });
+
+  const defaultTheme = page.getByRole('radio', { name: '기본', exact: true });
+  const christmas = page.getByRole('radio', { name: '크리스마스', exact: true });
+  const header = page.getByRole('banner');
+  const body = page.locator('body');
+  const seasonalNavIcons = nav.locator('.theme-icon-christmas svg:visible');
+  await expect(defaultTheme).toBeChecked();
+  await expect(header).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(seasonalNavIcons).toHaveCount(0);
+  const defaultBackground = await body.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+  await defaultTheme.focus();
+  await defaultTheme.press('ArrowRight');
+  await expect(christmas).toBeChecked();
+  await expect(header).toHaveCSS('background-color', 'rgb(248, 240, 227)');
+  await expect(body).toHaveCSS('background-color', 'rgb(234, 224, 211)');
+  await expect(body).toHaveCSS('background-image', /radial-gradient/);
+  await expect(seasonalNavIcons).toHaveCount(4);
+  await expect(seasonalNavIcons.first()).toHaveCSS('background-image', /repeating-linear-gradient/);
+  await expect(nav.locator('.theme-icon-meetings')).toHaveCSS('background-color', 'rgb(124, 68, 75)');
+  await expect(nav.locator('.theme-icon-members')).toHaveCSS('background-color', 'rgb(248, 240, 227)');
+
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await expect(homeDecoration).toBeVisible();
+
+  await nav.getByRole('link', { name: '모임', exact: true }).click();
+  await expect(page).toHaveURL('/meetings', { timeout: 15_000 });
+  await expect(header).toHaveCSS('background-color', 'rgb(248, 240, 227)');
+  const past = page.locator('section').filter({ has: page.getByRole('heading', { name: '지난 모임', exact: true }) });
+  await expect(past.locator('.theme-icon-book').first()).toBeVisible();
+  await expect(past.locator('.theme-icon-location').first()).toBeVisible();
+
+  await nav.getByRole('link', { name: '멤버', exact: true }).click();
+  await expect(page).toHaveURL('/members', { timeout: 15_000 });
+  const memberIcon = page.locator('.theme-member-avatar .theme-icon-christmas svg').first();
+  await expect(memberIcon).toBeVisible();
+  const assignedIcon = await memberIcon.getAttribute('class');
+  await page.reload();
+  await expect(memberIcon).toBeVisible();
+  expect(await memberIcon.getAttribute('class')).toBe(assignedIcon);
+
+  await nav.getByRole('link', { name: '설정', exact: true }).click();
+  await page.getByRole('link', { name: '테마 변경' }).click();
+  await expect(page).toHaveURL('/more/theme', { timeout: 15_000 });
+  await page.reload();
+  await expect(christmas).toBeChecked();
+  await expect(header).toHaveCSS('background-color', 'rgb(248, 240, 227)');
+
+  await defaultTheme.check();
+  await expect(header).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await page.reload();
+  await expect(defaultTheme).toBeChecked();
+  await expect(header).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await expect(body).toHaveCSS('background-color', defaultBackground);
+  await expect(body).toHaveCSS('background-image', 'none');
+  await expect(seasonalNavIcons).toHaveCount(0);
+  await expect(nav.locator('.theme-icon-default svg:visible')).toHaveCount(4);
+  await nav.getByRole('link', { name: '멤버', exact: true }).click();
+  await expect(page).toHaveURL('/members', { timeout: 15_000 });
+  await expect(page.locator('.theme-member-avatar .theme-icon-christmas svg:visible')).toHaveCount(0);
+  await expect(page.locator('.theme-member-avatar .theme-icon-default').first()).toHaveText(/\S/);
 });

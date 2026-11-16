@@ -5,6 +5,7 @@ import { getSupabaseServer } from '@/lib/supabase/server';
 import { authPath, sanitizeNext } from '@/lib/auth/safe-next';
 import { SignupForm } from './signup-form';
 import { CompleteProfileForm } from './complete-profile-form';
+import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 
 export default async function SignupPage({
   searchParams,
@@ -30,7 +31,7 @@ export default async function SignupPage({
       <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center space-y-2">
-            <div className="text-4xl">📖</div>
+            <div className="text-4xl"><SeasonalIcon kind="book">📖</SeasonalIcon></div>
             <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">{clubName}</h1>
           </div>
           <CompleteProfileForm userEmail={user.email ?? ''} next={next} />
@@ -49,7 +50,7 @@ export default async function SignupPage({
     <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
-          <div className="text-4xl">📖</div>
+          <div className="text-4xl"><SeasonalIcon kind="book">📖</SeasonalIcon></div>
           <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">{clubName}</h1>
           <p className="text-sm text-stone-500">함께 책 읽는 사람들</p>
         </div>

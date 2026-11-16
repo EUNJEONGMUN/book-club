@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
+import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 
 export function BookCoverUploader({
   value,
@@ -38,7 +39,7 @@ export function BookCoverUploader({
         {value ? (
           <img src={value} alt="책 표지" className="w-full h-full object-cover" />
         ) : (
-          <span className="text-2xl text-slate-300">📚</span>
+          <span className="text-2xl text-slate-300"><SeasonalIcon kind="book">📚</SeasonalIcon></span>
         )}
       </div>
       <div className="flex gap-2 items-center">
