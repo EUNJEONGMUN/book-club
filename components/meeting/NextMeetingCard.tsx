@@ -3,6 +3,7 @@ import { getKoreanMeetingDateTime, getKoreanMeetingDayDifference } from '@/lib/m
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { AttendanceSection } from './AttendanceSection';
+import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 import type { Meeting, Profile, Attendance } from '@/lib/types';
 
 type Props = {
@@ -24,11 +25,11 @@ export function NextMeetingCard({ meeting, viewerProfile }: Props) {
     <Card>
       <CardContent className="p-4 space-y-4">
         <div className="flex gap-3">
-          <div className="w-20 h-28 bg-slate-200 rounded shrink-0 flex items-center justify-center overflow-hidden">
+          <div className="book-cover w-20 h-28 bg-slate-200 rounded shrink-0 flex items-center justify-center overflow-hidden">
             {meeting.book_cover_url ? (
               <img src={meeting.book_cover_url} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-3xl">📚</span>
+              <span className="text-3xl"><SeasonalIcon kind="book">📚</SeasonalIcon></span>
             )}
           </div>
           <div className="flex-1 space-y-1">
@@ -39,7 +40,7 @@ export function NextMeetingCard({ meeting, viewerProfile }: Props) {
               {month}월 {day}일 ({weekday}) {time}
             </p>
             <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
-            <p className="text-xs text-slate-500">📍 {meeting.location_name}</p>
+            <p className="text-xs text-slate-500"><SeasonalIcon kind="location">📍</SeasonalIcon> {meeting.location_name}</p>
           </div>
         </div>
 

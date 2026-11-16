@@ -15,7 +15,7 @@ export function ThemeSettings() {
 
   return (
     <fieldset disabled={!ready} className="min-w-0">
-      <legend className="mb-3 px-1 text-sm font-semibold text-stone-600">테마</legend>
+      <legend className="sr-only">테마</legend>
       <div className="settings-card grid grid-cols-2 gap-2 rounded-2xl border border-stone-200/80 bg-white p-3 shadow-sm">
         {THEME_OPTIONS.map(({ value, label }) => (
           <label

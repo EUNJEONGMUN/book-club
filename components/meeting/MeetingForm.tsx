@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BookSearch } from '@/components/meeting/BookSearch';
 import { LocationSearch } from '@/components/meeting/LocationSearch';
+import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 import type { KakaoBook } from '@/lib/actions/book-search';
 import type { KakaoPlace } from '@/lib/actions/location-search';
 import type { z } from 'zod';
@@ -87,7 +88,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
     <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
 
       {/* 책 정보 */}
-      <Section icon={<BookOpen className="w-4 h-4" />} title="책 정보">
+      <Section icon={<SeasonalIcon kind="book"><BookOpen className="size-4" /></SeasonalIcon>} title="책 정보">
         <BookSearch
           onSelect={(book: KakaoBook) => {
             form.setValue('book_title', book.title, { shouldValidate: true });
@@ -106,7 +107,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             ) : (
-              <BookOpen className="w-7 h-7 text-stone-300" />
+              <SeasonalIcon kind="book" className="size-7"><BookOpen className="size-7 text-stone-300" /></SeasonalIcon>
             )}
           </div>
 
@@ -190,7 +191,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
       </Section>
 
       {/* 장소 */}
-      <Section icon={<MapPin className="w-4 h-4" />} title="장소">
+      <Section icon={<SeasonalIcon kind="location"><MapPin className="size-4" /></SeasonalIcon>} title="장소">
         <LocationSearch
           onSelect={(place: KakaoPlace) => {
             form.setValue('location_name', place.place_name, { shouldValidate: true });

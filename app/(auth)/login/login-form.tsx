@@ -9,6 +9,7 @@ import { authPath, sanitizeNext } from '@/lib/auth/safe-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 
 export default function LoginForm({ clubName }: { clubName: string }) {
   return (
@@ -59,7 +60,7 @@ function LoginContent({ clubName }: { clubName: string }) {
 
         {/* 헤더 */}
         <div className="text-center space-y-2">
-          <div className="text-4xl">📖</div>
+          <div className="text-4xl"><SeasonalIcon kind="book">📖</SeasonalIcon></div>
           <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">{clubName}</h1>
           <p className="text-sm text-stone-500">함께 책 읽는 사람들</p>
         </div>

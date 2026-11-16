@@ -39,6 +39,8 @@ describe('설정 화면 권한별 동선', () => {
     expect(screen.getByRole('link', { name: '문은정 프로필 수정' })).toHaveAttribute('href', '/more/profile');
     expect(screen.getByRole('link', { name: '그룹 설정' })).toHaveAttribute('href', '/more/info');
     expect(screen.getByRole('link', { name: '가입 신청자 (1명)' })).toHaveAttribute('href', '/more/applicants');
+    expect(screen.getByRole('link', { name: '가입 신청자 (1명)' }).nextElementSibling)
+      .toHaveAttribute('href', '/more/theme');
     expect(screen.queryByText('초대링크')).not.toBeInTheDocument();
     expect(mocks.getActiveInvite).not.toHaveBeenCalled();
   });
@@ -50,6 +52,7 @@ describe('설정 화면 권한별 동선', () => {
     expect(screen.getByRole('heading', { name: '내 그룹' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: '그룹 설정' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /가입 신청자/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '테마 변경' })).toHaveAttribute('href', '/more/theme');
     expect(mocks.getPendingApplicants).not.toHaveBeenCalled();
   });
 

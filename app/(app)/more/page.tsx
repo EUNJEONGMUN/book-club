@@ -1,12 +1,11 @@
 import Link from 'next/link';
-import { ChevronRight, Settings, Users } from 'lucide-react';
+import { ChevronRight, Palette, Settings, Users } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { LogoutButton } from './logout-button';
 import { requireMember } from '@/lib/auth/membership';
 import { getClubSettings, getPendingApplicants } from '@/lib/queries/club';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ThemeSettings } from '@/components/theme/ThemeSettings';
 
 export default async function SettingsPage() {
   const { role } = await requireMember();
@@ -39,8 +38,6 @@ export default async function SettingsPage() {
         <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-stone-300" />
       </Link>
 
-      <ThemeSettings />
-
       <section aria-labelledby="my-group-heading" className="space-y-3">
         <h2 id="my-group-heading" className="px-1 text-sm font-semibold text-stone-600">내 그룹</h2>
         <div className="settings-card overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-sm">
@@ -62,6 +59,11 @@ export default async function SettingsPage() {
               <ChevronRight aria-hidden="true" className="size-5 text-stone-300" />
             </Link>
           )}
+          <Link href="/more/theme" className={`${rowClassName} border-t border-stone-100`}>
+            <Palette aria-hidden="true" className="size-5 shrink-0 text-stone-500" />
+            <span className="flex-1">테마 변경</span>
+            <ChevronRight aria-hidden="true" className="size-5 text-stone-300" />
+          </Link>
         </div>
       </section>
 
