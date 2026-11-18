@@ -1,21 +1,28 @@
 import { getKoreanMeetingDateTime, getKoreanMeetingDayDifference } from '@/lib/meeting-time';
 import { MeetingHeaderMenu } from './MeetingHeaderMenu';
+import { MeetingsListLink } from './MeetingsListLink';
 import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 import type { Meeting, Profile } from '@/lib/types';
 
 export function MeetingDetailHeader({
   meeting,
   isHost,
+  listYear,
 }: {
   meeting: Meeting & { host: Profile };
   isHost: boolean;
+  listYear?: number;
 }) {
   const { date, time, weekday } = getKoreanMeetingDateTime(meeting.scheduled_at);
   const diff = getKoreanMeetingDayDifference(meeting.scheduled_at);
   const dDay = diff > 0 ? `D-${diff}` : diff === 0 ? 'D-Day' : null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
+      <div className="-mt-2 flex items-center justify-between">
+        <MeetingsListLink year={listYear} />
+        <MeetingHeaderMenu meetingId={meeting.id} isHost={isHost} />
+      </div>
       <div className="flex gap-3">
         <div className="book-cover w-20 h-28 bg-slate-200 rounded shrink-0 flex items-center justify-center overflow-hidden">
           {meeting.book_cover_url ? (
@@ -24,14 +31,11 @@ export function MeetingDetailHeader({
             <span className="text-3xl"><SeasonalIcon kind="book">📚</SeasonalIcon></span>
           )}
         </div>
-        <div className="flex-1 min-w-0 space-y-0.5 relative">
-          <div className="absolute top-0 right-0 z-10">
-            <MeetingHeaderMenu meetingId={meeting.id} isHost={isHost} />
-          </div>
+        <div className="flex-1 min-w-0 space-y-0.5">
           {dDay && (
             <p className="text-xs font-bold text-blue-600">{dDay}</p>
           )}
-          <h1 className="text-xl font-bold leading-tight pr-10">{meeting.book_title}</h1>
+          <h1 className="text-xl font-bold leading-tight">{meeting.book_title}</h1>
           <p className="text-sm text-slate-600">{meeting.book_author}</p>
           <p className="text-sm text-slate-700 pt-1">
             {date.replaceAll('-', '.')} ({weekday}) {time}
