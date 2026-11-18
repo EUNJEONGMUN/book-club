@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { getMeetingReviews } from '@/lib/queries/reviews';
-import { hasMeetingStarted } from '@/lib/meeting-time';
+import { getKoreanMeetingDateTime, hasMeetingStarted } from '@/lib/meeting-time';
 import { getActiveMembers } from '@/lib/queries/club';
 import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
 import { ShareMeetingButton } from '@/components/meeting/ShareMeetingButton';
@@ -24,6 +24,7 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
   const isAdmin = myRole === 'admin';
   const reviews = await getMeetingReviews(meeting.id);
   const isPastMeeting = hasMeetingStarted(meeting.scheduled_at);
+  const listYear = isPastMeeting ? Number(getKoreanMeetingDateTime(meeting.scheduled_at).date.slice(0, 4)) : undefined;
 
   // 지난 모임이면 host/admin만 정정 가능 (수정 모드)
   const canEditAttendance = isPastMeeting && (isHost || isAdmin);
@@ -34,7 +35,7 @@ export default async function MeetingDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <MeetingDetailHeader meeting={meeting} isHost={isHost} />
+      <MeetingDetailHeader meeting={meeting} isHost={isHost} listYear={listYear} />
       <ShareMeetingButton />
       <section className="space-y-3">
         <p className="text-sm font-medium">발제 자료</p>

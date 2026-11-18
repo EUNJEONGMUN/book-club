@@ -29,23 +29,40 @@ export async function getNextMeeting(): Promise<NextMeetingWithAttendance | null
   return { ...(data as any), questions_count } as NextMeetingWithAttendance;
 }
 
-export async function getUpcomingMeetings(): Promise<Array<Meeting & { host: Profile }>> {
+export async function getUpcomingMeetings(now: Date): Promise<Array<Meeting & { host: Profile }>> {
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
     .select('*, host:profiles!meetings_host_id_fkey(*)')
-    .gte('scheduled_at', new Date().toISOString())
+    .gte('scheduled_at', now.toISOString())
     .order('scheduled_at', { ascending: true });
   if (error) throw error;
   return (data ?? []) as Array<Meeting & { host: Profile }>;
 }
 
-export async function getPastMeetings(): Promise<Array<Meeting & { host: Profile }>> {
+export async function getFirstPastMeetingDate(now: Date): Promise<string | null> {
+  const supabase = await getSupabaseServer();
+  const { data, error } = await supabase
+    .from('meetings')
+    .select('scheduled_at')
+    .lt('scheduled_at', now.toISOString())
+    .order('scheduled_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.scheduled_at ?? null;
+}
+
+export async function getPastMeetings(year: number, now: Date): Promise<Array<Meeting & { host: Profile }>> {
+  const start = new Date(`${year}-01-01T00:00:00+09:00`);
+  const nextYear = new Date(`${year + 1}-01-01T00:00:00+09:00`);
+  const end = now < nextYear ? now : nextYear;
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
     .select('*, host:profiles!meetings_host_id_fkey(*)')
-    .lt('scheduled_at', new Date().toISOString())
+    .gte('scheduled_at', start.toISOString())
+    .lt('scheduled_at', end.toISOString())
     .order('scheduled_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Array<Meeting & { host: Profile }>;

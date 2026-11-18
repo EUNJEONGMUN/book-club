@@ -1,17 +1,34 @@
 import { requireMember } from '@/lib/auth/membership';
 import Link from 'next/link';
-import { Plus } from 'lucide-react';
-import { getUpcomingMeetings, getPastMeetings } from '@/lib/queries/club';
+import { BookOpen, Plus } from 'lucide-react';
+import { getFirstPastMeetingDate, getUpcomingMeetings, getPastMeetings } from '@/lib/queries/club';
 import { MeetingCard } from '@/components/meeting/MeetingCard';
+import { MeetingBookshelf } from '@/components/meeting/MeetingBookshelf';
+import { MeetingYearSelect } from '@/components/meeting/MeetingYearSelect';
 import { buttonVariants } from '@/components/ui/button';
+import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { cn } from '@/lib/utils';
 
-export default async function MeetingsPage() {
+export default async function MeetingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string | string[]; view?: string | string[] }>;
+}) {
   await requireMember();
-  const [upcoming, past] = await Promise.all([
-    getUpcomingMeetings(),
-    getPastMeetings(),
+  const { year: requestedYear, view } = await searchParams;
+  const showBookshelf = view === 'bookshelf';
+  const now = new Date();
+  const currentYear = Number(getKoreanMeetingDateTime(now).date.slice(0, 4));
+  const [firstPastDate, upcoming] = await Promise.all([
+    getFirstPastMeetingDate(now),
+    showBookshelf ? [] : getUpcomingMeetings(now),
   ]);
+  const firstYear = firstPastDate ? Number(getKoreanMeetingDateTime(firstPastDate).date.slice(0, 4)) : currentYear;
+  const years = Array.from({ length: currentYear - firstYear + 1 }, (_, i) => currentYear - i);
+  const year = years.find((option) => String(option) === requestedYear) ?? currentYear;
+  const past = await getPastMeetings(year, now);
+
+  if (showBookshelf) return <MeetingBookshelf year={year} meetings={past} />;
 
   return (
     <div className="space-y-6">
@@ -31,7 +48,20 @@ export default async function MeetingsPage() {
 
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-slate-700">지난 모임</h2>
-        {past.length === 0 && <p className="text-sm text-slate-500">아직 지난 모임이 없습니다.</p>}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <MeetingYearSelect year={year} years={years} />
+            <span className="text-sm text-muted-foreground">{past.length}회</span>
+          </div>
+          <Link
+            href={{ pathname: '/meetings', query: { year, view: 'bookshelf' } }}
+            className={cn(buttonVariants({ variant: 'outline' }), 'min-h-11')}
+          >
+            <BookOpen aria-hidden="true" />
+            모아보기
+          </Link>
+        </div>
+        {past.length === 0 && <p className="text-sm text-muted-foreground">{year}년 지난 모임이 없습니다.</p>}
         {past.map((m) => <MeetingCard key={m.id} meeting={m} />)}
       </section>
     </div>

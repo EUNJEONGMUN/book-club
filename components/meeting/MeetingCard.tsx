@@ -19,7 +19,7 @@ export function MeetingCard({ meeting }: { meeting: Meeting & { host: Profile } 
             <h3 className="font-semibold truncate">{meeting.book_title}</h3>
             <p className="text-sm text-slate-500 truncate">{meeting.book_author}</p>
             <p className="text-xs text-slate-600 mt-1">
-              {date.replaceAll('-', '.')} ({weekday}) {time}
+              <time dateTime={meeting.scheduled_at}>{date.replaceAll('-', '.')} ({weekday}) {time}</time>
             </p>
             <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
             <p className="text-xs text-slate-500 truncate"><SeasonalIcon kind="location">📍</SeasonalIcon> {meeting.location_name}</p>
