@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const mocks = vi.hoisted(() => ({ exchange: vi.fn(), server: vi.fn() }));
+const mocks = vi.hoisted(() => ({ exchange: vi.fn(), server: vi.fn(), getUser: vi.fn() }));
 vi.mock('@/lib/supabase/server', () => ({ getSupabaseServer: mocks.server }));
 import { GET } from '@/app/(auth)/auth/callback/route';
 
@@ -64,5 +64,48 @@ describe('OAuth 로그인 반환', () => {
     const url = destination(await GET(request({ code: 'local-code', next })));
     expect(url.origin).toBe(origin);
     expect(url.pathname).toBe('/');
+  });
+});
+
+describe('Google 계정 연결 반환', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    mocks.server.mockResolvedValue({ auth: { exchangeCodeForSession: mocks.exchange, getUser: mocks.getUser } });
+    mocks.getUser.mockResolvedValue({ data: { user: { id: 'existing-user' } } });
+  });
+
+  it('기존 사용자에 Google이 연결되면 프로필에 성공을 표시한다', async () => {
+    mocks.exchange.mockResolvedValue({
+      data: { user: { id: 'existing-user', identities: [{ provider: 'email' }, { provider: 'google' }] } },
+      error: null,
+    });
+    const url = destination(await GET(request({ code: 'local-code', intent: 'link-google', next: '/join' })));
+    expect(url.pathname + url.search).toBe('/more/profile?google=linked');
+  });
+
+  it('다른 계정에 연결된 Google을 시도하면 프로필에 충돌을 표시한다', async () => {
+    const url = destination(await GET(request({
+      intent: 'link-google',
+      error: 'server_error',
+      error_code: 'identity_already_exists',
+    })));
+    expect(url.pathname + url.search).toBe('/more/profile?google=conflict');
+    expect(mocks.exchange).not.toHaveBeenCalled();
+  });
+
+  it('이미 로그아웃한 경우 연결 코드를 교환하지 않는다', async () => {
+    mocks.getUser.mockResolvedValue({ data: { user: null } });
+    const url = destination(await GET(request({ code: 'local-code', intent: 'link-google' })));
+    expect(url.pathname + url.search).toBe('/more/profile?google=failed');
+    expect(mocks.exchange).not.toHaveBeenCalled();
+  });
+
+  it('다른 사용자로 반환되면 연결 성공으로 표시하지 않는다', async () => {
+    mocks.exchange.mockResolvedValue({
+      data: { user: { id: 'other-user', identities: [{ provider: 'google' }] } },
+      error: null,
+    });
+    const url = destination(await GET(request({ code: 'local-code', intent: 'link-google' })));
+    expect(url.pathname + url.search).toBe('/more/profile?google=failed');
   });
 });
