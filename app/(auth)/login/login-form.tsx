@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
@@ -20,7 +20,6 @@ export default function LoginForm({ clubName }: { clubName: string }) {
 }
 
 function LoginContent({ clubName }: { clubName: string }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const next = sanitizeNext(searchParams.get('next'));
   const oauthError = searchParams.get('error');
@@ -39,10 +38,12 @@ function LoginContent({ clubName }: { clubName: string }) {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) return toast.error(error.message);
-    router.push(next);
-    router.refresh();
+    if (error) {
+      setLoading(false);
+      toast.error(error.message);
+      return;
+    }
+    window.location.replace(next);
   }
 
   async function signInOAuth(provider: 'google') {
@@ -55,67 +56,67 @@ function LoginContent({ clubName }: { clubName: string }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-muted/50">
       <div className="w-full max-w-sm space-y-8">
 
         {/* 헤더 */}
         <div className="text-center space-y-2">
-          <div className="text-4xl"><SeasonalIcon kind="book">📖</SeasonalIcon></div>
-          <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">{clubName}</h1>
-          <p className="text-sm text-stone-500">함께 책 읽는 사람들</p>
+          <div className="text-4xl"><SeasonalIcon iconRole="book">📖</SeasonalIcon></div>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">{clubName}</h1>
+          <p className="text-sm text-muted-foreground">함께 책 읽는 사람들</p>
         </div>
 
         {/* 폼 카드 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 space-y-5">
+        <div className="bg-card rounded-2xl shadow-sm border border-border p-6 space-y-5">
           {oauthMessage && (
-            <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            <p role="alert" className="rounded-xl border border-warning-border bg-warning p-3 text-sm text-warning-foreground">
               {oauthMessage}
             </p>
           )}
           <form onSubmit={signInEmail} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-stone-700">이메일</Label>
+              <Label htmlFor="login-email" className="text-foreground">이메일</Label>
               <Input
-                id="email"
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@example.com"
                 required
-                className="bg-stone-50 border-stone-200 focus:bg-white"
+                className="bg-muted/50 border-border focus:bg-card"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-stone-700">비밀번호</Label>
+              <Label htmlFor="login-password" className="text-foreground">비밀번호</Label>
               <Input
-                id="password"
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••"
                 required
-                className="bg-stone-50 border-stone-200 focus:bg-white"
+                className="bg-muted/50 border-border focus:bg-card"
               />
             </div>
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-stone-800 hover:bg-stone-700 text-white"
+              className="w-full"
             >
               {loading ? '로그인 중...' : '로그인'}
             </Button>
           </form>
 
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-stone-100" />
-            <span className="text-xs text-stone-400">또는</span>
-            <div className="flex-1 h-px bg-stone-100" />
+            <div className="flex-1 h-px bg-muted" />
+            <span className="text-xs text-muted-foreground">또는</span>
+            <div className="flex-1 h-px bg-muted" />
           </div>
 
           <Button
             variant="outline"
             onClick={() => signInOAuth('google')}
-            className="w-full border-stone-200 text-stone-700 hover:bg-stone-50"
+            className="w-full border-border text-foreground hover:bg-muted/50"
           >
             <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -127,9 +128,9 @@ function LoginContent({ clubName }: { clubName: string }) {
           </Button>
         </div>
 
-        <p className="text-sm text-center text-stone-500">
+        <p className="text-sm text-center text-muted-foreground">
           처음이신가요?{' '}
-          <Link href={authPath('/signup', next)} className="text-stone-800 font-medium underline underline-offset-4">
+          <Link href={authPath('/signup', next)} className="text-foreground font-medium underline underline-offset-4">
             회원가입
           </Link>
         </p>

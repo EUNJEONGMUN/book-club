@@ -57,7 +57,7 @@ export function AvatarUploader({
           onChange={handleFile}
           disabled={uploading}
         />
-        <span className={`inline-flex items-center justify-center rounded-md text-sm font-medium border h-8 px-3 cursor-pointer ${uploading ? 'opacity-50' : 'hover:bg-slate-50'}`}>
+        <span className={`inline-flex items-center justify-center rounded-md text-sm font-medium border h-8 px-3 cursor-pointer ${uploading ? 'opacity-50' : 'hover:bg-muted/50'}`}>
           {uploading ? '업로드 중...' : '사진 변경'}
         </span>
       </label>

@@ -41,7 +41,7 @@ it.each([
 
   await expect(action()).resolves.toEqual({
     ok: false,
-    error: '질문을 찾을 수 없거나 발제자 권한이 없습니다.',
+    error: '질문을 찾을 수 없거나 수정 권한이 없습니다.',
   });
   expect(revalidateMeetingPaths).not.toHaveBeenCalled();
   await expect(action()).resolves.toEqual({ ok: true });

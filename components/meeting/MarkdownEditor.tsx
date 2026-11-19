@@ -8,13 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 export const PREVIEW_PROSE = [
   'max-w-none text-sm',
   '[&>p]:my-0.5',
-  '[&>blockquote]:border-l-2 [&>blockquote]:border-stone-300 [&>blockquote]:pl-3 [&>blockquote]:text-stone-500 [&>blockquote]:italic [&>blockquote]:my-1',
+  '[&>blockquote]:border-l-2 [&>blockquote]:border-border [&>blockquote]:pl-3 [&>blockquote]:text-muted-foreground [&>blockquote]:italic [&>blockquote]:my-1',
   '[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1 [&_li]:my-0',
-  '[&_table]:my-2 [&_table]:border-collapse [&_th]:border [&_th]:border-stone-300 [&_th]:px-2 [&_th]:py-1 [&_th]:bg-stone-100 [&_td]:border [&_td]:border-stone-300 [&_td]:px-2 [&_td]:py-1',
-  '[&_:not(pre)>code]:bg-stone-200/70 [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:rounded [&_:not(pre)>code]:text-stone-700',
-  '[&_pre]:bg-stone-100 [&_pre]:border [&_pre]:border-stone-200 [&_pre]:p-3 [&_pre]:rounded-md [&_pre]:overflow-x-auto [&_pre]:my-2',
-  '[&_a]:text-stone-600 [&_a]:underline',
-  '[&_strong]:font-semibold [&_em]:italic [&_del]:line-through [&_del]:text-stone-400',
+  '[&_table]:my-2 [&_table]:border-collapse [&_th]:border [&_th]:border-border [&_th]:px-2 [&_th]:py-1 [&_th]:bg-muted [&_td]:border [&_td]:border-border [&_td]:px-2 [&_td]:py-1',
+  '[&_:not(pre)>code]:bg-muted/70 [&_:not(pre)>code]:px-1.5 [&_:not(pre)>code]:py-0.5 [&_:not(pre)>code]:rounded [&_:not(pre)>code]:text-foreground',
+  '[&_pre]:bg-muted [&_pre]:border [&_pre]:border-border [&_pre]:p-3 [&_pre]:rounded-md [&_pre]:overflow-x-auto [&_pre]:my-2',
+  '[&_a]:text-muted-foreground [&_a]:underline',
+  '[&_strong]:font-semibold [&_em]:italic [&_del]:line-through [&_del]:text-muted-foreground',
 ].join(' ');
 
 type Props = {
@@ -86,10 +86,10 @@ export function MarkdownEditor({ value, onChange, mode, onRequestTextMode, place
         onClick={handlePreviewClick}
         onKeyDown={(e) => e.key === 'Enter' && onRequestTextMode?.()}
         title="클릭하여 편집 (링크는 새 탭으로 열림)"
-        className="min-h-[6rem] px-3 py-2 rounded-md border border-stone-200 bg-white text-sm cursor-text hover:border-stone-300 hover:bg-stone-50/50 transition-colors"
+        className="min-h-[6rem] px-3 py-2 rounded-md border border-border bg-card text-sm cursor-text hover:border-border hover:bg-muted/50 transition-colors"
       >
         {previewSource ? (
-          <div className={`${PREVIEW_PROSE} ${isEmpty ? '[&_*]:text-stone-400 [&>p]:text-stone-400' : ''}`}>
+          <div className={`${PREVIEW_PROSE} ${isEmpty ? '[&_*]:text-muted-foreground [&>p]:text-muted-foreground' : ''}`}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
@@ -129,22 +129,22 @@ type TabsProps = {
 
 export function MarkdownModeTabs({ mode, onChange }: TabsProps) {
   return (
-    <div className="flex items-center text-xs text-stone-500 border border-stone-200 rounded-md overflow-hidden">
+    <div className="flex items-center text-xs text-muted-foreground border border-border rounded-md overflow-hidden">
       <button
         type="button"
         onClick={() => onChange('preview')}
         className={`px-2.5 py-1 transition-colors ${
-          mode === 'preview' ? 'bg-stone-100 text-stone-800 font-medium' : 'hover:bg-stone-50'
+          mode === 'preview' ? 'bg-muted text-foreground font-medium' : 'hover:bg-muted/50'
         }`}
       >
         미리보기
       </button>
-      <span className="text-stone-200 select-none">|</span>
+      <span className="text-muted-foreground select-none">|</span>
       <button
         type="button"
         onClick={() => onChange('text')}
         className={`px-2.5 py-1 transition-colors ${
-          mode === 'text' ? 'bg-stone-100 text-stone-800 font-medium' : 'hover:bg-stone-50'
+          mode === 'text' ? 'bg-muted text-foreground font-medium' : 'hover:bg-muted/50'
         }`}
       >
         텍스트

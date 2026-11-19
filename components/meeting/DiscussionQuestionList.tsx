@@ -13,22 +13,22 @@ import { MarkdownEditor, MarkdownModeTabs, PREVIEW_PROSE } from '@/components/me
 export function DiscussionQuestionList({
   meetingId,
   questions,
-  isHost,
+  canEdit,
 }: {
   meetingId: string;
   questions: DiscussionQuestion[];
-  isHost: boolean;
+  canEdit: boolean;
 }) {
   return (
     <div className="space-y-2">
       <p className="text-sm font-medium">발제문 {questions.length}개</p>
       {questions.length === 0 && (
-        <p className="text-sm text-slate-500">아직 등록된 질문이 없습니다.</p>
+        <p className="text-sm text-muted-foreground">아직 등록된 질문이 없습니다.</p>
       )}
       <ul className="space-y-2">
         {questions.map((q, i) => (
-          <li key={q.id} className="border rounded-xl p-3 bg-white">
-            <QuestionItem index={i + 1} question={q} meetingId={meetingId} editable={isHost} />
+          <li key={q.id} className="border rounded-xl p-3 bg-card">
+            <QuestionItem index={i + 1} question={q} meetingId={meetingId} editable={canEdit} />
           </li>
         ))}
       </ul>
@@ -67,9 +67,9 @@ function QuestionItem({
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-stone-700">발제문 입력</p>
+          <p className="text-sm font-medium text-foreground">발제문 입력</p>
           {mode === 'text' && (
-            <span className="text-xs text-stone-400">**굵게**, *기울임*, {'>'} 인용구</span>
+            <span className="text-xs text-muted-foreground">**굵게**, *기울임*, {'>'} 인용구</span>
           )}
         </div>
         <MarkdownEditor
@@ -78,7 +78,7 @@ function QuestionItem({
           mode={mode}
           onRequestTextMode={() => setMode('text')}
           rows={4}
-          className="bg-stone-50 border-stone-200"
+          className="bg-muted/50 border-border"
         />
         <div className="flex items-center justify-between">
           <MarkdownModeTabs mode={mode} onChange={setMode} />
@@ -86,7 +86,7 @@ function QuestionItem({
             <Button size="sm" variant="ghost" onClick={() => { setText(question.content); setMode('text'); setEditing(false); }}>
               취소
             </Button>
-            <Button size="sm" className="app-primary-action bg-stone-800 hover:bg-stone-700 text-white" onClick={save}>
+            <Button size="sm" onClick={save}>
               저장
             </Button>
           </div>
@@ -98,7 +98,7 @@ function QuestionItem({
   return (
     <div className="flex justify-between gap-3">
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-semibold text-stone-500 mr-2">Q{index}.</span>
+        <span className="text-sm font-semibold text-muted-foreground mr-2">Q{index}.</span>
         <div className={`inline ${PREVIEW_PROSE} [&>p]:inline`}>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{question.content}</ReactMarkdown>
         </div>
@@ -109,7 +109,7 @@ function QuestionItem({
             <Pencil className="w-4 h-4" />
           </Button>
           <Button size="icon" variant="ghost" aria-label={`질문 ${index} 삭제`} onClick={remove}>
-            <Trash2 className="w-4 h-4 text-red-500" />
+            <Trash2 className="w-4 h-4 text-danger-foreground" />
           </Button>
         </div>
       )}

@@ -9,7 +9,7 @@ export function ShareMeetingButton() {
     <Button
       type="button"
       variant="outline"
-      className="w-full gap-2 border-stone-200 text-stone-700"
+      className="w-full gap-2 border-border text-foreground"
       onClick={() => shareMeetingLink(window.location.href)}
     >
       <Share2 className="w-4 h-4" />

@@ -15,6 +15,16 @@ html[data-theme="christmas"] {
   --accent-foreground: #58343a;
   --border: #d6c6b7;
   --input: #a39081;
+  --field: #f8f0e3;
+  --info: #e9eee7;
+  --info-foreground: #395443;
+  --info-border: #b5c6b8;
+  --warning: #f5e8cb;
+  --warning-foreground: #6c4a21;
+  --warning-border: #dac498;
+  --danger: #f4e1db;
+  --danger-foreground: #8b333a;
+  --danger-border: #d8a9a8;
   --ring: #814650;
   --christmas-wine: #7c444b;
   --christmas-cream: #f8f0e3;
@@ -31,7 +41,7 @@ html[data-theme="christmas"] {
   background-size: 79px 89px, 157px 131px, 173px 113px, 100% 100%;
 }
 
-[data-theme="christmas"] .home-christmas-decoration {
+[data-theme="christmas"] [data-decoration-role="home"]:has(> [data-decoration-theme="christmas"]) {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
@@ -39,7 +49,7 @@ html[data-theme="christmas"] {
   min-height: 2.5rem;
 }
 
-[data-theme="christmas"] .home-christmas-ribbon {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"] {
   position: relative;
   width: 1.875rem;
   height: 1.625rem;
@@ -47,8 +57,8 @@ html[data-theme="christmas"] {
   transform: rotate(-12deg);
 }
 
-[data-theme="christmas"] .home-christmas-ribbon::before,
-[data-theme="christmas"] .home-christmas-ribbon::after {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"]::before,
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"]::after {
   content: "";
   position: absolute;
   top: 0.125rem;
@@ -57,19 +67,19 @@ html[data-theme="christmas"] {
   background: linear-gradient(#ae7779, var(--christmas-wine));
 }
 
-[data-theme="christmas"] .home-christmas-ribbon::before {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"]::before {
   left: 0;
   border-radius: 70% 60% 30% 60%;
   transform: rotate(24deg);
 }
 
-[data-theme="christmas"] .home-christmas-ribbon::after {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"]::after {
   right: 0;
   border-radius: 60% 70% 60% 30%;
   transform: rotate(-24deg);
 }
 
-[data-theme="christmas"] .home-christmas-ribbon > span {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"] > span {
   position: absolute;
   z-index: 1;
   top: 0.4375rem;
@@ -80,8 +90,8 @@ html[data-theme="christmas"] {
   background: var(--christmas-wine);
 }
 
-[data-theme="christmas"] .home-christmas-ribbon > span::before,
-[data-theme="christmas"] .home-christmas-ribbon > span::after {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"] > span::before,
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"] > span::after {
   content: "";
   position: absolute;
   top: 0.25rem;
@@ -92,17 +102,17 @@ html[data-theme="christmas"] {
   transform-origin: top center;
 }
 
-[data-theme="christmas"] .home-christmas-ribbon > span::before {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"] > span::before {
   left: 0;
   transform: rotate(27deg);
 }
 
-[data-theme="christmas"] .home-christmas-ribbon > span::after {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ribbon"] > span::after {
   right: 0;
   transform: rotate(-26deg);
 }
 
-[data-theme="christmas"] .home-christmas-ornament {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ornament"] {
   position: relative;
   width: 1.5rem;
   height: 1.5625rem;
@@ -116,7 +126,7 @@ html[data-theme="christmas"] {
   transform: rotate(12deg);
 }
 
-[data-theme="christmas"] .home-christmas-ornament::before {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ornament"]::before {
   content: "";
   position: absolute;
   top: -0.25rem;
@@ -127,7 +137,7 @@ html[data-theme="christmas"] {
   background: #998066;
 }
 
-[data-theme="christmas"] .home-christmas-ornament::after {
+[data-theme="christmas"] [data-decoration-role="home"] [data-part="ornament"]::after {
   content: "";
   position: absolute;
   bottom: calc(100% + 0.25rem);
@@ -138,7 +148,7 @@ html[data-theme="christmas"] {
   border-radius: 50%;
 }
 
-[data-theme="christmas"] .app-header {
+[data-theme="christmas"] [data-slot="app-header"] {
   --check-color: var(--christmas-cream-check);
   --check-size: 14px;
   background-color: var(--christmas-cream);
@@ -146,62 +156,44 @@ html[data-theme="christmas"] {
   color: #64343d;
 }
 
-[data-theme="christmas"] .app-shell:has(.app-bottom-nav) {
-  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
-}
-
-[data-theme="christmas"] .app-bottom-nav {
+[data-theme="christmas"] [data-slot="bottom-nav"] {
   background-color: var(--card);
   border-color: var(--border);
   box-shadow: 0 -6px 24px #654a3814;
 }
 
-[data-theme="christmas"] .app-bottom-nav ul {
-  max-width: 28rem;
-  margin-inline: auto;
-}
-
-[data-theme="christmas"] .app-bottom-nav a {
-  gap: 0.35rem;
-  padding-block: 0.45rem;
-  color: var(--muted-foreground);
-}
-
-[data-theme="christmas"] .app-bottom-nav a[aria-current="page"] {
+[data-theme="christmas"] [data-slot="bottom-nav"] a[aria-current="page"] {
   color: var(--christmas-wine);
 }
 
-[data-theme="christmas"] .app-bottom-nav .theme-icon-christmas svg {
+[data-theme="christmas"] [data-slot="bottom-nav"] [data-part="nav-icon"] {
   --check-color: var(--christmas-light-check);
   --check-size: 10px;
-  box-sizing: content-box;
-  padding: 0.5rem;
-  border-radius: 0.7rem;
   background-color: var(--primary);
   color: var(--primary-foreground);
 }
 
-[data-theme="christmas"] .app-bottom-nav .theme-icon-christmas svg:is(.theme-icon-meetings, .theme-icon-settings) {
+[data-theme="christmas"] [data-slot="bottom-nav"] [data-part="nav-icon"]:has(:is([data-icon-role="meetings"], [data-icon-role="settings"])) {
   background-color: var(--christmas-wine);
 }
 
-[data-theme="christmas"] .app-bottom-nav .theme-icon-christmas svg.theme-icon-members {
+[data-theme="christmas"] [data-slot="bottom-nav"] [data-part="nav-icon"]:has([data-icon-role="members"]) {
   --check-color: var(--christmas-cream-check);
   background-color: var(--christmas-cream);
   color: var(--christmas-wine);
 }
 
-[data-theme="christmas"] .app-bottom-nav a[aria-current="page"] .theme-icon-christmas svg {
+[data-theme="christmas"] [data-slot="bottom-nav"] a[aria-current="page"] [data-part="nav-icon"] {
   outline: 2px solid var(--christmas-wine);
   outline-offset: 2px;
 }
 
-[data-theme="christmas"] .app-bottom-nav a:focus-visible {
+[data-theme="christmas"] [data-slot="bottom-nav"] a:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: -2px;
 }
 
-[data-theme="christmas"] .book-cover:has(.theme-icon-book) {
+[data-theme="christmas"] [data-slot="book-cover"]:has([data-icon-role="book"]) {
   --check-color: var(--christmas-cream-check);
   --check-size: 11px;
   border-radius: 0.6rem;
@@ -209,62 +201,78 @@ html[data-theme="christmas"] {
   background-color: var(--christmas-cream);
 }
 
-[data-theme="christmas"] :is(.app-header, .app-bottom-nav .theme-icon-christmas svg, .theme-member-avatar, .book-cover:has(.theme-icon-book)) {
+[data-theme="christmas"] :is([data-slot="app-header"], [data-slot="bottom-nav"] [data-part="nav-icon"], [data-slot="member-avatar"], [data-slot="book-cover"]:has([data-icon-role="book"])) {
   background-image:
     repeating-linear-gradient(0deg, transparent 0 var(--check-size), var(--check-color) var(--check-size) calc(2 * var(--check-size))),
     repeating-linear-gradient(90deg, transparent 0 var(--check-size), var(--check-color) var(--check-size) calc(2 * var(--check-size)));
 }
 
-[data-theme="christmas"] .settings-card {
-  background-color: var(--card);
-  border-color: var(--border);
-}
-
-[data-theme="christmas"] a.settings-card:hover {
-  background-color: var(--accent);
-}
-
-[data-theme="christmas"] .app-primary-action {
-  background-color: var(--primary);
-  color: var(--primary-foreground);
-}
-
-[data-theme="christmas"] .app-primary-action:hover {
-  background-color: #33463a;
-}
-
-[data-theme="christmas"] .theme-icon-default {
+[data-theme="christmas"] [data-slot="seasonal-icon"]:has(> [data-icon-theme="christmas"]) > [data-icon-theme="default"] {
   display: none;
 }
 
-[data-theme="christmas"] .theme-icon-christmas {
+[data-theme="christmas"] :is([data-icon-theme="christmas"], [data-decoration-theme="christmas"]) {
   display: contents;
 }
 
-[data-theme="christmas"] .theme-icon-book {
+[data-theme="christmas"] :is([data-icon-role="book"], [data-icon-role="schedule"], [data-icon-role="presenter"]) > [data-icon-theme="christmas"] svg {
   color: var(--primary);
 }
 
-[data-theme="christmas"] .theme-icon-location {
+[data-theme="christmas"] [data-icon-role="location"] > [data-icon-theme="christmas"] svg {
   color: var(--christmas-wine);
 }
 
-[data-theme="christmas"] .theme-member-avatar {
+[data-theme="christmas"] [data-slot="member-avatar"] {
   --check-size: 10px;
   --check-color: var(--christmas-cream-check);
 }
 
-[data-theme="christmas"] .theme-member-avatar:has(.theme-icon-member-tree) {
+[data-theme="christmas"] [data-slot="member-avatar"]:has([data-icon-role="member-avatar-primary"]) {
   background-color: #e7e9dc;
   color: var(--primary);
 }
 
-[data-theme="christmas"] .theme-member-avatar:has(.theme-icon-member-gift) {
+[data-theme="christmas"] [data-slot="member-avatar"]:has([data-icon-role="member-avatar-accent"]) {
   background-color: #f4e1db;
   color: var(--christmas-wine);
 }
 
-[data-theme="christmas"] .theme-member-avatar:has(.theme-icon-member-snowflake) {
+[data-theme="christmas"] [data-slot="member-avatar"]:has([data-icon-role="member-avatar-secondary"]) {
   background-color: var(--christmas-cream);
   color: var(--christmas-wine);
+}
+
+[data-theme="christmas"] [data-slot="meeting-bookshelf"] {
+  --empty-cover: var(--muted);
+  --glint: #a88046;
+  background:
+    radial-gradient(ellipse at top right, #f4e6d4, transparent 58%),
+    radial-gradient(ellipse at bottom left, #ede5d7, transparent 52%),
+    var(--card);
+}
+
+[data-theme="christmas"] [data-slot="meeting-bookshelf"] [data-decoration-role="bookshelf"]:has(> [data-decoration-theme="christmas"]) {
+  display: flex;
+}
+
+[data-theme="christmas"] [data-slot="meeting-bookshelf"] :is([data-decoration-role="bookshelf"], [data-part="year"], [data-part="month-name"]) {
+  color: var(--christmas-wine);
+}
+
+[data-theme="christmas"] [data-slot="meeting-bookshelf"] [data-part="month"]:nth-child(even) [data-part="month-name"] {
+  color: var(--primary);
+}
+
+[data-theme="christmas"] [data-slot="meeting-bookshelf"] [data-part="cover"]:not(:focus-visible) {
+  outline: 1px solid color-mix(in srgb, var(--christmas-wine) 28%, transparent);
+}
+
+[data-theme="christmas"] [data-slot="meeting-bookshelf"] [data-part="month"]:nth-child(even) [data-part="cover"]:not(:focus-visible) {
+  outline-color: color-mix(in srgb, var(--primary) 36%, transparent);
+}
+
+[data-theme="christmas"] [data-slot="meeting-bookshelf"] [data-part="glints"] span::before {
+  content: "❄";
+  font-variant-emoji: text;
 }

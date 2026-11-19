@@ -59,49 +59,49 @@ export function SignupForm({ next }: { next: string }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 space-y-4">
+    <div className="bg-card rounded-2xl shadow-sm border border-border p-6 space-y-4">
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="name" className="text-stone-700">이름</Label>
+          <Label htmlFor="signup-name" className="text-foreground">이름</Label>
           <Input
-            id="name"
+            id="signup-name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="홍길동"
             required
             maxLength={20}
-            className="bg-stone-50 border-stone-200 focus:bg-white"
+            className="bg-muted/50 border-border focus:bg-card"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="email" className="text-stone-700">이메일</Label>
+          <Label htmlFor="signup-email" className="text-foreground">이메일</Label>
           <Input
-            id="email"
+            id="signup-email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="name@example.com"
             required
-            className="bg-stone-50 border-stone-200 focus:bg-white"
+            className="bg-muted/50 border-border focus:bg-card"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="password" className="text-stone-700">비밀번호</Label>
+          <Label htmlFor="signup-password" className="text-foreground">비밀번호</Label>
           <Input
-            id="password"
+            id="signup-password"
             type="password"
             minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="6자 이상"
             required
-            className="bg-stone-50 border-stone-200 focus:bg-white"
+            className="bg-muted/50 border-border focus:bg-card"
           />
         </div>
         <Button
           type="submit"
           disabled={loading}
-          className="w-full bg-stone-800 hover:bg-stone-700 text-white"
+          className="w-full"
         >
           {loading ? '처리 중...' : '가입하기'}
         </Button>

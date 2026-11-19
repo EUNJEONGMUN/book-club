@@ -1,15 +1,15 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getUser, getMeeting, generateContent } = vi.hoisted(() => ({
-  getUser: vi.fn(),
+const { getMembership, getMeeting, generateContent } = vi.hoisted(() => ({
+  getMembership: vi.fn(),
   getMeeting: vi.fn(),
   generateContent: vi.fn(),
 }));
 
+vi.mock('@/lib/auth/membership', () => ({ getMembership }));
 vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServer: async () => ({
-    auth: { getUser },
     from: () => ({
       select: () => ({ eq: () => ({ maybeSingle: getMeeting }) }),
     }),
@@ -33,8 +33,8 @@ beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', origin);
   vi.stubEnv('GEMINI_API_KEY', 'test-key');
   vi.stubGlobal('fetch', fetchFile);
-  getUser.mockResolvedValue({ data: { user: { id: 'host' } } });
-  getMeeting.mockResolvedValue({ data: { host_id: 'host', discussion_file_url: registeredUrl } });
+  getMembership.mockResolvedValue({ user: { id: 'host' }, role: 'member' });
+  getMeeting.mockResolvedValue({ data: { created_by: 'host', discussion_file_url: registeredUrl } });
 });
 
 afterEach(() => {
@@ -72,7 +72,7 @@ describe('PDF 추출 파일 경로', () => {
     `https://elsewhere.example.test/storage/v1/object/public/discussion-files/${meetingId}/other.pdf`,
     `${bucketUrl}/${meetingId}/image.png`,
   ])('DB에 저장된 경로라도 이 모임의 PDF 경로가 아니면 거부한다 (%s)', async (url) => {
-    getMeeting.mockResolvedValue({ data: { host_id: 'host', discussion_file_url: url } });
+    getMeeting.mockResolvedValue({ data: { created_by: 'host', discussion_file_url: url } });
 
     await expect(extractQuestionsFromPdf(meetingId, url))
       .resolves.toEqual({ ok: false, error: '잘못된 파일 경로입니다.' });

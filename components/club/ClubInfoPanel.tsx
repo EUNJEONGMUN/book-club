@@ -38,35 +38,35 @@ export function ClubInfoPanel({ club }: { club: ClubSettings }) {
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2">
-        <Pencil className="w-4 h-4 text-stone-500" />
-        <h2 className="text-sm font-semibold text-stone-700">모임 정보</h2>
+        <Pencil className="w-4 h-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">모임 정보</h2>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="name" className="text-stone-700">모임 이름</Label>
+          <Label htmlFor="club-settings-name" className="text-foreground">모임 이름</Label>
           <Input
-            id="name"
+            id="club-settings-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             maxLength={50}
-            className="bg-stone-50 border-stone-200 focus:bg-white"
+            className="bg-muted/50 border-border focus:bg-card"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="description" className="text-stone-700">설명 (선택)</Label>
+          <Label htmlFor="club-settings-description" className="text-foreground">설명 (선택)</Label>
           <textarea
-            id="description"
+            id="club-settings-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             maxLength={500}
             rows={3}
             placeholder="모임 소개를 입력해주세요."
-            className="block w-full bg-stone-50 border border-stone-200 rounded-md px-3 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-300"
+            className="block w-full bg-muted/50 border border-border rounded-md px-3 py-2 text-sm focus:bg-card focus:outline-none focus:ring-2 focus:ring-ring"
           />
-          <p className="text-xs text-stone-400 text-right">{description.length}/500</p>
+          <p className="text-xs text-muted-foreground text-right">{description.length}/500</p>
         </div>
-        <Button type="submit" disabled={saving || !dirty} className="app-primary-action gap-1 bg-stone-800 hover:bg-stone-700 text-white">
+        <Button type="submit" disabled={saving || !dirty} className="gap-1">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
           저장
         </Button>

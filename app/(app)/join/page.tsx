@@ -30,7 +30,7 @@ export default async function JoinPage({
     return (
       <div className="space-y-4 max-w-sm mx-auto">
         <h1 className="text-xl font-bold">확인할 수 없어요</h1>
-        <p className="text-sm text-stone-500">초대 링크를 확인하는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.</p>
+        <p className="text-sm text-muted-foreground">초대 링크를 확인하는 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.</p>
         <Link href="/"><Button variant="outline" className="w-full">홈으로</Button></Link>
       </div>
     );
@@ -48,7 +48,7 @@ export default async function JoinPage({
     return (
       <div className="space-y-4 max-w-sm mx-auto">
         <h1 className="text-xl font-bold">잘못된 초대 링크예요</h1>
-        <p className="text-sm text-stone-500">관리자에게 초대 링크를 다시 요청해주세요.</p>
+        <p className="text-sm text-muted-foreground">관리자에게 초대 링크를 다시 요청해주세요.</p>
         <Link href="/"><Button variant="outline" className="w-full">홈으로</Button></Link>
       </div>
     );
@@ -58,7 +58,7 @@ export default async function JoinPage({
     return (
       <div className="space-y-4 max-w-sm mx-auto">
         <h1 className="text-xl font-bold">취소된 초대링크예요</h1>
-        <p className="text-sm text-stone-500">관리자에게 새 초대링크를 요청해주세요.</p>
+        <p className="text-sm text-muted-foreground">관리자에게 새 초대링크를 요청해주세요.</p>
         <Link href="/"><Button variant="outline" className="w-full">홈으로</Button></Link>
       </div>
     );
@@ -68,7 +68,7 @@ export default async function JoinPage({
     return (
       <div className="space-y-4 max-w-sm mx-auto">
         <h1 className="text-xl font-bold">만료된 초대링크예요</h1>
-        <p className="text-sm text-stone-500">관리자에게 새 초대링크를 요청해주세요.</p>
+        <p className="text-sm text-muted-foreground">관리자에게 새 초대링크를 요청해주세요.</p>
         <Link href="/"><Button variant="outline" className="w-full">홈으로</Button></Link>
       </div>
     );
@@ -82,12 +82,12 @@ export default async function JoinPage({
   return (
     <div className="space-y-4 max-w-sm mx-auto">
       <h1 className="text-xl font-bold">{result.club_name}</h1>
-      <p className="text-sm text-stone-500">
+      <p className="text-sm text-muted-foreground">
         부글부글의 초대를 받으셨어요. 가입을 신청하면 관리자의 승인 후 멤버가 됩니다.
       </p>
       <JoinButton token={token} />
       <Link href="/">
-        <Button variant="ghost" className="w-full text-stone-500">취소</Button>
+        <Button variant="ghost" className="w-full text-muted-foreground">취소</Button>
       </Link>
     </div>
   );

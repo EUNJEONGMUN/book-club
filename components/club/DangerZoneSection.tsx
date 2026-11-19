@@ -20,7 +20,7 @@ export function DangerZoneSection({ clubName, isAdmin }: { clubName: string; isA
     } finally { setBusy(false); }
   }
   return <section className="space-y-3 border-t pt-4">
-    <p className="text-sm text-stone-600">탈퇴하면 모임 기록을 더 이상 볼 수 없어요.</p>
+    <p className="text-sm text-muted-foreground">탈퇴하면 모임 기록을 더 이상 볼 수 없어요.</p>
     <Button variant="outline" onClick={handleLeave} disabled={busy}>{busy ? '처리 중...' : '모임 탈퇴'}</Button>
   </section>;
 }

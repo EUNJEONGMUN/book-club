@@ -31,14 +31,14 @@ export default async function MembersPage() {
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-stone-500">멤버 {members.length}명</p>
+      <p className="text-sm text-muted-foreground">멤버 {members.length}명</p>
       {members.length === 0 ? (
-        <p className="text-sm text-stone-500 py-8 text-center">
+        <p className="text-sm text-muted-foreground py-8 text-center">
           멤버를 볼 수 있는 권한이 없거나 활성 멤버가 없습니다.
         </p>
       ) : (
         <Card className="overflow-hidden">
-          <ul className="divide-y divide-stone-100">
+          <ul className="divide-y divide-border">
             {sortedMembers.map((m) => (
               <li key={m.user_id}>
                 <MemberCard

@@ -58,16 +58,16 @@ export function InviteLinkPanel({
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2">
-        <Key className="w-4 h-4 text-stone-500" />
-        <h2 className="text-sm font-semibold text-stone-700">초대링크</h2>
+        <Key className="w-4 h-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">초대링크</h2>
       </div>
 
       {invite && invitePath ? (
         <div className="space-y-2">
-          <div className="p-3 bg-stone-50 rounded-xl border border-stone-200 text-xs text-stone-700 break-all">
+          <div className="p-3 bg-muted/50 rounded-xl border border-border text-xs text-foreground break-all">
             {origin + invitePath}
           </div>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-muted-foreground">
             만료: <time dateTime={invite.expires_at}>{expiryFormatter.format(new Date(invite.expires_at))}</time> (한국 시간)
           </p>
           <div className="flex gap-2">
@@ -83,7 +83,7 @@ export function InviteLinkPanel({
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-sm text-stone-500">아직 발급된 초대링크가 없어요.</p>
+          <p className="text-sm text-muted-foreground">아직 발급된 초대링크가 없어요.</p>
           <Button onClick={handleRotate} disabled={rotating} className="gap-1">
             {rotating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Key className="w-4 h-4" />}
             초대링크 만들기

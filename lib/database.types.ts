@@ -204,6 +204,7 @@ export type Database = {
           book_cover_url: string | null
           book_title: string
           created_at: string
+          created_by: string
           discussion_file_name: string | null
           discussion_file_url: string | null
           host_id: string
@@ -219,6 +220,7 @@ export type Database = {
           book_cover_url?: string | null
           book_title: string
           created_at?: string
+          created_by?: string
           discussion_file_name?: string | null
           discussion_file_url?: string | null
           host_id: string
@@ -234,6 +236,7 @@ export type Database = {
           book_cover_url?: string | null
           book_title?: string
           created_at?: string
+          created_by?: string
           discussion_file_name?: string | null
           discussion_file_url?: string | null
           host_id?: string
@@ -245,6 +248,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "meetings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "meetings_host_id_fkey"
             columns: ["host_id"]
@@ -311,6 +321,10 @@ export type Database = {
         Returns: undefined
       }
       apply_for_membership: { Args: { invite_token: string }; Returns: Json }
+      can_edit_meeting: {
+        Args: { meeting_creator: string; meeting_time: string }
+        Returns: boolean
+      }
       get_admin_emails: {
         Args: never
         Returns: {

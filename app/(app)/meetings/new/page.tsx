@@ -1,16 +1,17 @@
-'use client';
+import { requireMember } from '@/lib/auth/membership';
+import { getActiveMembers } from '@/lib/queries/club';
+import { NewMeetingForm } from './new-form';
 
-import { MeetingForm } from '@/components/meeting/MeetingForm';
-import { createMeeting } from '@/lib/actions/meetings';
+export default async function NewMeetingPage() {
+  const { user } = await requireMember();
+  const members = await getActiveMembers();
 
-export default function NewMeetingPage() {
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold text-stone-800">새 모임 등록</h1>
-      <MeetingForm
-        onSubmit={(d) => createMeeting(d)}
-        submitLabel="등록하기"
-        redirectOnSuccess={(id) => `/meetings/${id}`}
+      <h1 className="text-2xl font-bold text-foreground">새 모임 등록</h1>
+      <NewMeetingForm
+        creatorId={user.id}
+        members={members.map(({ user_id, display_name }) => ({ user_id, display_name }))}
       />
     </div>
   );

@@ -15,9 +15,9 @@ type MemberOption = {
 };
 
 const VIEW_STATUSES: { value: AttendanceStatus; label: string; bg: string; text: string; countColor: string; summaryColor: string; divider: string }[] = [
-  { value: 'attending', label: '참석', bg: 'bg-blue-50', text: 'text-blue-700', countColor: 'text-blue-600', summaryColor: 'text-blue-500', divider: 'border-blue-200' },
-  { value: 'not_attending', label: '불참', bg: 'bg-red-50', text: 'text-red-700', countColor: 'text-red-500', summaryColor: 'text-red-400', divider: 'border-red-200' },
-  { value: 'undecided', label: '미정', bg: 'bg-amber-50', text: 'text-amber-700', countColor: 'text-amber-500', summaryColor: 'text-amber-400', divider: 'border-amber-200' },
+  { value: 'attending', label: '참석', bg: 'bg-info', text: 'text-info-foreground', countColor: 'text-info-foreground', summaryColor: 'text-info-foreground', divider: 'border-info-border' },
+  { value: 'not_attending', label: '불참', bg: 'bg-danger', text: 'text-danger-foreground', countColor: 'text-danger-foreground', summaryColor: 'text-danger-foreground', divider: 'border-danger-border' },
+  { value: 'undecided', label: '미정', bg: 'bg-warning', text: 'text-warning-foreground', countColor: 'text-warning-foreground', summaryColor: 'text-warning-foreground', divider: 'border-warning-border' },
 ];
 
 export function AttendanceSummary({
@@ -46,7 +46,7 @@ export function AttendanceSummary({
               완료
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" onClick={() => setEditing(true)} className="h-7 gap-1 text-xs text-stone-500">
+            <Button variant="ghost" size="sm" onClick={() => setEditing(true)} className="h-7 gap-1 text-xs text-muted-foreground">
               <Pencil className="w-3.5 h-3.5" />
               수정
             </Button>
@@ -165,51 +165,51 @@ function EditPanel({
         <EditColumn
           label="참석"
           members={attending}
-          bg="bg-blue-50"
-          text="text-blue-700"
-          countColor="text-blue-600"
-          divider="border-blue-200"
+          bg="bg-info"
+          text="text-info-foreground"
+          countColor="text-info-foreground"
+          divider="border-info-border"
           onDelete={handleDelete}
           pending={pending}
         />
         <EditColumn
           label="불참"
           members={notAttending}
-          bg="bg-red-50"
-          text="text-red-700"
-          countColor="text-red-500"
-          divider="border-red-200"
+          bg="bg-danger"
+          text="text-danger-foreground"
+          countColor="text-danger-foreground"
+          divider="border-danger-border"
           onDelete={handleDelete}
           pending={pending}
         />
       </div>
 
-      <div className="border border-stone-200 rounded-lg p-3 bg-stone-50 space-y-2">
+      <div className="border border-border rounded-lg p-3 bg-muted/50 space-y-2">
         <button
           type="button"
           onClick={() => setPickerOpen((v) => !v)}
-          className="w-full flex items-center justify-between text-sm font-medium text-stone-700"
+          className="w-full flex items-center justify-between text-sm font-medium text-foreground"
         >
           <span className="flex items-center gap-1.5">
             <Plus className="w-4 h-4" />
             추가하기
-            <span className="text-xs text-stone-400">({available.length}명 추가 가능)</span>
+            <span className="text-xs text-muted-foreground">({available.length}명 추가 가능)</span>
           </span>
-          <ChevronDown className={`w-4 h-4 text-stone-400 transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
         </button>
         {pickerOpen && (
           available.length === 0 ? (
-            <p className="text-xs text-stone-400 px-1">추가할 멤버가 없어요.</p>
+            <p className="text-xs text-muted-foreground px-1">추가할 멤버가 없어요.</p>
           ) : (
             <ul className="space-y-1.5">
               {available.map((m) => (
                 <li key={m.user_id} className="flex items-center gap-2 text-sm">
-                  <span className="flex-1 truncate text-stone-700">{m.display_name}</span>
+                  <span className="flex-1 truncate text-foreground">{m.display_name}</span>
                   <button
                     type="button"
                     disabled={pending}
                     onClick={() => handleAdd(m.user_id, m.display_name, 'attending')}
-                    className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors disabled:opacity-50"
+                    className="text-xs px-2 py-1 rounded bg-info text-info-foreground hover:bg-info-border transition-colors disabled:opacity-50"
                   >
                     참석으로
                   </button>
@@ -217,7 +217,7 @@ function EditPanel({
                     type="button"
                     disabled={pending}
                     onClick={() => handleAdd(m.user_id, m.display_name, 'not_attending')}
-                    className="text-xs px-2 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition-colors disabled:opacity-50"
+                    className="text-xs px-2 py-1 rounded bg-danger text-danger-foreground hover:bg-danger-border transition-colors disabled:opacity-50"
                   >
                     불참으로
                   </button>
@@ -265,7 +265,7 @@ function EditColumn({
                 type="button"
                 disabled={pending}
                 onClick={() => onDelete(a.user_id)}
-                className="shrink-0 w-5 h-5 rounded hover:bg-white/60 transition-colors disabled:opacity-50 flex items-center justify-center"
+                className="shrink-0 w-5 h-5 rounded hover:bg-card/60 transition-colors disabled:opacity-50 flex items-center justify-center"
                 title="삭제"
               >
                 <X className="w-3 h-3" />

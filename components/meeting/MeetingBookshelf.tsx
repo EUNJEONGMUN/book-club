@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { Bell, Gift, TreePine } from 'lucide-react';
+import { SeasonalDecoration } from '@/components/theme/SeasonalDecoration';
 import { MeetingsListLink } from '@/components/meeting/MeetingsListLink';
 import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
+import { bookshelfSearch } from '@/lib/meeting-navigation';
 import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import type { Meeting } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -23,40 +24,38 @@ export function MeetingBookshelf({ year, meetings }: { year: number; meetings: M
   }
 
   return (
-    <div className={styles.board}>
-      <div className={styles.glints} aria-hidden="true">
+    <div data-slot="meeting-bookshelf" className={styles.board}>
+      <div data-part="glints" className={styles.glints} aria-hidden="true">
         <span /><span /><span /><span /><span /><span />
       </div>
       <div className={styles.heading}>
         <div className={styles.back}><MeetingsListLink year={year} /></div>
-        <h1 className={styles.year}>{year}</h1>
-        <div className={styles.ornaments} aria-hidden="true">
-          <Gift />
-          <TreePine />
-          <Bell />
-        </div>
+        <h1 data-part="year" className={styles.year}>{year}</h1>
+        <SeasonalDecoration decorationRole="bookshelf" className={styles.ornaments} />
       </div>
       <ol className={styles.months} aria-label="월별 함께 읽은 책">
         {months.map((book, index) => (
-          <li key={monthNames[index]} className={styles.month}>
+          <li key={monthNames[index]} data-part="month" className={styles.month}>
             {book ? (
               <Link
-                href={`/meetings/${book.id}`}
+                href={`/meetings/${book.id}${bookshelfSearch(year)}`}
                 aria-label={book.book_title}
-                className={cn('book-cover', styles.cover, styles.book)}
+                data-slot="book-cover"
+                data-part="cover"
+                className={cn(styles.cover, styles.book)}
               >
                 {book.book_cover_url ? (
                   <img src={book.book_cover_url} alt="" />
                 ) : (
-                  <span aria-hidden="true" className="text-2xl"><SeasonalIcon kind="book">📚</SeasonalIcon></span>
+                  <span aria-hidden="true" className="text-2xl"><SeasonalIcon iconRole="book">📚</SeasonalIcon></span>
                 )}
               </Link>
             ) : (
-              <div className={styles.cover}>
+              <div data-part="cover" className={styles.cover}>
                 <span className="sr-only">아직 읽은 책 기록이 없습니다.</span>
               </div>
             )}
-            <h2 className={styles.monthName} lang="en">{monthNames[index]}</h2>
+            <h2 data-part="month-name" className={styles.monthName} lang="en">{monthNames[index]}</h2>
           </li>
         ))}
       </ol>

@@ -37,11 +37,11 @@ export function DiscussionQuestionForm({ meetingId }: { meetingId: string }) {
   }
 
   return (
-    <div className="space-y-2 border rounded-xl p-3 bg-stone-50">
+    <div className="space-y-2 border rounded-xl p-3 bg-muted/50">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-stone-700">발제문 입력</p>
+        <p className="text-sm font-medium text-foreground">발제문 입력</p>
         {mode === 'text' && (
-          <span className="text-xs text-stone-400">**굵게**, *기울임*, {'>'} 인용구</span>
+          <span className="text-xs text-muted-foreground">**굵게**, *기울임*, {'>'} 인용구</span>
         )}
       </div>
       <MarkdownEditor
@@ -51,7 +51,7 @@ export function DiscussionQuestionForm({ meetingId }: { meetingId: string }) {
         onRequestTextMode={() => setMode('text')}
         placeholder={'예: 주인공의 선택에 동의하시나요?\n\n> "그는 결국 떠났다"\n위 구절에서 느낀 감정은?'}
         rows={4}
-        className="bg-white border-stone-200"
+        className="bg-card border-border"
       />
       <div className="flex items-center justify-between">
         <MarkdownModeTabs mode={mode} onChange={setMode} />

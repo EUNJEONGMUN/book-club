@@ -10,7 +10,7 @@ export default async function OnboardingPage() {
   return (
     <div className="space-y-3 py-12">
       <h1 className="text-xl font-bold">{clubName} 초대 링크가 필요해요</h1>
-      <p className="text-sm text-stone-600">
+      <p className="text-sm text-muted-foreground">
         관리자에게 받은 초대 링크를 열어 가입을 신청해주세요.
         링크가 없거나 잃어버렸다면 관리자에게 다시 요청해주세요.
       </p>

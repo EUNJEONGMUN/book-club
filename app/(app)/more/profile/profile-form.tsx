@@ -35,14 +35,14 @@ export function ProfileForm({
     <form onSubmit={save} className="space-y-4">
       <AvatarUploader initialUrl={avatarUrl} displayName={name} />
       <div className="space-y-1">
-        <Label htmlFor="name">이름</Label>
-        <Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} />
+        <Label htmlFor="profile-display-name">이름</Label>
+        <Input id="profile-display-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={20} />
       </div>
       <div className="flex gap-2">
         <Link href="/more" className="flex-1">
           <Button type="button" variant="outline" className="w-full">취소</Button>
         </Link>
-        <Button type="submit" disabled={loading} className="app-primary-action flex-1 bg-stone-800 hover:bg-stone-700 text-white">
+        <Button type="submit" disabled={loading} className="flex-1">
           저장
         </Button>
       </div>

@@ -1,22 +1,42 @@
 import { requireMember } from '@/lib/auth/membership';
 import { notFound, redirect } from 'next/navigation';
 import { getMeetingDetail } from '@/lib/queries/meetings';
-import { getCurrentProfile } from '@/lib/queries/members';
+import { getActiveMembers } from '@/lib/queries/club';
+import { bookshelfSearch, getBookshelfYear, type BookshelfSearchParams } from '@/lib/meeting-navigation';
+import { canEditMeeting } from '@/lib/meeting-permissions';
 import { EditMeetingForm } from './edit-form';
 
-export default async function EditMeetingPage({ params }: { params: Promise<{ meetingId: string }> }) {
-  const { meetingId } = await params;
-  await requireMember();
-  const [meeting, me] = await Promise.all([getMeetingDetail(meetingId), getCurrentProfile()]);
+export default async function EditMeetingPage({ params, searchParams }: {
+  params: Promise<{ meetingId: string }>;
+  searchParams: Promise<BookshelfSearchParams>;
+}) {
+  const [{ meetingId }, navigation] = await Promise.all([params, searchParams]);
+  const detailHref = `/meetings/${meetingId}${bookshelfSearch(getBookshelfYear(navigation))}`;
+  const { user, role } = await requireMember();
+  const meeting = await getMeetingDetail(meetingId);
   if (!meeting) notFound();
-  if (me?.id !== meeting.host_id) redirect(`/meetings/${meetingId}`);
+  if (!canEditMeeting(meeting, user.id, role)) redirect(detailHref);
+
+  const members = await getActiveMembers();
+  const presenters = members.map(({ user_id, display_name }) => ({
+    user_id,
+    display_name: user_id === user.id && user.id === meeting.created_by
+      ? `나(${display_name})`
+      : display_name,
+  }));
+  if (!presenters.some(({ user_id }) => user_id === meeting.host_id)) {
+    presenters.unshift({ user_id: meeting.host_id, display_name: `${meeting.host.display_name} (기존 발제자)` });
+  }
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">모임 수정</h1>
       <EditMeetingForm
         id={meetingId}
+        detailHref={detailHref}
+        presenters={presenters}
         defaults={{
+          host_id: meeting.host_id,
           book_title: meeting.book_title,
           book_author: meeting.book_author,
           book_cover_url: meeting.book_cover_url ?? '',

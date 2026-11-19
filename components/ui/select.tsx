@@ -1,0 +1,21 @@
+import type { ComponentProps } from 'react';
+import { ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export function Select({ className, children, ...props }: ComponentProps<'select'>) {
+  return (
+    <div className="relative min-w-0">
+      <select
+        data-slot="select"
+        className={cn(
+          'block h-10 w-full min-w-0 appearance-none rounded-lg border border-input bg-field pl-3 pr-9 text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50 aria-invalid:border-destructive',
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </select>
+      <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+    </div>
+  );
+}

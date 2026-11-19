@@ -63,21 +63,21 @@ export function PendingApplicantsList({
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2">
-        <UserPlus className="w-4 h-4 text-stone-500" />
-        <h2 className="text-sm font-semibold text-stone-700">가입 신청 ({applicants.length})</h2>
+        <UserPlus className="w-4 h-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">가입 신청 ({applicants.length})</h2>
       </div>
 
       {applicants.length === 0 ? (
-        <p className="text-sm text-stone-500">아직 신청이 없어요.</p>
+        <p className="text-sm text-muted-foreground">아직 신청이 없어요.</p>
       ) : (
         <ul className="space-y-2">
           {applicants.map((a) => {
             const isPending = pending.has(a.user_id);
             return (
-              <li key={a.user_id} className="p-3 bg-stone-50 rounded-xl border border-stone-200 flex items-center gap-3">
+              <li key={a.user_id} className="p-3 bg-muted/50 rounded-xl border border-border flex items-center gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{a.display_name}</p>
-                  <p className="text-xs text-stone-500">
+                  <p className="text-xs text-muted-foreground">
                     {format(new Date(a.joined_at), 'yyyy-MM-dd HH:mm', { locale: ko })}
                   </p>
                 </div>
@@ -85,7 +85,7 @@ export function PendingApplicantsList({
                   size="sm"
                   onClick={() => handleApprove(a.user_id)}
                   disabled={isPending}
-                  className="app-primary-action gap-1 bg-stone-800 hover:bg-stone-700 text-white"
+                  className="gap-1"
                 >
                   {isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                   승인

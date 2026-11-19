@@ -32,8 +32,8 @@ export function AttendanceToggle({
             className={cn(
               'py-3 rounded border text-sm font-medium transition',
               status === o.value
-                ? 'bg-slate-900 text-white border-slate-900'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'bg-card text-foreground border-border hover:bg-muted/50'
             )}
           >
             {o.label}
