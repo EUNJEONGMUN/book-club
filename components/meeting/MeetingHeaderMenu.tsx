@@ -3,9 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Loader2, MoreVertical, Pencil, Share2, Trash2 } from 'lucide-react';
+import { Loader2, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { deleteMeeting } from '@/lib/actions/meetings';
-import { shareMeetingLink } from '@/lib/share-meeting';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -37,11 +36,6 @@ export function MeetingHeaderMenu({
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  async function handleShare() {
-    const url = typeof window !== 'undefined' ? window.location.href : '';
-    await shareMeetingLink(url);
-  }
 
   async function handleDelete() {
     if (deleting) return;
@@ -87,10 +81,6 @@ export function MeetingHeaderMenu({
               모임 정보 수정
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem className="py-2.5 gap-2" onClick={handleShare}>
-            <Share2 className="w-4 h-4" />
-            공유
-          </DropdownMenuItem>
           {canDelete && (
             <DropdownMenuItem className="py-2.5 gap-2" variant="destructive" onClick={() => setConfirmOpen(true)}>
               <Trash2 className="w-4 h-4" />

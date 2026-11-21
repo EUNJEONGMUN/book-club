@@ -9,11 +9,11 @@ export function ShareMeetingButton() {
     <Button
       type="button"
       variant="outline"
-      className="w-full gap-2 border-border text-foreground"
+      className="min-h-11 w-full gap-2 border-border text-foreground"
       onClick={() => shareMeetingLink(window.location.href)}
     >
       <Share2 className="w-4 h-4" />
-      모임 공유 (카톡 / 링크 복사)
+      모임 링크 공유
     </Button>
   );
 }

@@ -1,39 +1,40 @@
 import { toast } from 'sonner';
 
-/**
- * 공유 fallback chain — native share sheet → clipboard → prompt.
- * 모바일에서는 카톡/문자 등 시스템 공유 시트가 뜸. PC면 클립보드 복사.
- */
-export async function shareMeetingLink(url: string): Promise<void> {
-  if (url) {
-    const sharedUrl = new URL(url);
-    if (sharedUrl.searchParams.get('from') === 'home') {
-      sharedUrl.searchParams.delete('from');
-      url = sharedUrl.href;
-    }
-  }
-  if (typeof navigator !== 'undefined' && 'share' in navigator) {
-    try {
-      await navigator.share({ url });
-      return;
-    } catch (err) {
-      // 사용자가 닫음 — silent
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      // 다른 에러 (권한 등) — clipboard fallback
-    }
-  }
+async function copyLink(url: string): Promise<boolean> {
   try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(url);
-      toast.success('링크가 복사되었습니다');
-      return;
-    }
+    if (!navigator.clipboard?.writeText) return false;
+    await navigator.clipboard.writeText(url);
+    return true;
   } catch {
-    // continue to prompt fallback
+    return false;
   }
-  if (typeof window !== 'undefined') {
-    window.prompt('아래 링크를 복사하세요', url);
-  } else {
-    toast.error('링크 복사를 지원하지 않는 환경입니다');
+}
+
+async function openSystemShare(url: string): Promise<boolean> {
+  try {
+    if (typeof navigator.share !== 'function') return false;
+    await navigator.share({ url });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function shareMeetingLink(url: string): Promise<void> {
+  const sharedUrl = new URL(url);
+  if (sharedUrl.searchParams.get('from') === 'home') {
+    sharedUrl.searchParams.delete('from');
+  }
+
+  // Start copying before system sharing consumes the activation from this click.
+  const copying = copyLink(sharedUrl.href);
+  const sharing = openSystemShare(sharedUrl.href);
+  if (await copying) {
+    toast.success('모임 링크를 복사했어요');
+    return;
+  }
+
+  if (!(await sharing)) {
+    window.prompt('아래 링크를 복사하세요', sharedUrl.href);
   }
 }
