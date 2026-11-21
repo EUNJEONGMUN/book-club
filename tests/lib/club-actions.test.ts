@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
-  admin: vi.fn(), member: vi.fn(), approve: vi.fn(), reject: vi.fn(), transfer: vi.fn(),
+  admin: vi.fn(), member: vi.fn(), approve: vi.fn(), reject: vi.fn(),
   leave: vi.fn(), apply: vi.fn(), rotate: vi.fn(), update: vi.fn(),
 }));
 vi.mock('@/lib/auth/membership', () => ({
   requireAdmin: mocks.admin, requireMember: mocks.member,
 }));
 vi.mock('@/lib/services/membership', () => ({
-  approveMember: mocks.approve, rejectMember: mocks.reject, transferAdmin: mocks.transfer,
+  approveMember: mocks.approve, rejectMember: mocks.reject,
   leaveMembership: mocks.leave, applyForMembership: mocks.apply,
 }));
 vi.mock('@/lib/services/invites', () => ({ rotateInvite: mocks.rotate }));

@@ -22,12 +22,6 @@ export async function rejectMember(userId: string) {
   if (result.ok) refreshMembership();
   return result;
 }
-export async function transferAdmin(userId: string) {
-  await requireAdmin();
-  const result = await members.transferAdmin(userId);
-  if (result.ok) refreshMembership();
-  return result;
-}
 export async function leaveMembership() {
   await requireMember();
   const result = await members.leaveMembership();

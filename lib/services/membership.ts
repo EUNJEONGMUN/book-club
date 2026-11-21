@@ -112,39 +112,6 @@ export async function rejectMember(userId: string): Promise<
   return { ok: true };
 }
 
-export async function transferAdmin(
-  newAdminUserId: string
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const supabase = await getSupabaseServer();
-  const { error } = await supabase.rpc('transfer_admin', {
-    new_admin_user_id: newAdminUserId,
-  });
-
-  if (error) {
-    console.error('[transferAdmin]', error);
-    Sentry.captureException(error, { tags: { action: 'transferAdmin' } });
-    if (error.message?.includes('Not authenticated')) {
-      return { ok: false, error: '로그인이 필요합니다.' };
-    }
-    if (error.message?.includes('Not admin')) {
-      return { ok: false, error: '모임 관리자만 이양할 수 있어요.' };
-    }
-    if (error.message?.includes('Cannot transfer admin to yourself')) {
-      return { ok: false, error: '본인에게는 이양할 수 없어요.' };
-    }
-    if (error.message?.includes('Target user is not a member')) {
-      return { ok: false, error: '대상이 부글부글의 멤버가 아닙니다.' };
-    }
-    if (error.message?.includes('Target user is still pending approval')) {
-      return { ok: false, error: '승인 대기 중인 사용자에게는 이양할 수 없어요.' };
-    }
-    return { ok: false, error: '관리자 이양에 실패했어요.' };
-  }
-
-  revalidatePath('/more');
-  return { ok: true };
-}
-
 export async function leaveMembership(): Promise<
   { ok: true } | { ok: false; error: string }
 > {

@@ -7,7 +7,6 @@ const mocks = vi.hoisted(() => ({
   getCurrentProfile: vi.fn(),
   getPendingApplicants: vi.fn(),
   getActiveInvite: vi.fn(),
-  getActiveMembers: vi.fn(),
 }));
 vi.mock('@/lib/auth/membership', () => ({ requireMember: mocks.requireMember }));
 vi.mock('@/lib/queries/club', () => mocks);
@@ -17,7 +16,6 @@ vi.mock('@/app/(app)/more/logout-button', () => ({ LogoutButton: () => <button>�
 vi.mock('@/components/club/ClubInfoPanel', () => ({ ClubInfoPanel: () => <div>모임 수정</div> }));
 vi.mock('@/components/club/ClubInfoReadOnly', () => ({ ClubInfoReadOnly: () => <div>모임 소개</div> }));
 vi.mock('@/components/club/InviteLinkPanel', () => ({ InviteLinkPanel: () => <div>초대링크</div> }));
-vi.mock('@/components/club/AdminTransferSection', () => ({ AdminTransferSection: () => <div>관리자 이양</div> }));
 vi.mock('@/components/club/DangerZoneSection', () => ({ DangerZoneSection: () => <div>모임 탈퇴</div> }));
 
 import SettingsPage from '@/app/(app)/more/page';
@@ -31,7 +29,6 @@ describe('설정 화면 권한별 동선', () => {
     mocks.getCurrentProfile.mockResolvedValue({ display_name: '문은정', avatar_url: null });
     mocks.getPendingApplicants.mockResolvedValue([{ user_id: 'pending-1' }]);
     mocks.getActiveInvite.mockResolvedValue(null);
-    mocks.getActiveMembers.mockResolvedValue([]);
   });
 
   it('관리자는 프로필, 그룹 설정과 실제 가입 신청자 수를 본다', async () => {
@@ -56,11 +53,10 @@ describe('설정 화면 권한별 동선', () => {
     expect(mocks.getPendingApplicants).not.toHaveBeenCalled();
   });
 
-  it('관리자의 그룹 설정에 수정, 초대, 권한 이양 기능을 유지한다', async () => {
+  it('관리자의 그룹 설정에 수정과 초대 기능을 유지한다', async () => {
     render(await GroupSettingsPage());
     expect(screen.getByText('모임 수정')).toBeInTheDocument();
     expect(screen.getByText('초대링크')).toBeInTheDocument();
-    expect(screen.getByText('관리자 이양')).toBeInTheDocument();
     expect(screen.queryByText('모임 탈퇴')).not.toBeInTheDocument();
   });
 
@@ -71,8 +67,6 @@ describe('설정 화면 권한별 동선', () => {
     expect(screen.getByText('모임 탈퇴')).toBeInTheDocument();
     expect(screen.queryByText('모임 수정')).not.toBeInTheDocument();
     expect(screen.queryByText('초대링크')).not.toBeInTheDocument();
-    expect(screen.queryByText('관리자 이양')).not.toBeInTheDocument();
     expect(mocks.getActiveInvite).not.toHaveBeenCalled();
-    expect(mocks.getActiveMembers).not.toHaveBeenCalled();
   });
 });
