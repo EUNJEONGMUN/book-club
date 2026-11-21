@@ -29,13 +29,15 @@ export function MeetingDetailHeader({
     <div className="space-y-2">
       <div className="-mt-2 flex items-center justify-between">
         <MeetingBackLink fromHome={fromHome} year={bookshelfYear ?? listYear} view={bookshelfYear === undefined ? undefined : 'bookshelf'} />
-        <MeetingHeaderMenu
-          meetingId={meeting.id}
-          editHref={editHref}
-          bookshelfYear={bookshelfYear}
-          canEdit={canEdit}
-          canDelete={canDelete}
-        />
+        {(canEdit || canDelete) && (
+          <MeetingHeaderMenu
+            meetingId={meeting.id}
+            editHref={editHref}
+            bookshelfYear={bookshelfYear}
+            canEdit={canEdit}
+            canDelete={canDelete}
+          />
+        )}
       </div>
       <div className="flex gap-3">
         <div data-slot="book-cover" className="w-20 h-28 bg-muted rounded shrink-0 flex items-center justify-center overflow-hidden">

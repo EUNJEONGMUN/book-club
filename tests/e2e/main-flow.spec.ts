@@ -50,18 +50,31 @@ test('홈에서 연 모임 상세는 홈으로 돌아가고 수정 취소 후에
   const backHome = page.getByRole('link', { name: '홈으로', exact: true });
   await expect(backHome).toHaveCSS('min-height', '44px');
   await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, 'writeText', {
+      configurable: true,
+      value: async (url: string) => { document.documentElement.dataset.copiedMeetingUrl = url; },
+    });
     Object.defineProperty(navigator, 'share', {
       configurable: true,
-      value: async ({ url }: ShareData) => { document.documentElement.dataset.sharedMeetingUrl = url; },
+      value: ({ url }: ShareData) => {
+        document.documentElement.dataset.sharedMeetingUrl = url;
+        return new Promise<void>(() => {});
+      },
     });
   });
-  await page.getByRole('button', { name: /모임 공유/ }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-shared-meeting-url', page.url().split('?')[0]);
+  const shareButton = page.getByRole('button', { name: '모임 링크 공유', exact: true });
+  await expect(shareButton).toHaveCSS('min-height', '44px');
+  await shareButton.click();
+  const meetingUrl = page.url().split('?')[0];
+  await expect(page.locator('html')).toHaveAttribute('data-copied-meeting-url', meetingUrl);
+  await expect(page.locator('html')).toHaveAttribute('data-shared-meeting-url', meetingUrl);
+  await expect(page.getByText('모임 링크를 복사했어요')).toBeVisible();
   await backHome.click();
   await expect(page).toHaveURL('/');
 
   await page.goto(`${editableDetail}?from=home`);
   await page.getByRole('button', { name: '모임 메뉴' }).click();
+  await expect(page.getByRole('menuitem', { name: /공유|복사/ })).toHaveCount(0);
   await page.getByRole('menuitem', { name: '모임 정보 수정' }).click();
   await expect(page).toHaveURL(`${editableDetail}/edit?from=home`);
   await page.getByRole('link', { name: '취소', exact: true }).click();
