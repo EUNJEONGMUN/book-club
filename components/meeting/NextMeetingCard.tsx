@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getKoreanMeetingDateTime, getKoreanMeetingDayDifference } from '@/lib/meeting-time';
+import { meetingFromHomeSearch } from '@/lib/meeting-navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { AttendanceSection } from './AttendanceSection';
@@ -50,7 +51,7 @@ export function NextMeetingCard({ meeting, viewerProfile }: Props) {
           viewerProfile={viewerProfile}
         />
 
-        <Link href={`/meetings/${meeting.id}`} className={buttonVariants({ variant: 'outline', className: 'min-h-11 w-full' })}>
+        <Link href={`/meetings/${meeting.id}${meetingFromHomeSearch}`} className={buttonVariants({ variant: 'outline', className: 'min-h-11 w-full' })}>
           상세 정보 →
         </Link>
       </CardContent>

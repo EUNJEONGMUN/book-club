@@ -2,16 +2,17 @@ import { requireMember } from '@/lib/auth/membership';
 import { notFound, redirect } from 'next/navigation';
 import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getActiveMembers } from '@/lib/queries/club';
-import { bookshelfSearch, getBookshelfYear, type BookshelfSearchParams } from '@/lib/meeting-navigation';
+import { getMeetingDetailNavigation, type MeetingDetailSearchParams } from '@/lib/meeting-navigation';
 import { canEditMeeting } from '@/lib/meeting-permissions';
 import { EditMeetingForm } from './edit-form';
 
 export default async function EditMeetingPage({ params, searchParams }: {
   params: Promise<{ meetingId: string }>;
-  searchParams: Promise<BookshelfSearchParams>;
+  searchParams: Promise<MeetingDetailSearchParams>;
 }) {
   const [{ meetingId }, navigation] = await Promise.all([params, searchParams]);
-  const detailHref = `/meetings/${meetingId}${bookshelfSearch(getBookshelfYear(navigation))}`;
+  const { search } = getMeetingDetailNavigation(navigation);
+  const detailHref = `/meetings/${meetingId}${search}`;
   const { user, role } = await requireMember();
   const meeting = await getMeetingDetail(meetingId);
   if (!meeting) notFound();

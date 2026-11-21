@@ -6,11 +6,12 @@ import { Input } from '@/components/ui/input';
 import { searchBooks, type KakaoBook } from '@/lib/actions/book-search';
 
 type Props = {
+  query: string;
+  onQueryChange: (query: string) => void;
   onSelect: (book: KakaoBook) => void;
 };
 
-export function BookSearch({ onSelect }: Props) {
-  const [query, setQuery] = useState('');
+export function BookSearch({ query, onQueryChange, onSelect }: Props) {
   const [results, setResults] = useState<KakaoBook[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -38,7 +39,7 @@ export function BookSearch({ onSelect }: Props) {
 
   function handleSelect(book: KakaoBook) {
     onSelect(book);
-    setQuery('');
+    onQueryChange('');
     setResults([]);
     setOpen(false);
   }
@@ -51,7 +52,7 @@ export function BookSearch({ onSelect }: Props) {
           <Input
             ref={inputRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => onQueryChange(e.target.value)}
             onKeyDown={handleKeyDown}
             aria-label="책 제목으로 검색"
             placeholder="책 제목으로 검색"

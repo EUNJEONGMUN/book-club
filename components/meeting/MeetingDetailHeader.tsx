@@ -1,7 +1,6 @@
 import { getKoreanMeetingDateTime, getKoreanMeetingDayDifference } from '@/lib/meeting-time';
-import { bookshelfSearch } from '@/lib/meeting-navigation';
 import { MeetingHeaderMenu } from './MeetingHeaderMenu';
-import { MeetingsListLink } from './MeetingsListLink';
+import { MeetingBackLink } from './MeetingBackLink';
 import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 import type { Meeting, Profile } from '@/lib/types';
 
@@ -9,12 +8,16 @@ export function MeetingDetailHeader({
   meeting,
   canEdit,
   canDelete,
+  editHref,
+  fromHome,
   listYear,
   bookshelfYear,
 }: {
   meeting: Meeting & { host: Profile };
   canEdit: boolean;
   canDelete: boolean;
+  editHref: string;
+  fromHome: boolean;
   listYear?: number;
   bookshelfYear?: number;
 }) {
@@ -25,10 +28,11 @@ export function MeetingDetailHeader({
   return (
     <div className="space-y-2">
       <div className="-mt-2 flex items-center justify-between">
-        <MeetingsListLink year={bookshelfYear ?? listYear} view={bookshelfYear === undefined ? undefined : 'bookshelf'} />
+        <MeetingBackLink fromHome={fromHome} year={bookshelfYear ?? listYear} view={bookshelfYear === undefined ? undefined : 'bookshelf'} />
         <MeetingHeaderMenu
           meetingId={meeting.id}
-          editHref={`/meetings/${meeting.id}/edit${bookshelfSearch(bookshelfYear)}`}
+          editHref={editHref}
+          bookshelfYear={bookshelfYear}
           canEdit={canEdit}
           canDelete={canDelete}
         />

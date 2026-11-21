@@ -4,6 +4,7 @@ import { requireMember } from '@/lib/auth/membership';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { bookshelfSearch } from '@/lib/meeting-navigation';
 import { meetingFormSchema } from '@/lib/validation/meeting';
 import { publicUrlToPath } from './_discussion-file-access';
 import { cleanupDiscussionFile } from './_discussion-file-cleanup';
@@ -76,7 +77,7 @@ export async function updateMeeting(id: string, input: unknown): Promise<ActionR
   return { ok: true };
 }
 
-export async function deleteMeeting(id: string): Promise<ActionResult> {
+export async function deleteMeeting(id: string, bookshelfYear?: number): Promise<ActionResult> {
   await requireMember();
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase.from('meetings').delete().eq('id', id).select('id, discussion_file_url');
@@ -85,7 +86,6 @@ export async function deleteMeeting(id: string): Promise<ActionResult> {
   const deleted = data[0];
   const path = publicUrlToPath(deleted.discussion_file_url, deleted.id);
   if (path) await cleanupDiscussionFile(path);
-  revalidatePath('/meetings');
-  revalidatePath('/');
-  redirect('/meetings');
+  await revalidateMeetingPaths(deleted.id);
+  redirect(`/meetings${bookshelfSearch(bookshelfYear)}`);
 }

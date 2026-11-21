@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { SeasonalDecoration } from '@/components/theme/SeasonalDecoration';
-import { MeetingsListLink } from '@/components/meeting/MeetingsListLink';
+import { MeetingBackLink } from '@/components/meeting/MeetingBackLink';
 import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 import { bookshelfSearch } from '@/lib/meeting-navigation';
 import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
@@ -29,7 +29,7 @@ export function MeetingBookshelf({ year, meetings }: { year: number; meetings: M
         <span /><span /><span /><span /><span /><span />
       </div>
       <div className={styles.heading}>
-        <div className={styles.back}><MeetingsListLink year={year} /></div>
+        <div className={styles.back}><MeetingBackLink year={year} /></div>
         <h1 data-part="year" className={styles.year}>{year}</h1>
         <SeasonalDecoration decorationRole="bookshelf" className={styles.ornaments} />
       </div>

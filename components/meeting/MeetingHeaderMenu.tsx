@@ -24,11 +24,13 @@ import {
 export function MeetingHeaderMenu({
   meetingId,
   editHref,
+  bookshelfYear,
   canEdit,
   canDelete,
 }: {
   meetingId: string;
   editHref: string;
+  bookshelfYear?: number;
   canEdit: boolean;
   canDelete: boolean;
 }) {
@@ -45,7 +47,7 @@ export function MeetingHeaderMenu({
     if (deleting) return;
     setDeleting(true);
     try {
-      const result = await deleteMeeting(meetingId);
+      const result = await deleteMeeting(meetingId, bookshelfYear);
       if (result && !result.ok) {
         toast.error(result.error);
         setDeleting(false);

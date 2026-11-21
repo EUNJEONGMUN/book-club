@@ -2,7 +2,7 @@ import { requireMember } from '@/lib/auth/membership';
 import { notFound } from 'next/navigation';
 import { getMeetingDetail } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
-import { getBookshelfYear, type BookshelfSearchParams } from '@/lib/meeting-navigation';
+import { getMeetingDetailNavigation, type MeetingDetailSearchParams } from '@/lib/meeting-navigation';
 import { canEditMeeting } from '@/lib/meeting-permissions';
 import { getMeetingReviews } from '@/lib/queries/reviews';
 import { getKoreanMeetingDateTime, hasMeetingStarted } from '@/lib/meeting-time';
@@ -18,7 +18,7 @@ import { AttendanceSection } from '@/components/meeting/AttendanceSection';
 
 export default async function MeetingDetailPage({ params, searchParams }: {
   params: Promise<{ meetingId: string }>;
-  searchParams: Promise<BookshelfSearchParams>;
+  searchParams: Promise<MeetingDetailSearchParams>;
 }) {
   const [{ meetingId }, navigation] = await Promise.all([params, searchParams]);
   const { user, role: myRole } = await requireMember();
@@ -31,6 +31,7 @@ export default async function MeetingDetailPage({ params, searchParams }: {
   const reviews = await getMeetingReviews(meeting.id);
   const isPastMeeting = hasMeetingStarted(meeting.scheduled_at);
   const listYear = isPastMeeting ? Number(getKoreanMeetingDateTime(meeting.scheduled_at).date.slice(0, 4)) : undefined;
+  const { fromHome, bookshelfYear, search } = getMeetingDetailNavigation(navigation, listYear);
 
   const canEditAttendance = isPastMeeting && (isCreator || isAdmin);
   const eligibleMembers = canEditAttendance
@@ -43,8 +44,10 @@ export default async function MeetingDetailPage({ params, searchParams }: {
         meeting={meeting}
         canEdit={canEdit}
         canDelete={isCreator}
+        editHref={`/meetings/${meetingId}/edit${search}`}
+        fromHome={fromHome}
         listYear={listYear}
-        bookshelfYear={getBookshelfYear(navigation, listYear)}
+        bookshelfYear={bookshelfYear}
       />
       <ShareMeetingButton />
       <section className="space-y-3">

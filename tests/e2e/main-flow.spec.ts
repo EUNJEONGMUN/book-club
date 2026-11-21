@@ -34,6 +34,42 @@ test('로그인 후 그룹 선택 없이 홈과 고정 메뉴를 이용한다', 
   await expect(page.getByRole('button', { name: /새 그룹|그룹 만들기/ })).toHaveCount(0);
 });
 
+test('홈에서 연 모임 상세는 홈으로 돌아가고 수정 취소 후에도 출발 경로를 유지한다', async ({ page }) => {
+  test.slow();
+  await expect(page.getByRole('heading', { name: /안녕하세요/ })).toBeVisible();
+  const homeDetail = page.getByRole('link', { name: /상세 정보/ });
+  const editableDetail = '/meetings/20000000-0000-0000-0000-000000000002';
+  if (await homeDetail.isVisible()) {
+    await expect(homeDetail).toHaveAttribute('href', /\?from=home$/);
+    await homeDetail.click();
+  } else {
+    // The seeded upcoming meeting eventually becomes a past meeting.
+    await page.goto(`${editableDetail}?from=home`);
+  }
+  await expect(page).toHaveURL(/\/meetings\/[a-f0-9-]+\?from=home$/);
+  const backHome = page.getByRole('link', { name: '홈으로', exact: true });
+  await expect(backHome).toHaveCSS('min-height', '44px');
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: async ({ url }: ShareData) => { document.documentElement.dataset.sharedMeetingUrl = url; },
+    });
+  });
+  await page.getByRole('button', { name: /모임 공유/ }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-shared-meeting-url', page.url().split('?')[0]);
+  await backHome.click();
+  await expect(page).toHaveURL('/');
+
+  await page.goto(`${editableDetail}?from=home`);
+  await page.getByRole('button', { name: '모임 메뉴' }).click();
+  await page.getByRole('menuitem', { name: '모임 정보 수정' }).click();
+  await expect(page).toHaveURL(`${editableDetail}/edit?from=home`);
+  await page.getByRole('link', { name: '취소', exact: true }).click();
+  await expect(page).toHaveURL(`${editableDetail}?from=home`);
+  await backHome.click();
+  await expect(page).toHaveURL('/');
+});
+
 test('기존 지난 모임을 새 주소에서 읽을 수 있다', async ({ page }) => {
   await page.getByRole('navigation').getByRole('link', { name: '모임', exact: true }).click();
   await expect(page).toHaveURL('/meetings');
@@ -48,6 +84,68 @@ test('기존 지난 모임을 새 주소에서 읽을 수 있다', async ({ page
   const back = page.getByRole('link', { name: '모임목록', exact: true });
   await back.click();
   await expect(yearSelect).toHaveValue(year);
+});
+
+test('새 모임 작성 취소는 입력 내용이 있을 때 확인하고 출발 화면으로 돌아간다', async ({ page }) => {
+  test.slow();
+  const dialog = page.getByRole('dialog', { name: '모임 등록을 취소할까요?' });
+  const cancelLink = page.getByRole('link', { name: '취소', exact: true });
+  const cancelButton = page.getByRole('button', { name: '취소', exact: true });
+  const continueWriting = dialog.getByRole('button', { name: '계속 작성' });
+  const title = page.getByLabel('책 제목', { exact: true });
+  const time = page.getByRole('combobox', { name: '시간', exact: true });
+  const yearSelect = page.getByRole('combobox', { name: '지난 모임 연도' });
+
+  await page.goto('/meetings/new');
+  await expect(cancelLink).toHaveCSS('height', '44px');
+  await cancelLink.click();
+  await expect(page).toHaveURL('/meetings');
+  await expect(dialog).toHaveCount(0);
+
+  const year = (await yearSelect.getByRole('option').last().getAttribute('value'))!;
+  if (await yearSelect.inputValue() !== year) {
+    await yearSelect.selectOption(year);
+    await expect(page).toHaveURL(`/meetings?year=${year}`);
+  }
+  const createFromList = page.getByRole('link', { name: '신규 생성' });
+  await expect(createFromList).toHaveAttribute('href', `/meetings/new?year=${year}`);
+  await createFromList.click();
+  await expect(page).toHaveURL(`/meetings/new?year=${year}`);
+  await title.fill('작성 중인 책');
+  await cancelButton.click();
+  await expect(dialog).toBeVisible();
+  await continueWriting.click();
+  await expect(dialog).toBeHidden();
+  await expect(cancelButton).toBeFocused();
+  await expect(title).toHaveValue('작성 중인 책');
+  await cancelButton.click();
+  await dialog.getByRole('link', { name: '작성 취소' }).click();
+  await expect(page).toHaveURL(`/meetings?year=${year}`);
+  await expect(yearSelect).toHaveValue(year);
+
+  await page.goto('/');
+  const createFromHome = page.getByRole('link', { name: '모임 만들기' });
+  if (await createFromHome.isVisible()) {
+    await createFromHome.click();
+  } else {
+    // The home button only renders when there is no upcoming meeting.
+    await page.goto('/meetings/new?from=home');
+  }
+  await expect(page).toHaveURL('/meetings/new?from=home');
+  const defaultTime = await time.inputValue();
+  await time.selectOption('14:00');
+  await cancelButton.click();
+  await expect(dialog).toBeVisible();
+  await continueWriting.click();
+  await expect(time).toHaveValue('14:00');
+  await time.selectOption(defaultTime);
+  await expect(cancelLink).toBeVisible();
+  const placeSearch = page.getByRole('textbox', { name: '장소명으로 검색' });
+  await placeSearch.fill('모임 장소');
+  await cancelButton.click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('link', { name: '작성 취소' }).click();
+  await expect(page).toHaveURL('/');
 });
 
 test('책에서 모임 상세를 열고 같은 연도의 책장과 목록으로 돌아간다', async ({ page }) => {
@@ -116,17 +214,32 @@ test('책에서 모임 상세를 열고 같은 연도의 책장과 목록으로 
 });
 
 test('멤버·설정·프로필을 조회하며 전체 삭제 기능은 제공하지 않는다', async ({ page }) => {
+  test.slow();
   await page.getByRole('navigation').getByRole('link', { name: '멤버', exact: true }).click();
   await expect(page).toHaveURL('/members');
   await expect(page.getByText(/멤버 \d+명/)).toBeVisible();
   await page.getByRole('navigation').getByRole('link', { name: '설정', exact: true }).click();
   await expect(page).toHaveURL('/more');
   await expect(page.getByRole('button', { name: '그룹 삭제', exact: true })).toHaveCount(0);
-  const links = page.getByRole('link');
-  await expect(links.and(page.locator('[href="/more/applicants"]'))).toBeVisible();
-  await links.and(page.locator('[href="/more/profile"]')).click();
-  await expect(page).toHaveURL('/more/profile');
-  await expect(page.getByLabel('이름')).not.toHaveValue('');
+  const main = page.getByRole('main');
+  const back = main.getByRole('link', { name: '설정', exact: true });
+  for (const [path, name] of [
+    ['/more/info', /그룹 설정/],
+    ['/more/applicants', /가입 신청자/],
+    ['/more/theme', /테마 변경/],
+    ['/more/profile', /^프로필$/],
+  ] as const) {
+    await main.getByRole('link').and(page.locator(`[href="${path}"]`)).click();
+    await expect(page).toHaveURL(path);
+    const heading = main.getByRole('heading', { level: 1, name });
+    await expect(heading).toBeVisible();
+    await expect(back).toHaveAttribute('href', '/more');
+    await expect(back).toHaveCSS('min-height', '44px');
+    expect((await back.boundingBox())!.y).toBeLessThan((await heading.boundingBox())!.y);
+    if (path === '/more/profile') await expect(main.getByLabel('이름')).not.toHaveValue('');
+    await back.click();
+    await expect(page).toHaveURL('/more');
+  }
 });
 
 test('예전 부글부글 주소는 기존 ID의 새 상세 화면으로 연결한다', async ({ page }) => {

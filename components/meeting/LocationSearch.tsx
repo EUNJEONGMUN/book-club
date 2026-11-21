@@ -8,11 +8,12 @@ import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 import { searchPlaces, type KakaoPlace } from '@/lib/actions/location-search';
 
 type Props = {
+  query: string;
+  onQueryChange: (query: string) => void;
   onSelect: (place: KakaoPlace) => void;
 };
 
-export function LocationSearch({ onSelect }: Props) {
-  const [query, setQuery] = useState('');
+export function LocationSearch({ query, onQueryChange, onSelect }: Props) {
   const [results, setResults] = useState<KakaoPlace[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -41,7 +42,7 @@ export function LocationSearch({ onSelect }: Props) {
 
   function handleSelect(place: KakaoPlace) {
     onSelect(place);
-    setQuery('');
+    onQueryChange('');
     setResults([]);
     setOpen(false);
   }
@@ -54,7 +55,7 @@ export function LocationSearch({ onSelect }: Props) {
           <Input
             ref={inputRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => onQueryChange(e.target.value)}
             onKeyDown={handleKeyDown}
             aria-label="장소명으로 검색"
             placeholder="장소명으로 검색"

@@ -11,6 +11,7 @@ import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { cn } from '@/lib/utils';
 import { meetingFormSchema, type MeetingFormInput } from '@/lib/validation/meeting';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -39,9 +40,10 @@ type Props = {
   submitLabel: string;
   redirectOnSuccess?: (id: string) => string;
   cancelHref?: string;
+  confirmCancel?: boolean;
 };
 
-export function MeetingForm({ defaultValues, presenterOptions, onSubmit, submitLabel, redirectOnSuccess, cancelHref }: Props) {
+export function MeetingForm({ defaultValues, presenterOptions, onSubmit, submitLabel, redirectOnSuccess, cancelHref, confirmCancel }: Props) {
   const router = useRouter();
 
   const existingSchedule = defaultValues?.scheduled_at
@@ -51,6 +53,8 @@ export function MeetingForm({ defaultValues, presenterOptions, onSubmit, submitL
   const initialTime = existingSchedule?.time ?? '13:00';
   const [scheduledDate, setScheduledDate] = useState(initialDate);
   const [scheduledTime, setScheduledTime] = useState(initialTime);
+  const [bookQuery, setBookQuery] = useState('');
+  const [placeQuery, setPlaceQuery] = useState('');
 
   const form = useForm<MeetingFormRaw, unknown, MeetingFormInput>({
     resolver: zodResolver(meetingFormSchema),
@@ -69,7 +73,7 @@ export function MeetingForm({ defaultValues, presenterOptions, onSubmit, submitL
 
   function updateScheduledAt(date: string, time: string) {
     const value = date && time ? `${date}T${time}` : '';
-    form.setValue('scheduled_at', value, { shouldValidate: form.formState.isSubmitted });
+    form.setValue('scheduled_at', value, { shouldDirty: true, shouldValidate: form.formState.isSubmitted });
   }
 
   async function handleSubmit(data: MeetingFormInput) {
@@ -85,6 +89,9 @@ export function MeetingForm({ defaultValues, presenterOptions, onSubmit, submitL
   }
 
   const coverUrl = form.watch('book_cover_url');
+  const { isDirty, isSubmitting } = form.formState;
+  const hasDraft = isDirty || Boolean(bookQuery.trim() || placeQuery.trim());
+  const cancelClassName = 'h-11 w-full';
 
   return (
     <form data-slot="meeting-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
@@ -92,10 +99,12 @@ export function MeetingForm({ defaultValues, presenterOptions, onSubmit, submitL
       {/* 책 정보 */}
       <MeetingFormSection part="book" icon={<SeasonalIcon iconRole="book"><BookOpen className="size-4" /></SeasonalIcon>} title="책 정보">
         <BookSearch
+          query={bookQuery}
+          onQueryChange={setBookQuery}
           onSelect={(book: KakaoBook) => {
-            form.setValue('book_title', book.title, { shouldValidate: true });
-            form.setValue('book_author', book.authors.join(', '), { shouldValidate: true });
-            form.setValue('book_cover_url', book.thumbnail ?? '', { shouldValidate: true });
+            form.setValue('book_title', book.title, { shouldDirty: true, shouldValidate: true });
+            form.setValue('book_author', book.authors.join(', '), { shouldDirty: true, shouldValidate: true });
+            form.setValue('book_cover_url', book.thumbnail ?? '', { shouldDirty: true, shouldValidate: true });
           }}
         />
         <div className="flex gap-4">
@@ -216,10 +225,12 @@ export function MeetingForm({ defaultValues, presenterOptions, onSubmit, submitL
       {/* 장소 */}
       <MeetingFormSection part="location" icon={<SeasonalIcon iconRole="location"><MapPin className="size-4" /></SeasonalIcon>} title="장소">
         <LocationSearch
+          query={placeQuery}
+          onQueryChange={setPlaceQuery}
           onSelect={(place: KakaoPlace) => {
-            form.setValue('location_name', place.place_name, { shouldValidate: true });
-            form.setValue('location_url', place.place_url, { shouldValidate: true });
-            form.setValue('location_address', place.road_address_name || place.address_name, { shouldValidate: true });
+            form.setValue('location_name', place.place_name, { shouldDirty: true, shouldValidate: true });
+            form.setValue('location_url', place.place_url, { shouldDirty: true, shouldValidate: true });
+            form.setValue('location_address', place.road_address_name || place.address_name, { shouldDirty: true, shouldValidate: true });
           }}
         />
         <MeetingField name="location-name" label="장소 이름" error={form.formState.errors.location_name?.message}>
@@ -237,16 +248,38 @@ export function MeetingForm({ defaultValues, presenterOptions, onSubmit, submitL
 
       <div data-part="actions" className={cancelHref ? 'grid grid-cols-2 gap-2' : undefined}>
         {cancelHref && (
-          <Link href={cancelHref} className={cn(buttonVariants({ variant: 'outline' }), 'h-11 w-full')}>
-            취소
-          </Link>
+          confirmCancel && (hasDraft || isSubmitting) ? (
+            <Dialog>
+              <DialogTrigger render={<Button type="button" variant="outline" className={cancelClassName} disabled={isSubmitting} />}>
+                취소
+              </DialogTrigger>
+              <DialogContent showCloseButton={false}>
+                <DialogHeader>
+                  <DialogTitle>모임 등록을 취소할까요?</DialogTitle>
+                  <DialogDescription>지금 나가면 입력한 내용이 사라집니다.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose render={<Button type="button" variant="outline" className="min-h-11" />}>
+                    계속 작성
+                  </DialogClose>
+                  <Link href={cancelHref} className={buttonVariants({ variant: 'destructive', className: 'min-h-11' })}>
+                    작성 취소
+                  </Link>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <Link href={cancelHref} className={cn(buttonVariants({ variant: 'outline' }), cancelClassName)}>
+              취소
+            </Link>
+          )
         )}
         <Button
           type="submit"
-          disabled={form.formState.isSubmitting}
+          disabled={isSubmitting}
           className="h-11 w-full"
         >
-          {form.formState.isSubmitting ? '저장 중...' : submitLabel}
+          {isSubmitting ? '저장 중...' : submitLabel}
         </Button>
       </div>
     </form>

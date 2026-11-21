@@ -5,6 +5,13 @@ import { toast } from 'sonner';
  * 모바일에서는 카톡/문자 등 시스템 공유 시트가 뜸. PC면 클립보드 복사.
  */
 export async function shareMeetingLink(url: string): Promise<void> {
+  if (url) {
+    const sharedUrl = new URL(url);
+    if (sharedUrl.searchParams.get('from') === 'home') {
+      sharedUrl.searchParams.delete('from');
+      url = sharedUrl.href;
+    }
+  }
   if (typeof navigator !== 'undefined' && 'share' in navigator) {
     try {
       await navigator.share({ url });

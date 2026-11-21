@@ -25,7 +25,7 @@ export default async function HomePage() {
         <div className="text-center py-12 space-y-3 border-2 border-dashed rounded">
           <p className="text-3xl"><SeasonalIcon iconRole="book">📚</SeasonalIcon></p>
           <p className="text-muted-foreground">아직 예정된 모임이 없어요</p>
-          <Link href="/meetings/new" className={buttonVariants()}>
+          <Link href="/meetings/new?from=home" className={buttonVariants({ className: 'min-h-11' })}>
             모임 만들기
           </Link>
         </div>

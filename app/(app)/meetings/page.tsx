@@ -38,7 +38,7 @@ export default async function MeetingsPage({
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">모임</h1>
-        <Link href="/meetings/new" className={buttonVariants({ className: 'min-h-11 gap-1' })}>
+        <Link href={{ pathname: '/meetings/new', query: { year } }} className={buttonVariants({ className: 'min-h-11 gap-1' })}>
           <Plus aria-hidden="true" className="w-4 h-4" />
           신규 생성
         </Link>

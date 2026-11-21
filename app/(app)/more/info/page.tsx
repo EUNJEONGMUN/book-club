@@ -1,5 +1,3 @@
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { requireMember } from '@/lib/auth/membership';
 import { getClubSettings, getActiveInvite, getActiveMembers } from '@/lib/queries/club';
@@ -8,6 +6,7 @@ import { ClubInfoReadOnly } from '@/components/club/ClubInfoReadOnly';
 import { InviteLinkPanel } from '@/components/club/InviteLinkPanel';
 import { AdminTransferSection } from '@/components/club/AdminTransferSection';
 import { DangerZoneSection } from '@/components/club/DangerZoneSection';
+import { SettingsBackLink } from '../settings-back-link';
 
 export default async function GroupSettingsPage() {
   const { role, user } = await requireMember();
@@ -22,9 +21,7 @@ export default async function GroupSettingsPage() {
 
   return (
     <div className="space-y-5 pb-4">
-      <Link href="/more" className="inline-flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft aria-hidden="true" className="size-4" /> 설정
-      </Link>
+      <SettingsBackLink />
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">그룹 설정</h1>
         <p className="break-words text-sm text-muted-foreground">{club.name}{isAdmin ? ' · 관리자 전용' : ''}</p>

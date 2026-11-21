@@ -3,9 +3,10 @@
 import { MeetingForm } from '@/components/meeting/MeetingForm';
 import { createMeeting } from '@/lib/actions/meetings';
 
-export function NewMeetingForm({ creatorId, members }: {
+export function NewMeetingForm({ creatorId, members, cancelHref }: {
   creatorId: string;
   members: { user_id: string; display_name: string }[];
+  cancelHref: string;
 }) {
   const creator = members.find(({ user_id }) => user_id === creatorId);
 
@@ -19,6 +20,8 @@ export function NewMeetingForm({ creatorId, members }: {
       onSubmit={createMeeting}
       submitLabel="등록하기"
       redirectOnSuccess={(id) => `/meetings/${id}`}
+      cancelHref={cancelHref}
+      confirmCancel
     />
   );
 }
