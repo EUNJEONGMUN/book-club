@@ -2,6 +2,7 @@ import { requireAdmin } from '@/lib/auth/membership';
 import { notFound } from 'next/navigation';
 import { getClubSettings, getPendingApplicants } from '@/lib/queries/club';
 import { PendingApplicantsList } from '@/components/club/PendingApplicantsList';
+import { SettingsBackLink } from '../settings-back-link';
 
 export default async function ApplicantsPage() {
   await requireAdmin();
@@ -11,10 +12,11 @@ export default async function ApplicantsPage() {
   const applicants = await getPendingApplicants();
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 pb-4">
+      <SettingsBackLink />
       <div>
-        <h1 className="text-xl font-bold text-stone-800">{club.name} 가입 신청자</h1>
-        <p className="text-sm text-stone-500 mt-1">{applicants.length}명 대기 중</p>
+        <h1 className="text-xl font-bold text-foreground">{club.name} 가입 신청자</h1>
+        <p className="text-sm text-muted-foreground mt-1">{applicants.length}명 대기 중</p>
       </div>
       <PendingApplicantsList initialApplicants={applicants} />
     </div>

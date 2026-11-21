@@ -1,16 +1,26 @@
-'use client';
+import { requireMember } from '@/lib/auth/membership';
+import { getActiveMembers } from '@/lib/queries/club';
+import { NewMeetingForm } from './new-form';
 
-import { MeetingForm } from '@/components/meeting/MeetingForm';
-import { createMeeting } from '@/lib/actions/meetings';
+export default async function NewMeetingPage({ searchParams }: {
+  searchParams: Promise<{ from?: string | string[]; year?: string | string[] }>;
+}) {
+  const { user } = await requireMember();
+  const [members, { from, year }] = await Promise.all([getActiveMembers(), searchParams]);
+  let cancelHref = '/meetings';
+  if (from === 'home') {
+    cancelHref = '/';
+  } else if (typeof year === 'string' && /^[1-9]\d{3}$/.test(year)) {
+    cancelHref = `/meetings?year=${year}`;
+  }
 
-export default function NewMeetingPage() {
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold text-stone-800">새 모임 등록</h1>
-      <MeetingForm
-        onSubmit={(d) => createMeeting(d)}
-        submitLabel="등록하기"
-        redirectOnSuccess={(id) => `/meetings/${id}`}
+      <h1 className="text-2xl font-bold text-foreground">새 모임 등록</h1>
+      <NewMeetingForm
+        creatorId={user.id}
+        members={members.map(({ user_id, display_name }) => ({ user_id, display_name }))}
+        cancelHref={cancelHref}
       />
     </div>
   );

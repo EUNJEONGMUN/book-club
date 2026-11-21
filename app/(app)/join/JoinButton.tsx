@@ -26,7 +26,7 @@ export function JoinButton({ token }: { token: string }) {
   }
 
   return (
-    <Button onClick={submit} disabled={submitting} className="w-full bg-stone-800 hover:bg-stone-700 text-white">
+    <Button onClick={submit} disabled={submitting} className="w-full">
       {submitting ? (
         <><Loader2 className="w-4 h-4 mr-2 animate-spin" />신청 중...</>
       ) : (

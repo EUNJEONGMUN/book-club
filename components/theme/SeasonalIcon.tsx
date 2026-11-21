@@ -1,20 +1,28 @@
-import { BellRing, CandyCane, Gift, Snowflake, TreePine } from 'lucide-react';
+import { BellRing, CandyCane, Gift, Snowflake, TreePine, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import type { SeasonalTheme } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
-const christmasIcons = {
-  book: TreePine,
-  location: CandyCane,
-  home: TreePine,
-  meetings: Gift,
-  members: Snowflake,
-  settings: BellRing,
-  'member-tree': TreePine,
-  'member-gift': Gift,
-  'member-snowflake': Snowflake,
-};
+const memberAvatarRoles = ['member-avatar-primary', 'member-avatar-accent', 'member-avatar-secondary'] as const;
 
-const memberIconKinds = ['member-tree', 'member-gift', 'member-snowflake'] as const;
+type IconRole = 'book' | 'location' | 'schedule' | 'presenter' | 'home' | 'meetings' | 'members' | 'settings'
+  | (typeof memberAvatarRoles)[number];
+
+const seasonalIcons: Record<SeasonalTheme, Partial<Record<IconRole, LucideIcon>>> = {
+  christmas: {
+    book: TreePine,
+    location: CandyCane,
+    schedule: BellRing,
+    presenter: Snowflake,
+    home: TreePine,
+    meetings: Gift,
+    members: Snowflake,
+    settings: BellRing,
+    'member-avatar-primary': TreePine,
+    'member-avatar-accent': Gift,
+    'member-avatar-secondary': Snowflake,
+  },
+};
 
 export function SeasonalMemberIcon({ memberId, children }: { memberId: string; children: ReactNode }) {
   // The member ID keeps the icon stable across renders and display name changes.
@@ -22,24 +30,26 @@ export function SeasonalMemberIcon({ memberId, children }: { memberId: string; c
   for (const character of memberId) {
     hash = (Math.imul(hash, 31) + character.charCodeAt(0)) >>> 0;
   }
-  const kind = memberIconKinds[hash % memberIconKinds.length];
-
-  return <SeasonalIcon kind={kind} className="size-5">{children}</SeasonalIcon>;
+  const role = memberAvatarRoles[hash % memberAvatarRoles.length];
+  return <SeasonalIcon iconRole={role} className="size-5">{children}</SeasonalIcon>;
 }
 
-export function SeasonalIcon({ kind, children, className }: {
-  kind: keyof typeof christmasIcons;
+export function SeasonalIcon({ iconRole, children, className }: {
+  iconRole: IconRole;
   children: ReactNode;
   className?: string;
 }) {
-  const ChristmasIcon = christmasIcons[kind];
-
   return (
-    <span aria-hidden="true" className="contents">
-      <span className="theme-icon-default contents">{children}</span>
-      <span className="theme-icon-christmas hidden">
-        <ChristmasIcon className={cn('inline-block size-[1em] align-[-0.125em]', `theme-icon-${kind}`, className)} />
-      </span>
+    <span aria-hidden="true" data-slot="seasonal-icon" data-icon-role={iconRole} className="contents">
+      <span data-icon-theme="default">{children}</span>
+      {Object.entries(seasonalIcons).map(([theme, icons]) => {
+        const Icon = icons[iconRole];
+        return Icon ? (
+          <span key={theme} data-icon-theme={theme}>
+            <Icon className={cn('inline-block size-[1em] align-[-0.125em]', className)} />
+          </span>
+        ) : null;
+      })}
     </span>
   );
 }

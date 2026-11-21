@@ -6,12 +6,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { BookOpen, CalendarDays, ChevronDown, MapPin } from 'lucide-react';
+import { BookOpen, CalendarDays, MapPin, Users } from 'lucide-react';
 import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { cn } from '@/lib/utils';
 import { meetingFormSchema, type MeetingFormInput } from '@/lib/validation/meeting';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { BookSearch } from '@/components/meeting/BookSearch';
 import { LocationSearch } from '@/components/meeting/LocationSearch';
@@ -31,15 +33,17 @@ const TIME_OPTIONS = Array.from({ length: 36 }, (_, i) => {
 
 type Props = {
   defaultValues?: Partial<MeetingFormInput>;
+  presenterOptions?: { user_id: string; display_name: string }[];
   onSubmit: (
     data: MeetingFormInput
   ) => Promise<{ ok: true; data?: { id: string } } | { ok: false; error: string }>;
   submitLabel: string;
   redirectOnSuccess?: (id: string) => string;
   cancelHref?: string;
+  confirmCancel?: boolean;
 };
 
-export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSuccess, cancelHref }: Props) {
+export function MeetingForm({ defaultValues, presenterOptions, onSubmit, submitLabel, redirectOnSuccess, cancelHref, confirmCancel }: Props) {
   const router = useRouter();
 
   const existingSchedule = defaultValues?.scheduled_at
@@ -49,6 +53,8 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
   const initialTime = existingSchedule?.time ?? '13:00';
   const [scheduledDate, setScheduledDate] = useState(initialDate);
   const [scheduledTime, setScheduledTime] = useState(initialTime);
+  const [bookQuery, setBookQuery] = useState('');
+  const [placeQuery, setPlaceQuery] = useState('');
 
   const form = useForm<MeetingFormRaw, unknown, MeetingFormInput>({
     resolver: zodResolver(meetingFormSchema),
@@ -67,7 +73,7 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
 
   function updateScheduledAt(date: string, time: string) {
     const value = date && time ? `${date}T${time}` : '';
-    form.setValue('scheduled_at', value, { shouldValidate: form.formState.isSubmitted });
+    form.setValue('scheduled_at', value, { shouldDirty: true, shouldValidate: form.formState.isSubmitted });
   }
 
   async function handleSubmit(data: MeetingFormInput) {
@@ -83,22 +89,27 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
   }
 
   const coverUrl = form.watch('book_cover_url');
+  const { isDirty, isSubmitting } = form.formState;
+  const hasDraft = isDirty || Boolean(bookQuery.trim() || placeQuery.trim());
+  const cancelClassName = 'h-11 w-full';
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
+    <form data-slot="meeting-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-5">
 
       {/* 책 정보 */}
-      <Section icon={<SeasonalIcon kind="book"><BookOpen className="size-4" /></SeasonalIcon>} title="책 정보">
+      <MeetingFormSection part="book" icon={<SeasonalIcon iconRole="book"><BookOpen className="size-4" /></SeasonalIcon>} title="책 정보">
         <BookSearch
+          query={bookQuery}
+          onQueryChange={setBookQuery}
           onSelect={(book: KakaoBook) => {
-            form.setValue('book_title', book.title, { shouldValidate: true });
-            form.setValue('book_author', book.authors.join(', '), { shouldValidate: true });
-            form.setValue('book_cover_url', book.thumbnail ?? '', { shouldValidate: true });
+            form.setValue('book_title', book.title, { shouldDirty: true, shouldValidate: true });
+            form.setValue('book_author', book.authors.join(', '), { shouldDirty: true, shouldValidate: true });
+            form.setValue('book_cover_url', book.thumbnail ?? '', { shouldDirty: true, shouldValidate: true });
           }}
         />
         <div className="flex gap-4">
           {/* 표지 미리보기 */}
-          <div className="shrink-0 w-20 h-28 rounded-lg bg-stone-100 overflow-hidden flex items-center justify-center">
+          <div className="shrink-0 w-20 h-28 rounded-lg bg-muted overflow-hidden flex items-center justify-center">
             {coverUrl ? (
               <img
                 src={coverUrl}
@@ -107,50 +118,74 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             ) : (
-              <SeasonalIcon kind="book" className="size-7"><BookOpen className="size-7 text-stone-300" /></SeasonalIcon>
+              <SeasonalIcon iconRole="book" className="size-7"><BookOpen className="size-7 text-muted-foreground" /></SeasonalIcon>
             )}
           </div>
 
           {/* 제목 / 저자 */}
           <div className="flex-1 space-y-3 min-w-0">
-            <FormField label="책 제목" error={form.formState.errors.book_title?.message}>
+            <MeetingField name="book-title" label="책 제목" error={form.formState.errors.book_title?.message}>
               {(field) => (
                 <Input
                   {...field}
                   {...form.register('book_title')}
                   placeholder="예: 데미안 — 비우면 '미정'"
-                  className="bg-stone-50 border-stone-200"
                 />
               )}
-            </FormField>
-            <FormField label="저자" error={form.formState.errors.book_author?.message}>
+            </MeetingField>
+            <MeetingField name="book-author" label="저자" error={form.formState.errors.book_author?.message}>
               {(field) => (
                 <Input
                   {...field}
                   {...form.register('book_author')}
                   placeholder="예: 헤르만 헤세"
-                  className="bg-stone-50 border-stone-200"
                 />
               )}
-            </FormField>
+            </MeetingField>
           </div>
         </div>
 
         {/* 표지 URL은 검색으로 자동 입력 — hidden으로 유지 */}
         <input type="hidden" {...form.register('book_cover_url')} />
-      </Section>
+      </MeetingFormSection>
+
+      {presenterOptions && (
+        <MeetingFormSection part="presenter">
+          <MeetingField
+            name="presenter"
+            label={
+              <>
+                <SeasonalIcon iconRole="presenter" className="size-4 text-primary">
+                  <Users className="size-4 text-muted-foreground" />
+                </SeasonalIcon>
+                <span className="text-card-foreground">발제자</span>
+              </>
+            }
+            error={form.formState.errors.host_id?.message}
+          >
+            {(field) => (
+              <Select {...field} {...form.register('host_id')}>
+                {presenterOptions.map(({ user_id, display_name }) => (
+                  <option key={user_id} value={user_id}>{display_name}</option>
+                ))}
+              </Select>
+            )}
+          </MeetingField>
+        </MeetingFormSection>
+      )}
 
       {/* 일정 */}
-      <Section icon={<CalendarDays className="w-4 h-4" />} title="일정 (한국 시간)">
-        <div className="flex items-start justify-start gap-3">
-          <FormField
+      <MeetingFormSection part="schedule" icon={<SeasonalIcon iconRole="schedule" className="size-4"><CalendarDays className="size-4" /></SeasonalIcon>} title="일정 (한국 시간)">
+        <div className="grid max-w-80 grid-cols-[minmax(0,4fr)_minmax(0,3fr)] items-start gap-3">
+          <MeetingField
+            name="schedule-date"
             label="날짜"
             error={scheduledTime && form.formState.errors.scheduled_at
               ? (scheduledDate ? form.formState.errors.scheduled_at.message : '날짜를 선택해주세요')
               : undefined}
           >
             {(field) => (
-              <input
+              <Input
                 {...field}
                 type="date"
                 value={scheduledDate}
@@ -158,115 +193,148 @@ export function MeetingForm({ defaultValues, onSubmit, submitLabel, redirectOnSu
                   setScheduledDate(e.target.value);
                   updateScheduledAt(e.target.value, scheduledTime);
                 }}
-                className="block w-[160px] h-10 box-border rounded-md border border-stone-200 bg-stone-50 px-3 py-0 text-sm leading-10 text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
+                className="h-10 px-3 py-0"
               />
             )}
-          </FormField>
-          <FormField
+          </MeetingField>
+          <MeetingField
+            name="schedule-time"
             label="시간"
             error={form.formState.isSubmitted && !scheduledTime ? '시간을 선택해주세요' : undefined}
           >
             {(field) => (
-              <div className="relative">
-                <select
-                  {...field}
-                  value={scheduledTime}
-                  onChange={(e) => {
-                    setScheduledTime(e.target.value);
-                    updateScheduledAt(scheduledDate, e.target.value);
-                  }}
-                  className="block w-[120px] h-10 box-border appearance-none rounded-md border border-stone-200 bg-stone-50 pl-3 pr-8 text-sm text-center text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
-                >
-                  <option value="" disabled>선택</option>
-                  {!TIME_OPTIONS.includes(initialTime) && <option value={initialTime}>{initialTime}</option>}
-                  {TIME_OPTIONS.map((t) => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                <ChevronDown aria-hidden="true" className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-              </div>
+              <Select
+                {...field}
+                value={scheduledTime}
+                onChange={(e) => {
+                  setScheduledTime(e.target.value);
+                  updateScheduledAt(scheduledDate, e.target.value);
+                }}
+              >
+                <option value="" disabled>선택</option>
+                {!TIME_OPTIONS.includes(initialTime) && <option value={initialTime}>{initialTime}</option>}
+                {TIME_OPTIONS.map((time) => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </Select>
             )}
-          </FormField>
+          </MeetingField>
         </div>
-      </Section>
+      </MeetingFormSection>
 
       {/* 장소 */}
-      <Section icon={<SeasonalIcon kind="location"><MapPin className="size-4" /></SeasonalIcon>} title="장소">
+      <MeetingFormSection part="location" icon={<SeasonalIcon iconRole="location"><MapPin className="size-4" /></SeasonalIcon>} title="장소">
         <LocationSearch
+          query={placeQuery}
+          onQueryChange={setPlaceQuery}
           onSelect={(place: KakaoPlace) => {
-            form.setValue('location_name', place.place_name, { shouldValidate: true });
-            form.setValue('location_url', place.place_url, { shouldValidate: true });
-            form.setValue('location_address', place.road_address_name || place.address_name, { shouldValidate: true });
+            form.setValue('location_name', place.place_name, { shouldDirty: true, shouldValidate: true });
+            form.setValue('location_url', place.place_url, { shouldDirty: true, shouldValidate: true });
+            form.setValue('location_address', place.road_address_name || place.address_name, { shouldDirty: true, shouldValidate: true });
           }}
         />
-        <FormField label="장소 이름" error={form.formState.errors.location_name?.message}>
+        <MeetingField name="location-name" label="장소 이름" error={form.formState.errors.location_name?.message}>
           {(field) => (
             <Input
               {...field}
               {...form.register('location_name')}
               placeholder="예: 아마츄어 작업실 — 비우면 '미정'"
-              className="bg-stone-50 border-stone-200"
             />
           )}
-        </FormField>
+        </MeetingField>
         {/* 지도 링크는 장소 검색으로 자동 입력 */}
         <input type="hidden" {...form.register('location_url')} />
-      </Section>
+      </MeetingFormSection>
 
-      <div className={cancelHref ? 'flex gap-2' : ''}>
+      <div data-part="actions" className={cancelHref ? 'grid grid-cols-2 gap-2' : undefined}>
         {cancelHref && (
-          <Link href={cancelHref} className={cn(buttonVariants({ variant: 'outline' }), 'flex-1 border-stone-200 text-stone-600')}>
-            취소
-          </Link>
+          confirmCancel && (hasDraft || isSubmitting) ? (
+            <Dialog>
+              <DialogTrigger render={<Button type="button" variant="outline" className={cancelClassName} disabled={isSubmitting} />}>
+                취소
+              </DialogTrigger>
+              <DialogContent showCloseButton={false}>
+                <DialogHeader>
+                  <DialogTitle>모임 등록을 취소할까요?</DialogTitle>
+                  <DialogDescription>지금 나가면 입력한 내용이 사라집니다.</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose render={<Button type="button" variant="outline" className="min-h-11" />}>
+                    계속 작성
+                  </DialogClose>
+                  <Link href={cancelHref} className={buttonVariants({ variant: 'destructive', className: 'min-h-11' })}>
+                    작성 취소
+                  </Link>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <Link href={cancelHref} className={cn(buttonVariants({ variant: 'outline' }), cancelClassName)}>
+              취소
+            </Link>
+          )
         )}
         <Button
           type="submit"
-          disabled={form.formState.isSubmitting}
-          className={`app-primary-action bg-stone-800 hover:bg-stone-700 text-white ${cancelHref ? 'flex-1' : 'w-full'}`}
+          disabled={isSubmitting}
+          className="h-11 w-full"
         >
-          {form.formState.isSubmitting ? '저장 중...' : submitLabel}
+          {isSubmitting ? '저장 중...' : submitLabel}
         </Button>
       </div>
     </form>
   );
 }
 
-function Section({
+function MeetingFormSection({
+  part,
   icon,
   title,
   children,
 }: {
-  icon: React.ReactNode;
-  title: string;
+  part: 'book' | 'presenter' | 'schedule' | 'location';
+  icon?: React.ReactNode;
+  title?: string;
   children: React.ReactNode;
 }) {
+  const titleId = `meeting-${part}-heading-${useId()}`;
+
   return (
-    <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-3">
-      <div className="flex items-center gap-2 text-stone-500">
-        {icon}
-        <span className="text-xs font-semibold uppercase tracking-wide">{title}</span>
-      </div>
+    <section
+      data-slot="meeting-form-section"
+      data-part={part}
+      aria-labelledby={title ? titleId : undefined}
+      className="space-y-3 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-sm"
+    >
+      {title && (
+        <h2 id={titleId} className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground">
+          {icon}
+          {title}
+        </h2>
+      )}
       {children}
-    </div>
+    </section>
   );
 }
 
-function FormField({
+function MeetingField({
+  name,
   label,
   error,
   children,
 }: {
-  label: string;
+  name: string;
+  label: React.ReactNode;
   error?: string;
   children: (field: { id: string; 'aria-invalid'?: true; 'aria-describedby'?: string }) => React.ReactNode;
 }) {
-  const id = useId();
+  const id = `meeting-${name}-${useId()}`;
   const errorId = error ? `${id}-error` : undefined;
   return (
-    <div className="space-y-1.5 min-w-0">
-      <Label htmlFor={id} className="text-stone-700">{label}</Label>
+    <div data-slot="meeting-form-field" data-field={name} className="min-w-0 space-y-1.5">
+      <Label htmlFor={id} className="text-card-foreground">{label}</Label>
       {children({ id, 'aria-invalid': error ? true : undefined, 'aria-describedby': errorId })}
-      {error && <p id={errorId} className="text-xs text-red-500">{error}</p>}
+      {error && <p id={errorId} className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }

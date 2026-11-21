@@ -2,7 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { DISCUSSION_FILE_PUBLIC_PATH, MAX_DISCUSSION_FILE_BYTES } from '@/lib/discussion-file';
-import { assertDiscussionFileHost, FILE_CHANGED, publicUrlToPath } from './_discussion-file-access';
+import { assertDiscussionFileEditor, FILE_CHANGED, publicUrlToPath } from './_discussion-file-access';
 
 /**
  * Gemini 출력의 흔한 정렬 오류를 보정. prompt를 강화해도 가끔 발생.
@@ -19,7 +19,7 @@ function normalizeExtractedQuestion(s: string): string {
 export async function extractQuestionsFromPdf(meetingId: string, expectedUrl: string): Promise<
   { ok: true; questions: string[] } | { ok: false; error: string }
 > {
-  const auth = await assertDiscussionFileHost(meetingId);
+  const auth = await assertDiscussionFileEditor(meetingId);
   if (!auth.ok) return { ok: false, error: auth.error };
 
   const registeredUrl = auth.meeting.discussion_file_url;

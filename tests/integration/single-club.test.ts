@@ -135,10 +135,67 @@ const cases: Array<[string, string | null, string, string?]> = [
  ['outsider cannot read meetings', outsider, is(`(SELECT count(*) FROM public.meetings)=0`)],
  ['anonymous cannot read meetings', null, is(`(SELECT count(*) FROM public.meetings)=0`), 'anon'],
  ['member can create a meeting as its host', member, `INSERT INTO public.meetings(host_id,book_title,book_author,scheduled_at,location_name) VALUES ('${member}','new','test',now(),'local');`],
- ['member cannot spoof another host', member, fails(`INSERT INTO public.meetings(host_id,book_title,book_author,scheduled_at,location_name) VALUES ('${host}','new','test',now(),'local')`)],
+ ['member can select another active member as presenter and retain authorship', member, `
+    INSERT INTO public.meetings(id,host_id,book_title,book_author,scheduled_at,location_name)
+      VALUES ('${id(51)}','${host}','new','test',now()-interval '1 day','local');
+    ${is(`(SELECT created_by='${member}' AND host_id='${host}' FROM public.meetings WHERE id='${id(51)}')`)}
+    UPDATE public.meetings SET book_title='edited by creator' WHERE id='${id(51)}';
+    SELECT public.append_discussion_questions('${id(51)}', ARRAY['creator question']);
+    INSERT INTO public.attendances(meeting_id,user_id,status) VALUES ('${id(51)}','${host}','attending');
+    ${fails(`UPDATE public.meetings SET created_by='${host}' WHERE id='${id(51)}'`)}
+    SELECT set_config('request.jwt.claim.sub','${host}',true);
+    UPDATE public.meetings SET book_title='edited by presenter' WHERE id='${id(51)}';
+    ${is(`(SELECT book_title FROM public.meetings WHERE id='${id(51)}')='edited by creator'`)}
+    ${fails(`PERFORM public.append_discussion_questions('${id(51)}', ARRAY['presenter question'])`)}
+    UPDATE public.attendances SET status='not_attending' WHERE meeting_id='${id(51)}';
+    ${is(`(SELECT status FROM public.attendances WHERE meeting_id='${id(51)}')='attending'`)}
+    UPDATE public.meetings SET host_id='${member}' WHERE id='${id(51)}';
+    ${is(`(SELECT host_id FROM public.meetings WHERE id='${id(51)}')='${host}'`)}
+    SELECT set_config('request.jwt.claim.sub','${member}',true);
+    UPDATE public.meetings SET host_id='${id(6)}' WHERE id='${id(51)}';
+    ${is(`(SELECT created_by='${member}' AND host_id='${id(6)}' FROM public.meetings WHERE id='${id(51)}')`)}
+ `],
+ ['member cannot assign a pending or non-member presenter or spoof the creator', member, `
+    ${fails(`INSERT INTO public.meetings(host_id,book_title,book_author,scheduled_at,location_name) VALUES ('${pending}','new','test',now(),'local')`)}
+    ${fails(`INSERT INTO public.meetings(host_id,book_title,book_author,scheduled_at,location_name) VALUES ('${outsider}','new','test',now(),'local')`)}
+    ${fails(`INSERT INTO public.meetings(host_id,created_by,book_title,book_author,scheduled_at,location_name) VALUES ('${member}','${host}','new','test',now(),'local')`)}
+ `],
  ['host can edit their own meeting', host, `UPDATE public.meetings SET book_title='edited' WHERE id='${future}'; ${is(`(SELECT book_title FROM public.meetings WHERE id='${future}')='edited'`)}`],
  ['other member cannot edit meeting', member, `UPDATE public.meetings SET book_title='bad' WHERE id='${future}'; ${is(`(SELECT book_title FROM public.meetings WHERE id='${future}')='phase2 future'`)}`],
- ['administrator retains host-only meeting edits', admin, `UPDATE public.meetings SET book_title='bad' WHERE id='${future}'; ${is(`(SELECT book_title FROM public.meetings WHERE id='${future}')='phase2 future'`)}`],
+ ['administrator cannot edit a future meeting they did not create', admin, `UPDATE public.meetings SET book_title='bad' WHERE id='${future}'; ${is(`(SELECT book_title FROM public.meetings WHERE id='${future}')='phase2 future'`)}`],
+ ['administrator can update past meeting details, questions and attachments', admin, `
+    UPDATE public.meetings SET book_title='revised', location_name='new venue', discussion_file_name='new.pdf', host_id='${member}' WHERE id='${past}';
+    ${is(`(SELECT book_title='revised' AND location_name='new venue' AND discussion_file_name='new.pdf' AND host_id='${member}' AND created_by='${host}' FROM public.meetings WHERE id='${past}')`)}
+    ${fails(`UPDATE public.meetings SET host_id='${pending}' WHERE id='${past}'`, 'check_violation')}
+    ${fails(`UPDATE public.meetings SET host_id='${outsider}' WHERE id='${past}'`, 'check_violation')}
+    UPDATE public.meetings SET host_id='${member}' WHERE id='${future}';
+    ${is(`(SELECT host_id FROM public.meetings WHERE id='${future}')='${host}'`)}
+    SELECT public.append_discussion_questions('${past}', ARRAY['admin question']);
+    UPDATE public.discussion_questions SET content='edited by admin' WHERE meeting_id='${past}';
+    ${is(`(SELECT content FROM public.discussion_questions WHERE meeting_id='${past}')='edited by admin'`)}
+    ${fails(`UPDATE public.discussion_questions SET meeting_id='${future}' WHERE meeting_id='${past}'`)}
+    ${fails(`PERFORM public.append_discussion_questions('${future}', ARRAY['future question'])`)}
+    INSERT INTO storage.objects(bucket_id,name) VALUES ('discussion-files','${past}/past.pdf');
+    UPDATE storage.objects SET name='${past}/renamed.pdf' WHERE name='${past}/past.pdf';
+    ${fails(`UPDATE storage.objects SET name='${future}/past.pdf' WHERE name='${past}/renamed.pdf'`)}
+    DELETE FROM storage.objects WHERE name='${past}/renamed.pdf';
+    ${is(`NOT EXISTS(SELECT 1 FROM storage.objects WHERE name='${past}/renamed.pdf')`)}
+    DELETE FROM public.discussion_questions WHERE meeting_id='${past}';
+    ${is(`NOT EXISTS(SELECT 1 FROM public.discussion_questions WHERE meeting_id='${past}')`)}
+    DELETE FROM public.meetings WHERE id='${past}';
+    ${is(`EXISTS(SELECT 1 FROM public.meetings WHERE id='${past}')`)}
+    UPDATE public.meetings SET scheduled_at=now()+interval '1 day' WHERE id='${past}';
+    ${is(`(SELECT scheduled_at > now() FROM public.meetings WHERE id='${past}')`)}
+    UPDATE public.meetings SET book_title='future edit' WHERE id='${past}';
+    ${is(`(SELECT book_title FROM public.meetings WHERE id='${past}')='revised'`)}
+ `],
+ ['past meetings retain an inactive presenter until an editor selects an active member', admin, `
+    DELETE FROM public.members WHERE user_id='${host}';
+    UPDATE public.meetings SET host_id='${host}', location_name='revised venue' WHERE id='${past}';
+    ${is(`(SELECT location_name='revised venue' AND host_id='${host}' FROM public.meetings WHERE id='${past}')`)}
+    UPDATE public.meetings SET host_id='${member}' WHERE id='${past}';
+    ${is(`(SELECT host_id='${member}' AND created_by='${host}' FROM public.meetings WHERE id='${past}')`)}
+ `],
  ['host can append discussion question', host, `INSERT INTO public.discussion_questions(meeting_id,order_idx,content) VALUES ('${future}',1,'allowed');`],
  ['other member cannot append discussion question', member, fails(`INSERT INTO public.discussion_questions(meeting_id,order_idx,content) VALUES ('${future}',1,'denied')`)],
  ['other member cannot use the append RPC', member, fails(`PERFORM public.append_discussion_questions('${future}', ARRAY['denied'])`)],

@@ -4,6 +4,7 @@ import { requireMember } from '@/lib/auth/membership';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getSupabaseServer } from '@/lib/supabase/server';
+import { bookshelfSearch } from '@/lib/meeting-navigation';
 import { meetingFormSchema } from '@/lib/validation/meeting';
 import { publicUrlToPath } from './_discussion-file-access';
 import { cleanupDiscussionFile } from './_discussion-file-cleanup';
@@ -15,15 +16,23 @@ export async function createMeeting(input: unknown): Promise<ActionResult<{ id: 
   const parsed = meetingFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
 
-  await requireMember();
+  const { user } = await requireMember();
   const supabase = await getSupabaseServer();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: '로그인이 필요합니다' };
+  const hostId = parsed.data.host_id ?? user.id;
+  if (hostId !== user.id) {
+    const { data: presenter, error } = await supabase.from('members')
+      .select('user_id')
+      .eq('user_id', hostId)
+      .in('role', ['admin', 'member'])
+      .maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    if (!presenter) return { ok: false, error: '승인된 멤버만 발제자로 선택할 수 있어요.' };
+  }
 
   const { data, error } = await supabase
     .from('meetings')
     .insert({
-      host_id: user.id,
+      host_id: hostId,
       book_title: parsed.data.book_title,
       book_author: parsed.data.book_author,
       book_cover_url: parsed.data.book_cover_url || null,
@@ -49,6 +58,7 @@ export async function updateMeeting(id: string, input: unknown): Promise<ActionR
   const { data, error } = await supabase
     .from('meetings')
     .update({
+      ...(parsed.data.host_id !== undefined && { host_id: parsed.data.host_id }),
       book_title: parsed.data.book_title,
       book_author: parsed.data.book_author,
       book_cover_url: parsed.data.book_cover_url || null,
@@ -61,22 +71,21 @@ export async function updateMeeting(id: string, input: unknown): Promise<ActionR
     .select('id');
   if (error) return { ok: false, error: error.message };
   if (!data || data.length === 0) {
-    return { ok: false, error: '발제자만 모임을 수정할 수 있어요.' };
+    return { ok: false, error: '모임을 수정할 권한이 없어요.' };
   }
   await revalidateMeetingPaths(id);
   return { ok: true };
 }
 
-export async function deleteMeeting(id: string): Promise<ActionResult> {
+export async function deleteMeeting(id: string, bookshelfYear?: number): Promise<ActionResult> {
   await requireMember();
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase.from('meetings').delete().eq('id', id).select('id, discussion_file_url');
   if (error) return { ok: false, error: error.message };
-  if (!data?.length) return { ok: false, error: '발제자만 모임을 삭제할 수 있어요.' };
+  if (!data?.length) return { ok: false, error: '작성자만 모임을 삭제할 수 있어요.' };
   const deleted = data[0];
   const path = publicUrlToPath(deleted.discussion_file_url, deleted.id);
   if (path) await cleanupDiscussionFile(path);
-  revalidatePath('/meetings');
-  revalidatePath('/');
-  redirect('/meetings');
+  await revalidateMeetingPaths(deleted.id);
+  redirect(`/meetings${bookshelfSearch(bookshelfYear)}`);
 }

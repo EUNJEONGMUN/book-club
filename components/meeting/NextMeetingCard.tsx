@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getKoreanMeetingDateTime, getKoreanMeetingDayDifference } from '@/lib/meeting-time';
+import { meetingFromHomeSearch } from '@/lib/meeting-navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { AttendanceSection } from './AttendanceSection';
@@ -25,22 +26,22 @@ export function NextMeetingCard({ meeting, viewerProfile }: Props) {
     <Card>
       <CardContent className="p-4 space-y-4">
         <div className="flex gap-3">
-          <div className="book-cover w-20 h-28 bg-slate-200 rounded shrink-0 flex items-center justify-center overflow-hidden">
+          <div data-slot="book-cover" className="w-20 h-28 bg-muted rounded shrink-0 flex items-center justify-center overflow-hidden">
             {meeting.book_cover_url ? (
               <img src={meeting.book_cover_url} alt="" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-3xl"><SeasonalIcon kind="book">📚</SeasonalIcon></span>
+              <span className="text-3xl"><SeasonalIcon iconRole="book">📚</SeasonalIcon></span>
             )}
           </div>
           <div className="flex-1 space-y-1">
-            <p className="text-xs font-bold text-blue-600">{dDay}</p>
+            <p className="text-xs font-bold text-info-foreground">{dDay}</p>
             <h2 className="text-lg font-bold">{meeting.book_title}</h2>
-            <p className="text-sm text-slate-600">{meeting.book_author}</p>
-            <p className="text-sm text-slate-700 mt-1">
+            <p className="text-sm text-muted-foreground">{meeting.book_author}</p>
+            <p className="text-sm text-foreground mt-1">
               {month}월 {day}일 ({weekday}) {time}
             </p>
-            <p className="text-xs text-slate-500">발제자: {meeting.host.display_name}</p>
-            <p className="text-xs text-slate-500"><SeasonalIcon kind="location">📍</SeasonalIcon> {meeting.location_name}</p>
+            <p className="text-xs text-muted-foreground">발제자: {meeting.host.display_name}</p>
+            <p className="text-xs text-muted-foreground"><SeasonalIcon iconRole="location">📍</SeasonalIcon> {meeting.location_name}</p>
           </div>
         </div>
 
@@ -50,7 +51,7 @@ export function NextMeetingCard({ meeting, viewerProfile }: Props) {
           viewerProfile={viewerProfile}
         />
 
-        <Link href={`/meetings/${meeting.id}`} className={buttonVariants({ variant: 'outline', className: 'w-full' })}>
+        <Link href={`/meetings/${meeting.id}${meetingFromHomeSearch}`} className={buttonVariants({ variant: 'outline', className: 'min-h-11 w-full' })}>
           상세 정보 →
         </Link>
       </CardContent>

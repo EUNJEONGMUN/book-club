@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { useTheme } from 'next-themes';
-import { DEFAULT_THEME, THEME_OPTIONS } from './AppThemeProvider';
+import { DEFAULT_THEME, THEME_OPTIONS } from '@/lib/theme';
 
 const subscribe = () => () => {};
 
@@ -16,7 +16,7 @@ export function ThemeSettings() {
   return (
     <fieldset disabled={!ready} className="min-w-0">
       <legend className="sr-only">테마</legend>
-      <div className="settings-card grid grid-cols-2 gap-2 rounded-2xl border border-stone-200/80 bg-white p-3 shadow-sm">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(8rem,1fr))] gap-2 rounded-2xl border border-border bg-card p-3 shadow-sm">
         {THEME_OPTIONS.map(({ value, label }) => (
           <label
             key={value}

@@ -35,11 +35,11 @@ export function BookCoverUploader({
 
   return (
     <div className="space-y-2">
-      <div className="w-24 h-32 bg-slate-100 rounded overflow-hidden flex items-center justify-center">
+      <div className="w-24 h-32 bg-muted rounded overflow-hidden flex items-center justify-center">
         {value ? (
           <img src={value} alt="책 표지" className="w-full h-full object-cover" />
         ) : (
-          <span className="text-2xl text-slate-300"><SeasonalIcon kind="book">📚</SeasonalIcon></span>
+          <span className="text-2xl text-muted-foreground"><SeasonalIcon iconRole="book">📚</SeasonalIcon></span>
         )}
       </div>
       <div className="flex gap-2 items-center">
@@ -51,7 +51,7 @@ export function BookCoverUploader({
             onChange={handleFile}
             disabled={uploading}
           />
-          <span className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium border h-8 px-3 cursor-pointer ${uploading ? 'opacity-50' : 'hover:bg-slate-50'}`}>
+          <span className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium border h-8 px-3 cursor-pointer ${uploading ? 'opacity-50' : 'hover:bg-muted/50'}`}>
             {uploading ? '업로드 중...' : '책 표지 업로드'}
           </span>
         </label>
@@ -59,7 +59,7 @@ export function BookCoverUploader({
           <button
             type="button"
             onClick={() => onChange('')}
-            className="inline-flex items-center justify-center rounded-md text-sm font-medium h-8 px-3 hover:bg-slate-100"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium h-8 px-3 hover:bg-muted"
           >
             제거
           </button>

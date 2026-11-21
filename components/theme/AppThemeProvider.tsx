@@ -3,11 +3,7 @@
 import { ThemeProvider } from 'next-themes';
 import type { ReactNode } from 'react';
 
-export const DEFAULT_THEME = 'light';
-export const THEME_OPTIONS = [
-  { value: DEFAULT_THEME, label: '기본' },
-  { value: 'christmas', label: '크리스마스' },
-];
+import { DEFAULT_THEME, THEME_OPTIONS } from '@/lib/theme';
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
   return (

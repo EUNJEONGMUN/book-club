@@ -19,6 +19,7 @@ const optionalWithPlaceholder = (placeholder: string, max: number) =>
     .transform((v) => (v && v.length > 0 ? v : placeholder));
 
 export const meetingFormSchema = z.object({
+  host_id: z.guid('올바른 발제자를 선택해주세요').optional(),
   book_title: optionalWithPlaceholder('미정', 200),
   // 저자는 비어도 됨 (책 자체가 미정이면 저자도 자연스럽게 비움)
   book_author: z.string().trim().max(100).optional().default(''),

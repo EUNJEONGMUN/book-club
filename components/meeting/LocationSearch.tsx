@@ -8,11 +8,12 @@ import { SeasonalIcon } from '@/components/theme/SeasonalIcon';
 import { searchPlaces, type KakaoPlace } from '@/lib/actions/location-search';
 
 type Props = {
+  query: string;
+  onQueryChange: (query: string) => void;
   onSelect: (place: KakaoPlace) => void;
 };
 
-export function LocationSearch({ onSelect }: Props) {
-  const [query, setQuery] = useState('');
+export function LocationSearch({ query, onQueryChange, onSelect }: Props) {
   const [results, setResults] = useState<KakaoPlace[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -41,7 +42,7 @@ export function LocationSearch({ onSelect }: Props) {
 
   function handleSelect(place: KakaoPlace) {
     onSelect(place);
-    setQuery('');
+    onQueryChange('');
     setResults([]);
     setOpen(false);
   }
@@ -50,62 +51,62 @@ export function LocationSearch({ onSelect }: Props) {
     <div className="relative">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <Input
             ref={inputRef}
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => onQueryChange(e.target.value)}
             onKeyDown={handleKeyDown}
             aria-label="장소명으로 검색"
             placeholder="장소명으로 검색"
-            className="h-10 pl-9 bg-stone-50 border-stone-200"
+            className="h-10 pl-9"
           />
         </div>
         <button
           type="button"
           onClick={handleSearch}
           disabled={loading || !query.trim()}
-          className="h-10 px-4 rounded-md bg-stone-800 text-white text-sm font-medium hover:bg-stone-700 disabled:opacity-40 transition-colors shrink-0 flex items-center justify-center min-w-[56px]"
+          className="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/85 disabled:opacity-40 transition-colors shrink-0 flex items-center justify-center min-w-[56px]"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : '검색'}
         </button>
       </div>
 
       {open && (
-        <div className="absolute z-10 mt-1 w-full bg-white rounded-xl border border-stone-200 shadow-lg overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-0.5 border-b border-stone-100 bg-stone-50/50">
-            <span className="text-[11px] font-medium text-stone-500">
+        <div className="absolute z-10 mt-1 w-full bg-card rounded-xl border border-border shadow-lg overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-0.5 border-b border-border bg-muted/50">
+            <span className="text-[11px] font-medium text-muted-foreground">
               {loading ? '검색 중...' : results.length > 0 ? `검색 결과 ${results.length}개` : '결과 없음'}
             </span>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="닫기"
-              className="p-0.5 text-stone-400 hover:text-stone-700 transition-colors"
+              className="p-0.5 text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
           {loading ? (
-            <div className="flex items-center justify-center py-6 text-stone-400 text-sm gap-2">
+            <div className="flex items-center justify-center py-6 text-muted-foreground text-sm gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               검색 중...
             </div>
           ) : results.length === 0 ? (
-            <p className="py-6 text-center text-sm text-stone-400">검색 결과가 없습니다.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">검색 결과가 없습니다.</p>
           ) : (
-            <ul className="max-h-44 overflow-y-auto divide-y divide-stone-100">
+            <ul className="max-h-44 overflow-y-auto divide-y divide-border">
               {results.map((place, i) => (
                 <li key={i}>
                   <button
                     type="button"
                     onClick={() => handleSelect(place)}
-                    className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-stone-50 text-left transition-colors"
+                    className="w-full flex items-start gap-3 px-3 py-2.5 hover:bg-muted/50 text-left transition-colors"
                   >
-                    <SeasonalIcon kind="location" className="mt-0.5 size-4 shrink-0"><MapPin className="mt-0.5 size-4 shrink-0 text-stone-400" /></SeasonalIcon>
+                    <SeasonalIcon iconRole="location" className="mt-0.5 size-4 shrink-0"><MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" /></SeasonalIcon>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-stone-800 truncate">{place.place_name}</p>
-                      <p className="text-xs text-stone-400 truncate">
+                      <p className="text-sm font-medium text-foreground truncate">{place.place_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
                         {place.road_address_name || place.address_name}
                       </p>
                     </div>

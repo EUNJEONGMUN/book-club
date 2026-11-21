@@ -23,10 +23,16 @@ import {
 
 export function MeetingHeaderMenu({
   meetingId,
-  isHost,
+  editHref,
+  bookshelfYear,
+  canEdit,
+  canDelete,
 }: {
   meetingId: string;
-  isHost: boolean;
+  editHref: string;
+  bookshelfYear?: number;
+  canEdit: boolean;
+  canDelete: boolean;
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -41,7 +47,7 @@ export function MeetingHeaderMenu({
     if (deleting) return;
     setDeleting(true);
     try {
-      const result = await deleteMeeting(meetingId);
+      const result = await deleteMeeting(meetingId, bookshelfYear);
       if (result && !result.ok) {
         toast.error(result.error);
         setDeleting(false);
@@ -64,7 +70,7 @@ export function MeetingHeaderMenu({
             <Button
               variant="ghost"
               size="icon"
-              className="shrink-0 text-stone-500 hover:text-stone-800"
+              className="shrink-0 text-muted-foreground hover:text-foreground"
               aria-label="모임 메뉴"
             />
           }
@@ -72,10 +78,10 @@ export function MeetingHeaderMenu({
           <MoreVertical className="w-5 h-5" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" sideOffset={6} className="min-w-44 p-1.5 space-y-0.5">
-          {isHost && (
+          {canEdit && (
             <DropdownMenuItem
               className="py-2.5 gap-2"
-              onClick={() => router.push(`/meetings/${meetingId}/edit`)}
+              onClick={() => router.push(editHref)}
             >
               <Pencil className="w-4 h-4" />
               모임 정보 수정
@@ -85,7 +91,7 @@ export function MeetingHeaderMenu({
             <Share2 className="w-4 h-4" />
             공유
           </DropdownMenuItem>
-          {isHost && (
+          {canDelete && (
             <DropdownMenuItem className="py-2.5 gap-2" variant="destructive" onClick={() => setConfirmOpen(true)}>
               <Trash2 className="w-4 h-4" />
               모임 삭제
@@ -99,7 +105,7 @@ export function MeetingHeaderMenu({
           <DialogHeader>
             <DialogTitle>모임을 삭제하시겠어요?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-slate-600">관련된 참석 정보와 발제문이 모두 삭제됩니다.</p>
+          <p className="text-sm text-muted-foreground">관련된 참석 정보와 발제문이 모두 삭제됩니다.</p>
           <DialogFooter>
             <Button variant="outline" disabled={deleting} onClick={() => setConfirmOpen(false)}>
               취소

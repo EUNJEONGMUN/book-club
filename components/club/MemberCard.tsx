@@ -22,7 +22,7 @@ export function MemberCard({ member, history, defaultExpanded = true }: Props) {
     <div className="px-4 py-4 flex gap-3">
       <Avatar className="w-12 h-12 shrink-0">
         <AvatarImage src={member.avatar_url ?? undefined} alt={member.display_name} />
-        <AvatarFallback className="theme-member-avatar bg-stone-100 text-stone-600 text-base font-medium">
+        <AvatarFallback data-slot="member-avatar" className="bg-muted text-muted-foreground text-base font-medium">
           <SeasonalMemberIcon memberId={member.user_id}>
             {member.display_name.slice(0, 1)}
           </SeasonalMemberIcon>
@@ -32,14 +32,14 @@ export function MemberCard({ member, history, defaultExpanded = true }: Props) {
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="font-semibold text-stone-800 truncate">{member.display_name}</p>
+              <p className="font-semibold text-foreground truncate">{member.display_name}</p>
               {member.role === 'admin' && (
-                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium shrink-0">
+                <span className="text-xs bg-warning text-warning-foreground px-2 py-0.5 rounded-full font-medium shrink-0">
                   admin
                 </span>
               )}
             </div>
-            <p className="text-xs text-stone-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               참석 {member.attended_count}회 · 발제 {member.hosted_count}회
             </p>
           </div>
@@ -47,7 +47,7 @@ export function MemberCard({ member, history, defaultExpanded = true }: Props) {
             <button
               type="button"
               onClick={() => setExpanded((v) => !v)}
-              className="shrink-0 flex items-center gap-1 text-xs text-stone-500 hover:text-stone-700 transition-colors"
+              className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               aria-expanded={expanded}
             >
               이력 {history!.length}건
@@ -63,12 +63,12 @@ export function MemberCard({ member, history, defaultExpanded = true }: Props) {
           <ul className="mt-3 space-y-2">
             {history!.map((h) => (
               <li key={h.meeting_id} className="flex items-center gap-3 text-sm">
-                <span className="text-stone-400 tabular-nums shrink-0 w-14">
+                <span className="text-muted-foreground tabular-nums shrink-0 w-14">
                   {getKoreanMeetingDateTime(h.scheduled_at).date.slice(0, 7).replace('-', '.')}
                 </span>
-                <span className="text-stone-700 truncate flex-1">{h.book_title}</span>
+                <span className="text-foreground truncate flex-1">{h.book_title}</span>
                 {h.is_host && (
-                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium shrink-0">
+                  <span className="text-xs bg-warning text-warning-foreground px-2 py-0.5 rounded-full font-medium shrink-0">
                     발제
                   </span>
                 )}

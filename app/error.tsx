@@ -5,7 +5,7 @@ export default function GlobalError({ error, reset }: { error: Error; reset: () 
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="text-center space-y-3">
         <p className="text-xl">😵 오류가 발생했어요</p>
-        <p className="text-sm text-slate-600">{error.message}</p>
+        <p className="text-sm text-muted-foreground">{error.message}</p>
         <button onClick={reset} className="underline">다시 시도</button>
       </div>
     </div>

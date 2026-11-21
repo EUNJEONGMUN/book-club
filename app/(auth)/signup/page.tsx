@@ -28,16 +28,16 @@ export default async function SignupPage({
     if (profile) redirect(next);
 
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-muted/50">
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center space-y-2">
-            <div className="text-4xl"><SeasonalIcon kind="book">📖</SeasonalIcon></div>
-            <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">{clubName}</h1>
+            <div className="text-4xl"><SeasonalIcon iconRole="book">📖</SeasonalIcon></div>
+            <h1 className="text-2xl font-semibold text-foreground tracking-tight">{clubName}</h1>
           </div>
           <CompleteProfileForm userEmail={user.email ?? ''} next={next} />
-          <p className="text-sm text-center text-stone-500">
+          <p className="text-sm text-center text-muted-foreground">
             이미 계정이 있나요?{' '}
-            <Link href={loginPath} className="text-stone-800 font-medium underline underline-offset-4">
+            <Link href={loginPath} className="text-foreground font-medium underline underline-offset-4">
               로그인
             </Link>
           </p>
@@ -47,17 +47,17 @@ export default async function SignupPage({
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-muted/50">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
-          <div className="text-4xl"><SeasonalIcon kind="book">📖</SeasonalIcon></div>
-          <h1 className="text-2xl font-semibold text-stone-800 tracking-tight">{clubName}</h1>
-          <p className="text-sm text-stone-500">함께 책 읽는 사람들</p>
+          <div className="text-4xl"><SeasonalIcon iconRole="book">📖</SeasonalIcon></div>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">{clubName}</h1>
+          <p className="text-sm text-muted-foreground">함께 책 읽는 사람들</p>
         </div>
         <SignupForm next={next} />
-        <p className="text-sm text-center text-stone-500">
+        <p className="text-sm text-center text-muted-foreground">
           이미 계정이 있나요?{' '}
-          <Link href={loginPath} className="text-stone-800 font-medium underline underline-offset-4">
+          <Link href={loginPath} className="text-foreground font-medium underline underline-offset-4">
             로그인
           </Link>
         </p>

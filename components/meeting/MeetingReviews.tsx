@@ -21,8 +21,8 @@ const VISIBILITY_OPTIONS: { value: ReviewVisibility; label: string; icon: typeof
 ];
 
 const VISIBILITY_BADGE: Record<ReviewVisibility, { label: string; bg: string; text: string; icon: typeof Lock }> = {
-  private: { label: '비공개', bg: 'bg-stone-200', text: 'text-stone-600', icon: Lock },
-  public: { label: '공개', bg: 'bg-amber-100', text: 'text-amber-700', icon: Globe },
+  private: { label: '비공개', bg: 'bg-muted', text: 'text-muted-foreground', icon: Lock },
+  public: { label: '공개', bg: 'bg-warning', text: 'text-warning-foreground', icon: Globe },
   anonymous: { label: '익명', bg: 'bg-violet-100', text: 'text-violet-700', icon: VenetianMask },
 };
 
@@ -78,24 +78,24 @@ export function MeetingReviews({ meetingId, initialOwn, others, isPastMeeting }:
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-semibold text-stone-700">한줄 평</h2>
+      <h2 className="text-sm font-semibold text-foreground">한줄 평</h2>
 
       {/* 본인 영역 */}
       {!isPastMeeting ? (
-        <p className="text-sm text-stone-500 px-3 py-2 bg-stone-50 rounded-lg">
+        <p className="text-sm text-muted-foreground px-3 py-2 bg-muted/50 rounded-lg">
           모임 시작 시각부터 한줄 평을 남길 수 있어요.
         </p>
       ) : editing ? (
-        <div className="space-y-2 p-3 border border-stone-200 rounded-xl bg-stone-50">
+        <div className="space-y-2 p-3 border border-border rounded-xl bg-muted/50">
           <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value.slice(0, MAX_LEN))}
             placeholder="이번 모임은 어땠나요?"
             rows={3}
-            className="bg-white border-stone-200 text-sm"
+            className="bg-card border-border text-sm"
           />
           <div className="flex items-center justify-between gap-2 flex-wrap">
-            <div className="inline-flex rounded-full bg-stone-200 p-0.5">
+            <div className="inline-flex rounded-full bg-muted p-0.5">
               {VISIBILITY_OPTIONS.map((o) => {
                 const Icon = o.icon;
                 const active = visibility === o.value;
@@ -107,8 +107,8 @@ export function MeetingReviews({ meetingId, initialOwn, others, isPastMeeting }:
                     className={
                       'inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ' +
                       (active
-                        ? 'bg-white text-stone-800 shadow-sm font-medium'
-                        : 'text-stone-500 hover:text-stone-700')
+                        ? 'bg-card text-foreground shadow-sm font-medium'
+                        : 'text-muted-foreground hover:text-foreground')
                     }
                   >
                     <Icon className="w-3 h-3" />
@@ -118,7 +118,7 @@ export function MeetingReviews({ meetingId, initialOwn, others, isPastMeeting }:
               })}
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-stone-400 tabular-nums">{content.length}/{MAX_LEN}</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{content.length}/{MAX_LEN}</span>
               {own && (
                 <Button
                   type="button"
@@ -141,16 +141,16 @@ export function MeetingReviews({ meetingId, initialOwn, others, isPastMeeting }:
         </div>
       ) : (
         own && (
-          <div className="p-3 border border-stone-200 rounded-xl bg-amber-50/40 space-y-2">
+          <div className="p-3 border border-border rounded-xl bg-warning/40 space-y-2">
             <div className="flex items-start gap-2">
               <OwnVisibilityBadge visibility={own.visibility} />
-              <p className="flex-1 text-sm text-stone-800 whitespace-pre-wrap">{own.content}</p>
+              <p className="flex-1 text-sm text-foreground whitespace-pre-wrap">{own.content}</p>
             </div>
             <div className="flex items-center justify-end gap-1">
               <Button variant="ghost" size="sm" onClick={() => setEditing(true)} disabled={saving}>
                 수정
               </Button>
-              <Button variant="ghost" size="sm" onClick={remove} disabled={saving} className="text-stone-500">
+              <Button variant="ghost" size="sm" onClick={remove} disabled={saving} className="text-muted-foreground">
                 <Trash2 className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -162,22 +162,22 @@ export function MeetingReviews({ meetingId, initialOwn, others, isPastMeeting }:
       {others.length > 0 && (
         <ul className="space-y-2 pt-1">
           {others.map((r) => (
-            <li key={r.id} className="p-3 border border-stone-100 rounded-xl bg-white">
+            <li key={r.id} className="p-3 border border-border rounded-xl bg-card">
               <div className="flex items-start gap-3">
                 <Avatar className="w-8 h-8 shrink-0">
                   <AvatarImage src={r.avatar_url ?? undefined} alt={r.display_name} />
-                  <AvatarFallback className="bg-stone-100 text-stone-600 text-xs font-medium">
+                  <AvatarFallback className="bg-muted text-muted-foreground text-xs font-medium">
                     {r.display_name.slice(0, 1)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2">
-                    <p className="text-sm font-semibold text-stone-800 truncate">{r.display_name}</p>
-                    <p className="text-xs text-stone-400 tabular-nums shrink-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{r.display_name}</p>
+                    <p className="text-xs text-muted-foreground tabular-nums shrink-0">
                       {format(new Date(r.updated_at), 'yyyy.MM.dd', { locale: ko })}
                     </p>
                   </div>
-                  <p className="text-sm text-stone-700 mt-0.5 whitespace-pre-wrap">{r.content}</p>
+                  <p className="text-sm text-foreground mt-0.5 whitespace-pre-wrap">{r.content}</p>
                 </div>
               </div>
             </li>
@@ -186,7 +186,7 @@ export function MeetingReviews({ meetingId, initialOwn, others, isPastMeeting }:
       )}
 
       {isPastMeeting && others.length === 0 && !own && (
-        <p className="text-xs text-stone-400 px-1">첫 한줄 평을 남겨보세요.</p>
+        <p className="text-xs text-muted-foreground px-1">첫 한줄 평을 남겨보세요.</p>
       )}
     </section>
   );

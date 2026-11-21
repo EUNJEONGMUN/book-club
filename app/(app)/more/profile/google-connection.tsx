@@ -45,8 +45,8 @@ export function GoogleConnection({
   }
 
   return (
-    <section aria-labelledby="login-methods" className="space-y-3 border-t pt-4">
-      <h2 id="login-methods" className="font-semibold">로그인 수단</h2>
+    <section aria-labelledby="profile-login-methods-heading" className="space-y-3 border-t pt-4">
+      <h2 id="profile-login-methods-heading" className="font-semibold">로그인 수단</h2>
       <dl className="space-y-2 text-sm">
         <div className="flex items-baseline justify-between gap-4">
           <dt>이메일 로그인</dt>
@@ -61,7 +61,7 @@ export function GoogleConnection({
           )}</dd>
         </div>
       </dl>
-      {issue && !connecting && <p role="alert" className="text-sm text-red-700">{messages[issue]}</p>}
+      {issue && !connecting && <p role="alert" className="text-sm text-danger-foreground">{messages[issue]}</p>}
       {result === 'linked' && hasGoogle && <p role="status" className="text-sm">Google 계정을 연결했어요.</p>}
     </section>
   );

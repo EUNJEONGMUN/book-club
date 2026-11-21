@@ -4,7 +4,7 @@ import { getSupabaseServer } from '@/lib/supabase/server';
 import { revalidateMeetingPaths } from './_revalidate-meeting';
 import { questionFormSchema } from '@/lib/validation/question';
 
-const QUESTION_NOT_CHANGED = '질문을 찾을 수 없거나 발제자 권한이 없습니다.';
+const QUESTION_NOT_CHANGED = '질문을 찾을 수 없거나 수정 권한이 없습니다.';
 
 export async function addQuestion(meetingId: string, input: unknown) {
   const parsed = questionFormSchema.safeParse(input);
@@ -25,7 +25,7 @@ async function appendQuestions(meetingId: string, contents: string[]) {
     question_contents: contents,
   });
   if (error?.code === '42501') {
-    return { ok: false as const, error: '모임을 찾을 수 없거나 발제자 권한이 없습니다.' };
+    return { ok: false as const, error: '모임을 찾을 수 없거나 수정 권한이 없습니다.' };
   }
   if (error) return { ok: false as const, error: error.message };
   await revalidateMeetingPaths(meetingId);

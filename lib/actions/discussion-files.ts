@@ -9,7 +9,7 @@ import {
   DISCUSSION_FILE_TYPES,
   MAX_DISCUSSION_FILE_BYTES,
 } from '@/lib/discussion-file';
-import { assertDiscussionFileHost, FILE_CHANGED, publicUrlToPath } from './_discussion-file-access';
+import { assertDiscussionFileEditor, FILE_CHANGED, publicUrlToPath } from './_discussion-file-access';
 import { cleanupDetachedFile, cleanupIfMeetingDeleted } from './_discussion-file-cleanup';
 import { revalidateMeetingPaths } from './_revalidate-meeting';
 
@@ -23,7 +23,7 @@ const uploadMetadata = z.object({
 
 type UploadIntent = z.infer<typeof uploadMetadata> & {
   meetingId: string;
-  hostId: string;
+  userId: string;
   path: string;
   previousUrl: string | null;
   previousUpdatedAt: string;
@@ -49,14 +49,14 @@ function readUpload(ticket: string): UploadIntent | null {
   const received = Buffer.from(signature, 'base64url');
   const expected = uploadSignature(payload);
   if (received.length !== expected.length || !timingSafeEqual(received, expected)) return null;
-  const intent = JSON.parse(Buffer.from(payload, 'base64url').toString()) as UploadIntent;
-  return intent.expiresAt > Date.now() ? intent : null;
+  const intent = JSON.parse(Buffer.from(payload, 'base64url').toString()) as UploadIntent & { hostId?: string };
+  return intent.expiresAt > Date.now() ? { ...intent, userId: intent.userId ?? intent.hostId } : null;
 }
 
-type HostAccess = Extract<Awaited<ReturnType<typeof assertDiscussionFileHost>>, { ok: true }>;
+type EditorAccess = Extract<Awaited<ReturnType<typeof assertDiscussionFileEditor>>, { ok: true }>;
 
 async function updateDiscussionFile(
-  { supabase, meeting }: HostAccess,
+  { supabase, meeting }: EditorAccess,
   meetingId: string,
   url: string | null,
   fileName: string | null,
@@ -84,7 +84,7 @@ export async function prepareDiscussionFileUpload(
   file: z.input<typeof uploadMetadata>,
   expectedUrl: string | null,
 ) {
-  const auth = await assertDiscussionFileHost(meetingId);
+  const auth = await assertDiscussionFileEditor(meetingId);
   if (!auth.ok) return { ok: false as const, error: auth.error };
   if (expectedUrl !== auth.meeting.discussion_file_url) {
     return { ok: false as const, error: FILE_CHANGED };
@@ -104,7 +104,7 @@ export async function prepareDiscussionFileUpload(
   const ticket = signUpload({
     ...metadata.data,
     meetingId,
-    hostId: auth.meeting.host_id,
+    userId: auth.userId,
     path,
     previousUrl: auth.meeting.discussion_file_url,
     previousUpdatedAt: auth.meeting.updated_at,
@@ -114,18 +114,18 @@ export async function prepareDiscussionFileUpload(
 }
 
 export async function finishDiscussionFileUpload(meetingId: string, ticket: string) {
-  const auth = await assertDiscussionFileHost(meetingId);
+  const auth = await assertDiscussionFileEditor(meetingId);
   if (!auth.ok) {
     if (auth.missingForUserId) {
       const intent = readUpload(ticket);
-      if (intent?.meetingId === meetingId && intent.hostId === auth.missingForUserId) {
+      if (intent?.meetingId === meetingId && intent.userId === auth.missingForUserId) {
         await cleanupIfMeetingDeleted(meetingId, intent.path);
       }
     }
     return { ok: false as const, error: auth.error };
   }
   const intent = readUpload(ticket);
-  if (!intent || intent.meetingId !== meetingId || intent.hostId !== auth.meeting.host_id) {
+  if (!intent || intent.meetingId !== meetingId || intent.userId !== auth.userId) {
     return { ok: false as const, error: UPLOAD_EXPIRED };
   }
   const { supabase, meeting } = auth;
@@ -179,7 +179,7 @@ export async function finishDiscussionFileUpload(meetingId: string, ticket: stri
 }
 
 export async function removeDiscussionFile(meetingId: string, expectedUrl?: string | null) {
-  const auth = await assertDiscussionFileHost(meetingId);
+  const auth = await assertDiscussionFileEditor(meetingId);
   if (!auth.ok) return { ok: false as const, error: auth.error };
   if (expectedUrl !== undefined && expectedUrl !== auth.meeting.discussion_file_url) {
     return { ok: false as const, error: FILE_CHANGED };

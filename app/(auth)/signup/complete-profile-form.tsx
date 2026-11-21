@@ -34,29 +34,29 @@ export function CompleteProfileForm({ userEmail, next }: { userEmail: string; ne
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-6 space-y-4">
-      <p className="text-sm text-stone-500">
-        <span className="font-medium text-stone-700">{userEmail}</span>로 로그인되었어요.
+    <div className="bg-card rounded-2xl shadow-sm border border-border p-6 space-y-4">
+      <p className="text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">{userEmail}</span>로 로그인되었어요.
         <br />
         모임에서 사용할 이름을 입력해주세요.
       </p>
       <form onSubmit={submit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="name" className="text-stone-700">이름</Label>
+          <Label htmlFor="complete-profile-name" className="text-foreground">이름</Label>
           <Input
-            id="name"
+            id="complete-profile-name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="홍길동"
             required
             maxLength={20}
-            className="bg-stone-50 border-stone-200 focus:bg-white"
+            className="bg-muted/50 border-border focus:bg-card"
           />
         </div>
-        <Button type="submit" disabled={loading} className="w-full bg-stone-800 hover:bg-stone-700 text-white">
+        <Button type="submit" disabled={loading} className="w-full">
           {loading ? '처리 중...' : '완료'}
         </Button>
-        <Button type="button" variant="ghost" onClick={cancel} className="w-full text-stone-500 hover:text-stone-700">
+        <Button type="button" variant="ghost" onClick={cancel} className="w-full text-muted-foreground hover:text-foreground">
           취소 (로그아웃)
         </Button>
       </form>

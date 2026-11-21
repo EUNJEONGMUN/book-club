@@ -133,17 +133,17 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
       />
       {/* 현재 파일 */}
       {fileUrl ? (
-        <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-xl border border-stone-200">
+        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl border border-border">
           {isPdf ? (
-            <FileText className="w-5 h-5 text-red-500 shrink-0" />
+            <FileText className="w-5 h-5 text-danger-foreground shrink-0" />
           ) : (
-            <ImageIcon className="w-5 h-5 text-blue-500 shrink-0" />
+            <ImageIcon className="w-5 h-5 text-info-foreground shrink-0" />
           )}
           <a
             href={linkHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 text-sm text-stone-700 underline underline-offset-2 truncate"
+            className="flex-1 text-sm text-foreground underline underline-offset-2 truncate"
           >
             {fileName}
           </a>
@@ -161,7 +161,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
             aria-label="발제 파일 삭제"
             disabled={fileControlsDisabled}
             onClick={handleRemove}
-            className="text-stone-400 hover:text-red-500 transition-colors disabled:opacity-50"
+            className="text-muted-foreground hover:text-danger-foreground transition-colors disabled:opacity-50"
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -171,7 +171,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
           <Button
             type="button"
             variant="outline"
-            className="w-full border-stone-200 text-stone-600"
+            className="w-full border-border text-muted-foreground"
             disabled={fileControlsDisabled}
             onClick={() => inputRef.current?.click()}
           >
@@ -184,7 +184,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
         </div>
       )}
       {uploadProgress !== null && (
-        <p role="status" className="text-sm text-stone-600">
+        <p role="status" className="text-sm text-muted-foreground">
           {uploadProgress === 100 ? '업로드한 파일 확인 중…' : `파일 업로드 중 ${uploadProgress}%`}
         </p>
       )}
@@ -195,7 +195,7 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
           <Button
             type="button"
             variant="outline"
-            className="w-full border-stone-200 text-stone-600"
+            className="w-full border-border text-muted-foreground"
             disabled={extracting || fileBusy}
             onClick={handleExtract}
           >
@@ -206,15 +206,15 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
             )}
           </Button>
           {extracting ? (
-            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
+            <div className="flex items-start gap-2 p-2.5 rounded-lg bg-warning border border-warning-border text-xs text-warning-foreground">
               <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 mt-0.5" />
               <div className="space-y-0.5">
                 <p className="font-medium">PDF 분석 중 — 보통 30초~2분 정도 소요됩니다</p>
-                <p className="text-amber-600">페이지를 닫지 마시고 잠시만 기다려주세요.</p>
+                <p className="text-warning-foreground">페이지를 닫지 마시고 잠시만 기다려주세요.</p>
               </div>
             </div>
           ) : (
-            <p className="text-xs text-stone-400 px-1">AI가 PDF를 분석합니다 (30초~2분 소요)</p>
+            <p className="text-xs text-muted-foreground px-1">AI가 PDF를 분석합니다 (30초~2분 소요)</p>
           )}
         </div>
       )}

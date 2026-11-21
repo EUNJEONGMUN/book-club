@@ -1,5 +1,7 @@
 'use client';
 
+import { Select } from '@/components/ui/select';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -39,25 +41,25 @@ export function AdminTransferSection({
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2">
-        <Crown className="w-4 h-4 text-stone-500" />
-        <h2 className="text-sm font-semibold text-stone-700">관리자 이양</h2>
+        <Crown className="w-4 h-4 text-muted-foreground" />
+        <h2 className="text-sm font-semibold text-foreground">관리자 이양</h2>
       </div>
 
       {others.length === 0 ? (
-        <p className="text-sm text-stone-500">이양할 다른 멤버가 없어요.</p>
+        <p className="text-sm text-muted-foreground">이양할 다른 멤버가 없어요.</p>
       ) : (
         <div className="space-y-3">
-          <p className="text-xs text-stone-500">새 관리자를 선택하면 본인은 일반 멤버가 됩니다.</p>
-          <select
+          <p className="text-xs text-muted-foreground">새 관리자를 선택하면 본인은 일반 멤버가 됩니다.</p>
+          <Select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
-            className="block w-full bg-stone-50 border border-stone-200 rounded-md px-3 py-2 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-300"
+            className="text-sm"
           >
             <option value="">멤버 선택</option>
             {others.map((m) => (
               <option key={m.user_id} value={m.user_id}>{m.display_name}</option>
             ))}
-          </select>
+          </Select>
           <Button
             onClick={handleTransfer}
             disabled={!selected || transferring}

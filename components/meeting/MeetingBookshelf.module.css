@@ -6,17 +6,6 @@
   font-display: swap;
 }
 
-/* The fixed navigation stays visible. Reserve its height and the phone's safe area. */
-:global(.app-shell):has(.board) {
-  --bookshelf-nav-height: calc(4rem + 1px);
-  padding-bottom: calc(var(--bookshelf-nav-height) + env(safe-area-inset-bottom));
-}
-
-:global(html[data-theme="christmas"]) :global(.app-shell):has(.board) {
-  --bookshelf-nav-height: calc(3.5rem + 1px);
-  padding-bottom: calc(var(--bookshelf-nav-height) + env(safe-area-inset-bottom));
-}
-
 .board {
   --empty-cover: #ebe7dd;
   --glint: #b7a05f;
@@ -26,19 +15,10 @@
   grid-template-rows: auto minmax(0, 1fr);
   gap: clamp(0.375rem, 1svh, 0.875rem);
   min-height: 23rem;
-  height: calc(100svh - 3rem - 1px - var(--bookshelf-nav-height) - env(safe-area-inset-bottom));
+  height: calc(100svh - 3rem - 1px - var(--bottom-nav-height));
   margin: -1rem;
   padding: 0.375rem clamp(1rem, 5vw, 1.5rem) clamp(0.5rem, 2svh, 1rem);
   overflow: hidden;
-}
-
-:global(html[data-theme="christmas"]) .board {
-  --empty-cover: var(--muted);
-  --glint: #a88046;
-  background:
-    radial-gradient(ellipse at top right, #f4e6d4, transparent 58%),
-    radial-gradient(ellipse at bottom left, #ede5d7, transparent 52%),
-    var(--card);
 }
 
 .heading {
@@ -66,12 +46,10 @@
 }
 
 .ornaments {
-  display: none;
   position: absolute;
   inset-inline-end: 0;
   align-items: center;
   gap: 0.3rem;
-  color: var(--christmas-wine);
 }
 
 .ornaments svg {
@@ -88,18 +66,6 @@
 
 .ornaments svg:last-child {
   color: var(--glint);
-}
-
-:global(html[data-theme="christmas"]) .ornaments {
-  display: flex;
-}
-
-:global(html[data-theme="christmas"]) :is(.year, .monthName) {
-  color: var(--christmas-wine);
-}
-
-:global(html[data-theme="christmas"]) .month:nth-child(even) .monthName {
-  color: var(--primary);
 }
 
 .months {
@@ -133,14 +99,6 @@
 
 .book {
   box-shadow: 0 2px 5px #49392722;
-}
-
-:global(html[data-theme="christmas"]) .cover:not(:focus-visible) {
-  outline: 1px solid color-mix(in srgb, var(--christmas-wine) 28%, transparent);
-}
-
-:global(html[data-theme="christmas"]) .month:nth-child(even) .cover:not(:focus-visible) {
-  outline-color: color-mix(in srgb, var(--primary) 36%, transparent);
 }
 
 .book:focus-visible {
@@ -183,11 +141,6 @@
 .glints span:nth-child(2)::before,
 .glints span:nth-child(4)::before {
   content: "✦";
-}
-
-:global(html[data-theme="christmas"]) .glints span::before {
-  content: "❄";
-  font-variant-emoji: text;
 }
 
 .glints span:nth-child(1) { top: 7%; left: 8%; }
