@@ -347,10 +347,6 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_member: { Args: never; Returns: boolean }
       rotate_invite: { Args: never; Returns: string }
-      transfer_admin: {
-        Args: { new_admin_user_id: string }
-        Returns: undefined
-      }
       validate_invite_token: { Args: { invite_token: string }; Returns: Json }
     }
     Enums: {

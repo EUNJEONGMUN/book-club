@@ -1,22 +1,19 @@
 import { notFound } from 'next/navigation';
 import { requireMember } from '@/lib/auth/membership';
-import { getClubSettings, getActiveInvite, getActiveMembers } from '@/lib/queries/club';
+import { getClubSettings, getActiveInvite } from '@/lib/queries/club';
 import { ClubInfoPanel } from '@/components/club/ClubInfoPanel';
 import { ClubInfoReadOnly } from '@/components/club/ClubInfoReadOnly';
 import { InviteLinkPanel } from '@/components/club/InviteLinkPanel';
-import { AdminTransferSection } from '@/components/club/AdminTransferSection';
 import { DangerZoneSection } from '@/components/club/DangerZoneSection';
 import { SettingsBackLink } from '../settings-back-link';
 
 export default async function GroupSettingsPage() {
-  const { role, user } = await requireMember();
+  const { role } = await requireMember();
   const club = await getClubSettings();
   if (!club) notFound();
 
   const isAdmin = role === 'admin';
-  const [invite, members] = isAdmin
-    ? await Promise.all([getActiveInvite(), getActiveMembers()])
-    : [null, []];
+  const invite = isAdmin ? await getActiveInvite() : null;
   const panelClassName = 'rounded-2xl border border-border/80 bg-card p-5 shadow-sm';
 
   return (
@@ -30,10 +27,7 @@ export default async function GroupSettingsPage() {
         {isAdmin ? <ClubInfoPanel club={club} /> : <ClubInfoReadOnly club={club} />}
       </div>
       {isAdmin ? (
-        <>
-          <div className={panelClassName}><InviteLinkPanel initialInvite={invite} /></div>
-          <div className={panelClassName}><AdminTransferSection activeMembers={members} currentUserId={user.id} /></div>
-        </>
+        <div className={panelClassName}><InviteLinkPanel initialInvite={invite} /></div>
       ) : (
         <div className={panelClassName}><DangerZoneSection clubName={club.name} isAdmin={false} /></div>
       )}
