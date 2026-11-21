@@ -2,7 +2,7 @@
 
 ## 로컬 실행
 
-Node.js, pnpm과 Docker가 필요하다. GitHub CI의 Node.js 버전은 22다. Docker를 실행한 뒤 아래 명령을 사용한다.
+CI와 같은 Node.js 22, pnpm 11과 Docker가 필요하다. Docker를 실행한 뒤 아래 명령을 사용한다.
 
 ```bash
 pnpm install
@@ -25,7 +25,7 @@ pnpm dev
 
 - 책·장소 검색은 `KAKAO_REST_API_KEY`를 사용한다. [Kakao Developers](https://developers.kakao.com)에서 앱과 REST API 키를 준비하고 카카오맵 기능을 활성화한다.
 - PDF 질문 추출은 `GEMINI_API_KEY`를 사용한다. [Google AI Studio](https://aistudio.google.com/)에서 키를 발급한다.
-- Google OAuth는 Supabase Auth에서 설정한다. 로컬 설정은 `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID`와 `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`을 사용한다. [로컬 Google OAuth 검증](google-oauth-check.md)
+- Google OAuth는 Supabase Auth에서 설정한다. 로컬 설정은 `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID`와 `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`을 사용한다. 기존 계정에 Google 로그인을 연결하려면 해당 Supabase 프로젝트에서 수동 계정 연결도 활성화해야 한다. 로컬 설정에는 `enable_manual_linking = true`가 포함돼 있다. [로컬 Google OAuth 검증](google-oauth-check.md)
 - 가입 신청 알림을 시험할 때는 `RESEND_API_KEY`와 선택값 `RESEND_FROM`을 설정한다. 배포 빌드의 소스맵 업로드는 Vercel에 설정한 `SENTRY_AUTH_TOKEN`을 사용한다. [환경변수 템플릿](../.env.example)
 
 Vercel Preview는 별도 `book-club-preview` 프로젝트의 Supabase URL과 키를 사용한다. Production, Preview, 로컬은 각각의 프로젝트 값으로 구성한다. [Preview 환경 분리 기록](preview-isolation.md) · [실제 Preview 검증 기록](hosted-preview-verification.md)
@@ -60,7 +60,7 @@ pnpm build
 
 통합 테스트는 고정된 로컬 Docker 컨테이너를 사용한다. 권한 테스트는 트랜잭션을 롤백한다. 동시 질문 등록 테스트는 여러 연결에서 같은 테스트 모임을 볼 수 있도록 데이터를 커밋한 뒤 임시 계정·모임을 정리한다.
 
-Playwright E2E는 위 시드 관리자와 지난 모임을 사용한다. 처음 실행할 때는 `pnpm exec playwright install chromium`으로 브라우저를 설치한다. 로그인·홈 메뉴, 지난 모임 상세, 멤버·설정·프로필, 예전 모임 주소 이동을 확인한다. [테스트 시나리오](test-scenarios.md)
+Playwright E2E는 위 시드 관리자와 샘플 모임을 사용한다. 처음 실행할 때는 `pnpm exec playwright install chromium`으로 브라우저를 설치한다. 로그인, 연도별 모임 목록과 책장, 공유 버튼과 화면 복귀, 테마 선택 유지, 멤버·설정·프로필, 예전 모임 주소 이동을 확인한다. [테스트 시나리오](test-scenarios.md)
 
 ## 운영 전환 완료
 
