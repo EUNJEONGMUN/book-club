@@ -1,19 +1,24 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 
-const { rpc, revalidatePath } = vi.hoisted(() => ({
+const { rpc, revalidatePath, requireAdmin } = vi.hoisted(() => ({
   rpc: vi.fn(),
   revalidatePath: vi.fn(),
+  requireAdmin: vi.fn().mockResolvedValue({ role: 'admin' }),
 }));
 vi.mock('@/lib/supabase/server', () => ({
   getSupabaseServer: async () => ({ rpc }),
 }));
+vi.mock('@/lib/auth/membership', () => ({ requireAdmin, requireMember: vi.fn() }));
 vi.mock('next/cache', () => ({ revalidatePath }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
-import { rotateInvite, revokeInvite } from '@/lib/services/invites';
+import { rotateInvite, revokeInvite } from '@/lib/actions/club';
 
 beforeEach(() => {
-  vi.resetAllMocks();
+  revalidatePath.mockClear();
+  rpc.mockReset();
+  requireAdmin.mockClear();
+  requireAdmin.mockResolvedValue({ role: 'admin' });
 });
 
 it('rotate_invite 호출 결과의 토큰을 그대로 반환한다', async () => {
