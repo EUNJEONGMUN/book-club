@@ -1,43 +1,49 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 
-const { rpc, select, eq, single, revalidatePath } = vi.hoisted(() => ({
+const { rpc, revalidatePath } = vi.hoisted(() => ({
   rpc: vi.fn(),
-  select: vi.fn(),
-  eq: vi.fn(),
-  single: vi.fn(),
   revalidatePath: vi.fn(),
 }));
 vi.mock('@/lib/supabase/server', () => ({
-  getSupabaseServer: async () => ({ rpc, from: () => ({ select }) }),
+  getSupabaseServer: async () => ({ rpc }),
 }));
 vi.mock('next/cache', () => ({ revalidatePath }));
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn() }));
 
-import { rotateInvite } from '@/lib/services/invites';
+import { rotateInvite, revokeInvite } from '@/lib/services/invites';
 
 beforeEach(() => {
   vi.resetAllMocks();
+});
+
+it('rotate_invite 호출 결과의 토큰을 그대로 반환한다', async () => {
   rpc.mockResolvedValue({ data: 'new-token', error: null });
-  select.mockReturnValue({ eq });
-  eq.mockReturnValue({ single });
-});
 
-it('발급된 토큰으로 DB의 정확한 만료 시각을 조회한다', async () => {
-  const invite = { token: 'new-token', expires_at: '2026-12-02T18:25:43.987Z' };
-  single.mockResolvedValue({ data: invite, error: null });
-
-  await expect(rotateInvite()).resolves.toEqual({ ok: true, invite });
+  await expect(rotateInvite()).resolves.toEqual({ ok: true, invite: { token: 'new-token' } });
   expect(rpc).toHaveBeenCalledWith('rotate_invite');
-  expect(eq).toHaveBeenCalledWith('token', 'new-token');
   expect(revalidatePath).toHaveBeenCalledWith('/more/info');
 });
 
-it('발급 후 만료 시각 조회가 실패하면 새로고침으로 결과를 확인하도록 안내한다', async () => {
-  single.mockResolvedValue({ data: null, error: { message: 'lookup failed' } });
+it('rotate_invite가 빈 응답을 돌려주면 실패로 처리한다', async () => {
+  rpc.mockResolvedValue({ data: null, error: null });
 
-  await expect(rotateInvite()).resolves.toMatchObject({
-    ok: false,
-    error: expect.stringContaining('새로고침'),
-  });
+  await expect(rotateInvite()).resolves.toMatchObject({ ok: false });
+  expect(revalidatePath).not.toHaveBeenCalled();
+});
+
+it('revoke_invite 성공 후 설정 페이지를 재검증한다', async () => {
+  rpc.mockResolvedValue({ data: null, error: null });
+
+  await expect(revokeInvite()).resolves.toEqual({ ok: true });
+  expect(rpc).toHaveBeenCalledWith('revoke_invite');
   expect(revalidatePath).toHaveBeenCalledWith('/more/info');
+});
+
+it('revoke_invite가 관리자 권한 오류를 안내 메시지로 바꾼다', async () => {
+  rpc.mockResolvedValue({ data: null, error: { message: 'Not admin' } });
+
+  await expect(revokeInvite()).resolves.toMatchObject({
+    ok: false,
+    error: expect.stringContaining('관리자'),
+  });
 });
