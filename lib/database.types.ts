@@ -54,7 +54,6 @@ export type Database = {
           created_by: string
           description: string | null
           id: number
-          legacy_club_id: string
           name: string
           updated_at: string
         }
@@ -63,7 +62,6 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: number
-          legacy_club_id: string
           name: string
           updated_at?: string
         }
@@ -72,7 +70,6 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: number
-          legacy_club_id?: string
           name?: string
           updated_at?: string
         }
