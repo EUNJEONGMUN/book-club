@@ -30,10 +30,9 @@ INSERT INTO public.meeting_reviews(id,meeting_id,user_id,content,visibility) VAL
  ('${privateReview}','${past}','${host}','private test','private'),
  ('${publicReview}','${past}','${member}','public test','public'),
  ('${anonymousReview}','${past}','${anonymousAuthor}','anonymous test','anonymous');
-INSERT INTO public.invites(id,token,created_by,expires_at,revoked_at) VALUES
- ('${id(30)}','phase2-valid','${admin}',now()+interval '1 day',NULL),
- ('${id(31)}','phase2-expired','${admin}',now()-interval '1 day',NULL),
- ('${id(32)}','phase2-revoked','${admin}',now()+interval '1 day',now());
+INSERT INTO public.invites(id,token,created_by,revoked_at) VALUES
+ ('${id(30)}','phase2-valid','${admin}',NULL),
+ ('${id(32)}','phase2-revoked','${admin}',now());
 INSERT INTO storage.objects(id,bucket_id,name) VALUES ('${id(40)}','discussion-files','${future}/phase2-test.pdf');
 CREATE FUNCTION pg_temp.check_true(ok boolean) RETURNS void LANGUAGE plpgsql AS $$ BEGIN IF ok IS DISTINCT FROM true THEN RAISE EXCEPTION 'Invariant failed'; END IF; END $$;
 `;
@@ -266,10 +265,11 @@ const cases: Array<[string, string | null, string, string?]> = [
  ['already member application preserves membership', member, is(`(public.apply_for_membership('phase2-valid')->>'status')='already_member' AND (SELECT role FROM public.members WHERE user_id='${member}')='member'`)],
  ['already pending application is idempotent', pending, is(`(public.apply_for_membership('phase2-valid')->>'status')='already_pending'`)],
  ['invalid invite cannot add membership', outsider, fails(`PERFORM public.apply_for_membership('does-not-exist')`, 'raise_exception')],
- ['expired invite cannot add membership', outsider, fails(`PERFORM public.apply_for_membership('phase2-expired')`, 'raise_exception')],
  ['revoked invite cannot add membership', outsider, fails(`PERFORM public.apply_for_membership('phase2-revoked')`, 'raise_exception')],
  ['member cannot rotate invite', member, fails('PERFORM public.rotate_invite()', 'raise_exception')],
  ['administrator can rotate without deleting old invite', admin, `SELECT public.rotate_invite(); ${is(`(SELECT count(*) FROM public.invites WHERE token='phase2-valid' AND revoked_at IS NOT NULL)=1`)}`],
+ ['member cannot revoke invite', member, fails('PERFORM public.revoke_invite()', 'raise_exception')],
+ ['administrator can revoke the active invite without a new one appearing', admin, `SELECT public.revoke_invite(); ${is(`(SELECT count(*) FROM public.invites WHERE revoked_at IS NULL)=0`)}`],
  ['anonymous cannot call membership RPC', null, fails(`PERFORM public.apply_for_membership('phase2-valid')`), 'anon'],
  ['admin emails are server-only', member, fails('PERFORM public.get_admin_emails()')],
  ['legacy archived records are private', admin, fails('PERFORM count(*) FROM legacy_multiclub.clubs')],

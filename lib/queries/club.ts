@@ -75,7 +75,6 @@ export async function getActiveInvite(): Promise<Invite | null> {
     .from('invites')
     .select('*')
     .is('revoked_at', null)
-    .gte('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();

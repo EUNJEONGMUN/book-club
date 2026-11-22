@@ -122,7 +122,6 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
-          expires_at: string
           id: string
           revoked_at: string | null
           token: string
@@ -130,7 +129,6 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
-          expires_at?: string
           id?: string
           revoked_at?: string | null
           token: string
@@ -138,7 +136,6 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
-          expires_at?: string
           id?: string
           revoked_at?: string | null
           token?: string
@@ -346,6 +343,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_member: { Args: never; Returns: boolean }
+      revoke_invite: { Args: never; Returns: undefined }
       rotate_invite: { Args: never; Returns: string }
       validate_invite_token: { Args: { invite_token: string }; Returns: Json }
     }

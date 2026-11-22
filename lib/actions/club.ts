@@ -2,7 +2,7 @@
 
 import { requireMember, requireAdmin } from '@/lib/auth/membership';
 import * as members from '@/lib/services/membership';
-import { rotateInvite as rotate } from '@/lib/services/invites';
+import { rotateInvite as rotate, revokeInvite as revoke } from '@/lib/services/invites';
 import { updateClubSettings as update } from '@/lib/services/club-settings';
 import { revalidatePath } from 'next/cache';
 
@@ -31,6 +31,10 @@ export async function leaveMembership() {
 export async function rotateInvite() {
   await requireAdmin();
   return rotate();
+}
+export async function revokeInvite() {
+  await requireAdmin();
+  return revoke();
 }
 export async function updateClubSettings(input: { name: string; description?: string | null }) {
   await requireAdmin();

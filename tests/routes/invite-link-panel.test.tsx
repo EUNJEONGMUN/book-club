@@ -1,24 +1,44 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { hydrateRoot, type Root } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
 import { expect, it, vi } from 'vitest';
 
-const { rotateInvite } = vi.hoisted(() => ({ rotateInvite: vi.fn() }));
-vi.mock('@/lib/actions/club', () => ({ rotateInvite }));
+const { rotateInvite, revokeInvite, confirmSpy } = vi.hoisted(() => ({
+  rotateInvite: vi.fn(),
+  revokeInvite: vi.fn(),
+  confirmSpy: vi.fn(() => true),
+}));
+vi.mock('@/lib/actions/club', () => ({ rotateInvite, revokeInvite }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.stubGlobal('confirm', confirmSpy);
 
 import { InviteLinkPanel } from '@/components/club/InviteLinkPanel';
 
-it('발급 결과의 DB 만료 시각을 한국 시간으로 표시한다', async () => {
-  const expiresAt = '2026-12-02T18:25:43.987Z';
-  rotateInvite.mockResolvedValue({ ok: true, invite: { token: 'new-token', expires_at: expiresAt } });
+it('만들기 버튼을 눌러 서버가 발급한 토큰의 링크를 보여준다', async () => {
+  rotateInvite.mockResolvedValue({ ok: true, invite: { token: 'new-token' } });
   render(<InviteLinkPanel initialInvite={null} />);
 
   fireEvent.click(screen.getByRole('button', { name: '초대링크 만들기' }));
 
   expect(await screen.findByText(`${window.location.origin}/join?token=new-token`)).toBeVisible();
-  const expiry = screen.getByText(/12\.\s+0?3\.\s+03:25$/);
-  expect(expiry).toHaveAttribute('datetime', expiresAt);
+  expect(screen.getByRole('button', { name: '폐기' })).toBeVisible();
+});
+
+it('폐기 버튼을 누르면 서버에 폐기 요청을 보내고 만들기 UI로 돌아간다', async () => {
+  revokeInvite.mockResolvedValue({ ok: true });
+  const initialInvite = {
+    id: 'invite-id',
+    token: 'existing-token',
+    created_by: 'admin-id',
+    created_at: '2026-11-12T00:00:00Z',
+    revoked_at: null,
+  };
+  render(<InviteLinkPanel initialInvite={initialInvite} />);
+
+  fireEvent.click(screen.getByRole('button', { name: '폐기' }));
+
+  await waitFor(() => expect(revokeInvite).toHaveBeenCalled());
+  expect(await screen.findByRole('button', { name: '초대링크 만들기' })).toBeVisible();
 });
 
 it('활성 초대 링크의 서버 마크업을 오류 없이 브라우저에서 이어서 렌더링한다', async () => {
@@ -27,7 +47,6 @@ it('활성 초대 링크의 서버 마크업을 오류 없이 브라우저에서
     token: 'existing-token',
     created_by: 'admin-id',
     created_at: '2026-11-12T00:00:00Z',
-    expires_at: '2026-12-12T00:00:00Z',
     revoked_at: null,
   };
   const panel = <InviteLinkPanel initialInvite={initialInvite} />;
