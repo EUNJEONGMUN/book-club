@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import * as Sentry from '@sentry/nextjs';
 import { FileText, ImageIcon, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CandidateQuestionsEditor, newCandidate, type Candidate } from '@/components/meeting/CandidateQuestionsEditor';
@@ -70,7 +71,9 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
       setDisplayName(result.fileName);
       setCandidates([]);
       toast.success('파일이 업로드되었습니다.');
-    } catch {
+    } catch (e) {
+      console.error('[DiscussionFileUploader:handleFileChange]', e);
+      Sentry.captureException(e, { tags: { component: 'DiscussionFileUploader', step: 'fileChange' } });
       toast.error('파일 변경 결과를 확인하지 못했습니다. 페이지를 새로고침해 확인해주세요.');
     } finally {
       setUploading(false);
@@ -96,7 +99,9 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
       if (!result.ok) return toast.error(result.error);
       setCandidates(result.questions.map((content) => newCandidate(content)));
       toast.success(`${result.questions.length}개의 질문을 추출했습니다.`);
-    } catch {
+    } catch (e) {
+      console.error('[DiscussionFileUploader:handleExtract]', e);
+      Sentry.captureException(e, { tags: { component: 'DiscussionFileUploader', step: 'extract' } });
       toast.error('발제문을 추출하지 못했습니다. 다시 시도해주세요.');
     } finally {
       setExtracting(false);
@@ -115,7 +120,9 @@ export function DiscussionFileUploader({ meetingId, currentFileUrl, currentFileN
       if (!result.ok) return toast.error(result.error);
       toast.success(`${filtered.length}개의 질문이 추가되었습니다.`);
       setCandidates([]);
-    } catch {
+    } catch (e) {
+      console.error('[DiscussionFileUploader:handleSaveCandidates]', e);
+      Sentry.captureException(e, { tags: { component: 'DiscussionFileUploader', step: 'saveCandidates' } });
       toast.error('저장 결과를 확인하지 못했습니다. 발제문 목록을 확인한 뒤 다시 시도해주세요.');
     } finally {
       setSaving(false);

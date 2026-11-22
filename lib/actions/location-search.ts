@@ -1,5 +1,7 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
+
 export type KakaoPlace = {
   place_name: string;
   address_name: string;
@@ -38,7 +40,9 @@ export async function searchPlaces(
     }));
 
     return { ok: true, places };
-  } catch {
+  } catch (e) {
+    console.error('[searchPlaces]', e);
+    Sentry.captureException(e, { tags: { action: 'searchPlaces' } });
     return { ok: false, error: '네트워크 오류가 발생했습니다.' };
   }
 }
