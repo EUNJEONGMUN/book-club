@@ -5,7 +5,7 @@ import { getKoreanMeetingDateTime } from '@/lib/meeting-time';
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SeasonalMemberIcon } from '@/components/theme/SeasonalIcon';
-import type { MemberWithStats, MemberHistoryItem } from '@/lib/queries/club';
+import type { MemberWithStats, MemberHistoryItem } from '@/lib/queries/members';
 
 type Props = {
   member: MemberWithStats;

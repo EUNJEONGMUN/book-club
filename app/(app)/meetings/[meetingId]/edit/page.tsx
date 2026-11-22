@@ -1,7 +1,7 @@
 import { requireMember } from '@/lib/auth/membership';
 import { notFound, redirect } from 'next/navigation';
 import { getMeetingDetail } from '@/lib/queries/meetings';
-import { getActiveMembers } from '@/lib/queries/club';
+import { getActiveMembers } from '@/lib/queries/members';
 import { getMeetingDetailNavigation, type MeetingDetailSearchParams } from '@/lib/meeting-navigation';
 import { canEditMeeting } from '@/lib/meeting-permissions';
 import { EditMeetingForm } from './edit-form';

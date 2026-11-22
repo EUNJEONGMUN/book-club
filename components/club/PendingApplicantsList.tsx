@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { approveMember, rejectMember } from '@/lib/actions/club';
 import { Button } from '@/components/ui/button';
-import type { PendingApplicant } from '@/lib/queries/club';
+import type { PendingApplicant } from '@/lib/queries/members';
 
 export function PendingApplicantsList({
   initialApplicants,

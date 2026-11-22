@@ -1,6 +1,7 @@
 import { requireAdmin } from '@/lib/auth/membership';
 import { notFound } from 'next/navigation';
-import { getClubSettings, getPendingApplicants } from '@/lib/queries/club';
+import { getClubSettings } from '@/lib/queries/club';
+import { getPendingApplicants } from '@/lib/queries/members';
 import { PendingApplicantsList } from '@/components/club/PendingApplicantsList';
 import { SettingsBackLink } from '../settings-back-link';
 
