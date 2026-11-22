@@ -6,7 +6,7 @@ import {
   getMemberHistory,
   type MemberHistoryItem,
 } from '@/lib/queries/members';
-import { MemberCard } from '@/components/club/MemberCard';
+import { MemberCard } from '@/components/settings/MemberCard';
 import { Card } from '@/components/ui/card';
 
 export default async function MembersPage() {

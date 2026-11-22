@@ -12,7 +12,7 @@ vi.mock('@/lib/actions/club', () => ({ rotateInvite, revokeInvite }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.stubGlobal('confirm', confirmSpy);
 
-import { InviteLinkPanel } from '@/components/club/InviteLinkPanel';
+import { InviteLinkPanel } from '@/components/settings/InviteLinkPanel';
 
 it('만들기 버튼을 눌러 서버가 발급한 토큰의 링크를 보여준다', async () => {
   rotateInvite.mockResolvedValue({ ok: true, invite: { token: 'new-token' } });
