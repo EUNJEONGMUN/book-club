@@ -4,7 +4,6 @@
 DO $$
 DECLARE
   admin_id UUID := '00000000-0000-0000-0000-000000000001';
-  old_club_id UUID := '10000000-0000-0000-0000-000000000001';
 BEGIN
   -- 이미 같은 이메일로 가입한 로컬 관리자가 있으면 그 계정을 사용한다.
   SELECT id INTO admin_id FROM auth.users WHERE email = 'admin@example.local';
@@ -37,7 +36,7 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
 
   -- 일반 사용자용 그룹 생성은 차단되어 있으므로 로컬 시드는 DB 소유자로 실행한다.
-  INSERT INTO club_settings (id, legacy_club_id, name, created_by) VALUES (1, old_club_id, '부글부글', admin_id)
+  INSERT INTO club_settings (id, name, created_by) VALUES (1, '부글부글', admin_id)
   ON CONFLICT (id) DO NOTHING;
   INSERT INTO members (user_id, role) VALUES (admin_id, 'admin')
   ON CONFLICT DO NOTHING;
