@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import type { Database } from '@/lib/database.types';
 import { maintenanceResponse } from '@/lib/maintenance';
+import { sanitizeNext } from '@/lib/auth/safe-next';
 
 export async function updateSession(req: NextRequest) {
   const maintenance = maintenanceResponse(req);
@@ -32,7 +33,8 @@ export async function updateSession(req: NextRequest) {
     const url = req.nextUrl.clone();
     url.pathname = '/login';
     url.search = '';
-    url.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search);
+    const next = sanitizeNext(req.nextUrl.pathname + req.nextUrl.search);
+    if (next !== '/') url.searchParams.set('next', next);
     return NextResponse.redirect(url);
   }
 
@@ -45,10 +47,10 @@ export async function updateSession(req: NextRequest) {
       .maybeSingle();
     if (!profile) {
       const url = req.nextUrl.clone();
-      const originalNext = req.nextUrl.pathname + req.nextUrl.search;
+      const next = sanitizeNext(req.nextUrl.pathname + req.nextUrl.search);
       url.pathname = '/signup';
       url.search = '';
-      if (originalNext !== '/') url.searchParams.set('next', originalNext);
+      if (next !== '/') url.searchParams.set('next', next);
       return NextResponse.redirect(url);
     }
   }
