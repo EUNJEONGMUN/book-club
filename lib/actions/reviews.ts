@@ -68,16 +68,20 @@ export async function deleteMyReview(meetingId: string): Promise<ActionResult> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: '로그인이 필요합니다.' };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('meeting_reviews')
     .delete()
     .eq('meeting_id', meetingId)
-    .eq('user_id', user.id);
+    .eq('user_id', user.id)
+    .select('id');
 
   if (error) {
     console.error('[deleteMyReview]', error);
     Sentry.captureException(error, { tags: { action: 'deleteMyReview' } });
     return { ok: false, error: '삭제에 실패했습니다.' };
+  }
+  if (!data || data.length === 0) {
+    return { ok: false, error: '삭제할 한줄 평이 없거나 권한이 없어요.' };
   }
   await revalidateMeetingPaths(meetingId);
   return { ok: true };
