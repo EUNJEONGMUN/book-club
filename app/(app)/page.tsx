@@ -1,6 +1,6 @@
 import { requireMember } from '@/lib/auth/membership';
 import Link from 'next/link';
-import { getNextMeeting } from '@/lib/queries/club';
+import { getNextMeeting } from '@/lib/queries/meetings';
 import { getCurrentProfile } from '@/lib/queries/members';
 import { NextMeetingCard } from '@/components/meeting/NextMeetingCard';
 import { buttonVariants } from '@/components/ui/button';

@@ -9,8 +9,14 @@ const mocks = vi.hoisted(() => ({
   getActiveInvite: vi.fn(),
 }));
 vi.mock('@/lib/auth/membership', () => ({ requireMember: mocks.requireMember }));
-vi.mock('@/lib/queries/club', () => mocks);
-vi.mock('@/lib/queries/members', () => ({ getCurrentProfile: mocks.getCurrentProfile }));
+vi.mock('@/lib/queries/club', () => ({
+  getClubSettings: mocks.getClubSettings,
+  getActiveInvite: mocks.getActiveInvite,
+}));
+vi.mock('@/lib/queries/members', () => ({
+  getCurrentProfile: mocks.getCurrentProfile,
+  getPendingApplicants: mocks.getPendingApplicants,
+}));
 vi.mock('next/navigation', () => ({ notFound: () => { throw new Error('notFound'); } }));
 vi.mock('@/app/(app)/more/logout-button', () => ({ LogoutButton: () => <button>로그아웃</button> }));
 vi.mock('@/components/club/ClubInfoPanel', () => ({ ClubInfoPanel: () => <div>모임 수정</div> }));

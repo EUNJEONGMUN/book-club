@@ -1,5 +1,5 @@
 import { requireMember } from '@/lib/auth/membership';
-import { getActiveMembers } from '@/lib/queries/club';
+import { getActiveMembers } from '@/lib/queries/members';
 import { NewMeetingForm } from './new-form';
 
 export default async function NewMeetingPage({ searchParams }: {

@@ -1,12 +1,11 @@
 import { requireMember } from '@/lib/auth/membership';
 import { notFound } from 'next/navigation';
 import { getMeetingDetail } from '@/lib/queries/meetings';
-import { getCurrentProfile } from '@/lib/queries/members';
+import { getCurrentProfile, getActiveMembers } from '@/lib/queries/members';
 import { getMeetingDetailNavigation, type MeetingDetailSearchParams } from '@/lib/meeting-navigation';
 import { canEditMeeting } from '@/lib/meeting-permissions';
 import { getMeetingReviews } from '@/lib/queries/reviews';
 import { getKoreanMeetingDateTime, hasMeetingStarted } from '@/lib/meeting-time';
-import { getActiveMembers } from '@/lib/queries/club';
 import { MeetingDetailHeader } from '@/components/meeting/MeetingDetailHeader';
 import { ShareMeetingButton } from '@/components/meeting/ShareMeetingButton';
 import { DiscussionQuestionList } from '@/components/meeting/DiscussionQuestionList';

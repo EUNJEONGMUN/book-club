@@ -1,7 +1,7 @@
 import { requireMember } from '@/lib/auth/membership';
 import Link from 'next/link';
 import { BookOpen, Plus } from 'lucide-react';
-import { getFirstPastMeetingDate, getUpcomingMeetings, getPastMeetings } from '@/lib/queries/club';
+import { getFirstPastMeetingDate, getUpcomingMeetings, getPastMeetings } from '@/lib/queries/meetings';
 import { MeetingCard } from '@/components/meeting/MeetingCard';
 import { MeetingBookshelf } from '@/components/meeting/MeetingBookshelf';
 import { MeetingYearSelect } from '@/components/meeting/MeetingYearSelect';

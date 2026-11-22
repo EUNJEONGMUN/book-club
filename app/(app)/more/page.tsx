@@ -3,8 +3,8 @@ import { ChevronRight, Palette, Settings, Users } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { LogoutButton } from './logout-button';
 import { requireMember } from '@/lib/auth/membership';
-import { getClubSettings, getPendingApplicants } from '@/lib/queries/club';
-import { getCurrentProfile } from '@/lib/queries/members';
+import { getClubSettings } from '@/lib/queries/club';
+import { getPendingApplicants, getCurrentProfile } from '@/lib/queries/members';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default async function SettingsPage() {

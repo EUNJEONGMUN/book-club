@@ -1,11 +1,11 @@
 import { requireMember } from '@/lib/auth/membership';
 import { notFound } from 'next/navigation';
+import { getClubSettings } from '@/lib/queries/club';
 import {
-  getClubSettings,
   getMembersWithStats,
   getMemberHistory,
   type MemberHistoryItem,
-} from '@/lib/queries/club';
+} from '@/lib/queries/members';
 import { MemberCard } from '@/components/club/MemberCard';
 import { Card } from '@/components/ui/card';
 
