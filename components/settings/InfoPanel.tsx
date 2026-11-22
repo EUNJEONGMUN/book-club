@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ClubSettings } from '@/lib/types';
 
-export function ClubInfoPanel({ club }: { club: ClubSettings }) {
+export function InfoPanel({ club }: { club: ClubSettings }) {
   const router = useRouter();
   const [name, setName] = useState(club.name);
   const [description, setDescription] = useState(club.description ?? '');

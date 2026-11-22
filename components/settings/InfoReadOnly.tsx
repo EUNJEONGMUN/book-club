@@ -1,7 +1,7 @@
 import { Info } from 'lucide-react';
 import type { ClubSettings } from '@/lib/types';
 
-export function ClubInfoReadOnly({ club }: { club: ClubSettings }) {
+export function InfoReadOnly({ club }: { club: ClubSettings }) {
   return (
     <section className="space-y-3">
       <div className="flex items-center gap-2">

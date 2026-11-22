@@ -2,7 +2,7 @@ import { requireAdmin } from '@/lib/auth/membership';
 import { notFound } from 'next/navigation';
 import { getClubSettings } from '@/lib/queries/club';
 import { getPendingApplicants } from '@/lib/queries/members';
-import { PendingApplicantsList } from '@/components/club/PendingApplicantsList';
+import { PendingApplicantsList } from '@/components/settings/PendingApplicantsList';
 import { SettingsBackLink } from '../settings-back-link';
 
 export default async function ApplicantsPage() {

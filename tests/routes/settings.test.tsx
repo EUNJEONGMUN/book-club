@@ -19,10 +19,10 @@ vi.mock('@/lib/queries/members', () => ({
 }));
 vi.mock('next/navigation', () => ({ notFound: () => { throw new Error('notFound'); } }));
 vi.mock('@/app/(app)/more/logout-button', () => ({ LogoutButton: () => <button>로그아웃</button> }));
-vi.mock('@/components/club/ClubInfoPanel', () => ({ ClubInfoPanel: () => <div>모임 수정</div> }));
-vi.mock('@/components/club/ClubInfoReadOnly', () => ({ ClubInfoReadOnly: () => <div>모임 소개</div> }));
-vi.mock('@/components/club/InviteLinkPanel', () => ({ InviteLinkPanel: () => <div>초대링크</div> }));
-vi.mock('@/components/club/DangerZoneSection', () => ({ DangerZoneSection: () => <div>모임 탈퇴</div> }));
+vi.mock('@/components/settings/InfoPanel', () => ({ InfoPanel: () => <div>모임 수정</div> }));
+vi.mock('@/components/settings/InfoReadOnly', () => ({ InfoReadOnly: () => <div>모임 소개</div> }));
+vi.mock('@/components/settings/InviteLinkPanel', () => ({ InviteLinkPanel: () => <div>초대링크</div> }));
+vi.mock('@/components/settings/DangerZoneSection', () => ({ DangerZoneSection: () => <div>모임 탈퇴</div> }));
 
 import SettingsPage from '@/app/(app)/more/page';
 import GroupSettingsPage from '@/app/(app)/more/info/page';

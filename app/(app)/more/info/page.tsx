@@ -1,10 +1,10 @@
 import { notFound } from 'next/navigation';
 import { requireMember } from '@/lib/auth/membership';
 import { getClubSettings, getActiveInvite } from '@/lib/queries/club';
-import { ClubInfoPanel } from '@/components/club/ClubInfoPanel';
-import { ClubInfoReadOnly } from '@/components/club/ClubInfoReadOnly';
-import { InviteLinkPanel } from '@/components/club/InviteLinkPanel';
-import { DangerZoneSection } from '@/components/club/DangerZoneSection';
+import { InfoPanel } from '@/components/settings/InfoPanel';
+import { InfoReadOnly } from '@/components/settings/InfoReadOnly';
+import { InviteLinkPanel } from '@/components/settings/InviteLinkPanel';
+import { DangerZoneSection } from '@/components/settings/DangerZoneSection';
 import { SettingsBackLink } from '../settings-back-link';
 
 export default async function GroupSettingsPage() {
@@ -24,7 +24,7 @@ export default async function GroupSettingsPage() {
         <p className="break-words text-sm text-muted-foreground">{club.name}{isAdmin ? ' · 관리자 전용' : ''}</p>
       </div>
       <div className={panelClassName}>
-        {isAdmin ? <ClubInfoPanel club={club} /> : <ClubInfoReadOnly club={club} />}
+        {isAdmin ? <InfoPanel club={club} /> : <InfoReadOnly club={club} />}
       </div>
       {isAdmin ? (
         <div className={panelClassName}><InviteLinkPanel initialInvite={invite} /></div>
