@@ -15,6 +15,12 @@ export type PendingApplicant = {
   joined_at: string; // application time
 };
 
+type PendingApplicantRow = {
+  user_id: string;
+  joined_at: string;
+  profile: { display_name: string } | null;
+};
+
 /** Returns pending applicants for the club. RLS restricts to active members. */
 export async function getPendingApplicants(): Promise<PendingApplicant[]> {
   const supabase = await getSupabaseServer();
@@ -24,9 +30,10 @@ export async function getPendingApplicants(): Promise<PendingApplicant[]> {
     .eq('role', 'pending')
     .order('joined_at', { ascending: true });
   if (error) throw error;
-  return (data ?? [])
-    .filter((row: any) => row.profile != null)
-    .map((row: any) => ({
+  const rows = (data ?? []) as PendingApplicantRow[];
+  return rows
+    .filter((row): row is PendingApplicantRow & { profile: { display_name: string } } => row.profile != null)
+    .map((row) => ({
       user_id: row.user_id,
       display_name: row.profile.display_name,
       joined_at: row.joined_at,
@@ -40,6 +47,13 @@ export type ActiveMember = {
   joined_at: string;
 };
 
+type ActiveMemberRow = {
+  user_id: string;
+  role: 'admin' | 'member' | 'pending';
+  joined_at: string;
+  profile: { display_name: string } | null;
+};
+
 /** Returns admin + member rows for the club. Pending excluded. RLS restricts to active members. */
 export async function getActiveMembers(): Promise<ActiveMember[]> {
   const supabase = await getSupabaseServer();
@@ -49,9 +63,10 @@ export async function getActiveMembers(): Promise<ActiveMember[]> {
     .in('role', ['admin', 'member'])
     .order('joined_at', { ascending: true });
   if (error) throw error;
-  return (data ?? [])
-    .filter((row: any) => row.profile != null)
-    .map((row: any) => ({
+  const rows = (data ?? []) as ActiveMemberRow[];
+  return rows
+    .filter((row): row is ActiveMemberRow & { profile: { display_name: string } } => row.profile != null)
+    .map((row) => ({
       user_id: row.user_id,
       display_name: row.profile.display_name,
       role: row.role as 'admin' | 'member',
@@ -68,6 +83,12 @@ export type MemberWithStats = {
   hosted_count: number;
 };
 
+type MemberWithProfileRow = {
+  user_id: string;
+  role: 'admin' | 'member' | 'pending';
+  profile: { display_name: string; avatar_url: string | null } | null;
+};
+
 /**
  * Returns active members (admin + member) of the service with per-member
  * attended + hosted counts for the service. Pending excluded.
@@ -81,7 +102,8 @@ export async function getMembersWithStats(): Promise<MemberWithStats[]> {
     .select('user_id, role, profile:profiles(display_name, avatar_url)')
     .in('role', ['admin', 'member']);
   if (memberErr) throw memberErr;
-  const members = (memberRows ?? []).filter((r: any) => r.profile != null);
+  const members = ((memberRows ?? []) as MemberWithProfileRow[])
+    .filter((r): r is MemberWithProfileRow & { profile: { display_name: string; avatar_url: string | null } } => r.profile != null);
 
   if (members.length === 0) return [];
 
@@ -108,7 +130,7 @@ export async function getMembersWithStats(): Promise<MemberWithStats[]> {
   (meetings ?? []).forEach((m) => hostedMap.set(m.host_id, (hostedMap.get(m.host_id) ?? 0) + 1));
 
   return members
-    .map((row: any) => ({
+    .map((row) => ({
       user_id: row.user_id,
       display_name: row.profile.display_name,
       avatar_url: row.profile.avatar_url ?? null,
@@ -160,9 +182,13 @@ export async function getMemberHistory(userId: string): Promise<MemberHistoryIte
     });
   });
 
-  (attended ?? []).forEach((a: any) => {
+  type AttendedRow = {
+    meeting_id: string;
+    meeting: { book_title: string; book_cover_url: string | null; scheduled_at: string } | null;
+  };
+  ((attended ?? []) as AttendedRow[]).forEach((a) => {
     if (map.has(a.meeting_id)) return; // 발제 우선 보존
-    const m = a.meeting as { book_title: string; book_cover_url: string | null; scheduled_at: string } | null;
+    const m = a.meeting;
     if (!m) return;
     map.set(a.meeting_id, {
       meeting_id: a.meeting_id,
