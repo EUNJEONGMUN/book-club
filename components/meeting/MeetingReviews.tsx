@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
+import * as Sentry from '@sentry/nextjs';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Globe, Lock, Loader2, Trash2, VenetianMask } from 'lucide-react';
@@ -45,35 +46,49 @@ export function MeetingReviews({ meetingId, initialOwn, others, isPastMeeting }:
     if (!trimmed) return toast.error('내용을 입력해주세요.');
     if (trimmed.length > MAX_LEN) return toast.error(`${MAX_LEN}자 이내로 입력해주세요.`);
     setSaving(true);
-    const r = await upsertMyReview(meetingId, { content: trimmed, visibility });
-    setSaving(false);
-    if (!r.ok) return toast.error(r.error);
-    toast.success('저장됐어요.');
-    const now = new Date().toISOString();
-    setOwn({
-      id: own?.id ?? '',
-      user_id: own?.user_id ?? '',
-      display_name: own?.display_name ?? '',
-      avatar_url: own?.avatar_url ?? null,
-      content: trimmed,
-      visibility,
-      created_at: own?.created_at ?? now,
-      updated_at: now,
-    });
-    setEditing(false);
+    try {
+      const r = await upsertMyReview(meetingId, { content: trimmed, visibility });
+      if (!r.ok) return toast.error(r.error);
+      toast.success('저장됐어요.');
+      const now = new Date().toISOString();
+      setOwn({
+        id: own?.id ?? '',
+        user_id: own?.user_id ?? '',
+        display_name: own?.display_name ?? '',
+        avatar_url: own?.avatar_url ?? null,
+        content: trimmed,
+        visibility,
+        created_at: own?.created_at ?? now,
+        updated_at: now,
+      });
+      setEditing(false);
+    } catch (e) {
+      console.error('[MeetingReviews:save]', e);
+      Sentry.captureException(e, { tags: { component: 'MeetingReviews', step: 'save' } });
+      toast.error('저장 결과를 확인하지 못했습니다. 페이지를 새로고침해 확인해주세요.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function remove() {
     if (!confirm('한줄 평을 삭제할까요?')) return;
     setSaving(true);
-    const r = await deleteMyReview(meetingId);
-    setSaving(false);
-    if (!r.ok) return toast.error(r.error);
-    toast.success('삭제됐어요.');
-    setOwn(null);
-    setContent('');
-    setVisibility('private');
-    setEditing(true);
+    try {
+      const r = await deleteMyReview(meetingId);
+      if (!r.ok) return toast.error(r.error);
+      toast.success('삭제됐어요.');
+      setOwn(null);
+      setContent('');
+      setVisibility('private');
+      setEditing(true);
+    } catch (e) {
+      console.error('[MeetingReviews:remove]', e);
+      Sentry.captureException(e, { tags: { component: 'MeetingReviews', step: 'remove' } });
+      toast.error('삭제 결과를 확인하지 못했습니다. 페이지를 새로고침해 확인해주세요.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

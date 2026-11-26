@@ -1,5 +1,7 @@
 'use server';
 
+import * as Sentry from '@sentry/nextjs';
+
 export type KakaoBook = {
   title: string;
   authors: string[];
@@ -36,7 +38,9 @@ export async function searchBooks(query: string): Promise<{ ok: true; books: Kak
     }));
 
     return { ok: true, books };
-  } catch {
+  } catch (e) {
+    console.error('[searchBooks]', e);
+    Sentry.captureException(e, { tags: { action: 'searchBooks' } });
     return { ok: false, error: '네트워크 오류가 발생했습니다.' };
   }
 }
