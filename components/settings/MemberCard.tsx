@@ -49,12 +49,13 @@ export function MemberCard({ member, history, defaultExpanded = true }: Props) {
               onClick={() => setExpanded((v) => !v)}
               className="shrink-0 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
               aria-expanded={expanded}
+              aria-label={`${member.display_name}님의 이력 ${history!.length}건 ${expanded ? '접기' : '펼치기'}`}
             >
               이력 {history!.length}건
               {expanded ? (
-                <ChevronUp className="w-3.5 h-3.5" />
+                <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
               ) : (
-                <ChevronDown className="w-3.5 h-3.5" />
+                <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
               )}
             </button>
           )}
