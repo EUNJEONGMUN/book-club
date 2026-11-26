@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import * as Sentry from '@sentry/nextjs';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
 import { Globe, Lock, Loader2, Trash2, VenetianMask } from 'lucide-react';
 import { upsertMyReview, deleteMyReview } from '@/lib/actions/reviews';
+import { formatMeetingDate } from '@/lib/meeting-time';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -189,7 +188,7 @@ export function MeetingReviews({ meetingId, initialOwn, others, isPastMeeting }:
                   <div className="flex items-baseline gap-2">
                     <p className="text-sm font-semibold text-foreground truncate">{r.display_name}</p>
                     <p className="text-xs text-muted-foreground tabular-nums shrink-0">
-                      {format(new Date(r.updated_at), 'yyyy.MM.dd', { locale: ko })}
+                      {formatMeetingDate(r.updated_at)}
                     </p>
                   </div>
                   <p className="text-sm text-foreground mt-0.5 whitespace-pre-wrap">{r.content}</p>

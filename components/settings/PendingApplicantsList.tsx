@@ -4,9 +4,8 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Check, X, Loader2, UserPlus } from 'lucide-react';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
 import { approveMember, rejectMember } from '@/lib/actions/club';
+import { formatMeetingDateTime } from '@/lib/meeting-time';
 import { Button } from '@/components/ui/button';
 import type { PendingApplicant } from '@/lib/queries/members';
 
@@ -78,7 +77,7 @@ export function PendingApplicantsList({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{a.display_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(a.joined_at), 'yyyy-MM-dd HH:mm', { locale: ko })}
+                    {formatMeetingDateTime(a.joined_at)}
                   </p>
                 </div>
                 <Button

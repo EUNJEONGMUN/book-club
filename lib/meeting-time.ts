@@ -30,3 +30,14 @@ export function getKoreanMeetingDayDifference(scheduledAt: string, now = new Dat
 export function hasMeetingStarted(scheduledAt: string, now = Date.now()): boolean {
   return Date.parse(scheduledAt) <= now;
 }
+
+/** `2026.11.22` — 한줄 평 등 날짜만 필요한 자리. */
+export function formatMeetingDate(value: string | Date): string {
+  return getKoreanMeetingDateTime(value).date.replace(/-/g, '.');
+}
+
+/** `2026-11-22 14:30` — 신청자 접수 시각 등 분까지 필요한 자리. */
+export function formatMeetingDateTime(value: string | Date): string {
+  const { date, time } = getKoreanMeetingDateTime(value);
+  return `${date} ${time}`;
+}

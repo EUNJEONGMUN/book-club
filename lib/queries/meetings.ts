@@ -1,6 +1,8 @@
 import { getSupabaseServer } from '@/lib/supabase/server';
 import type { Meeting, Profile, DiscussionQuestion, Attendance } from '@/lib/types';
 
+const MEETING_WITH_HOST = '*, host:profiles!meetings_host_id_fkey(*)' as const;
+
 export type MeetingDetail = Meeting & {
   host: Profile;
   questions: DiscussionQuestion[];
@@ -17,7 +19,7 @@ export async function getNextMeeting(): Promise<NextMeetingWithAttendance | null
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
-    .select('*, host:profiles!meetings_host_id_fkey(*), discussion_questions(count), attendances(*, profile:profiles(*))')
+    .select(`${MEETING_WITH_HOST}, discussion_questions(count), attendances(*, profile:profiles(*))`)
     .gte('scheduled_at', new Date().toISOString())
     .order('scheduled_at', { ascending: true })
     .limit(1)
@@ -32,7 +34,7 @@ export async function getUpcomingMeetings(now: Date): Promise<Array<Meeting & { 
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
-    .select('*, host:profiles!meetings_host_id_fkey(*)')
+    .select(MEETING_WITH_HOST)
     .gte('scheduled_at', now.toISOString())
     .order('scheduled_at', { ascending: true });
   if (error) throw error;
@@ -59,7 +61,7 @@ export async function getPastMeetings(year: number, now: Date): Promise<Array<Me
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
-    .select('*, host:profiles!meetings_host_id_fkey(*)')
+    .select(MEETING_WITH_HOST)
     .gte('scheduled_at', start.toISOString())
     .lt('scheduled_at', end.toISOString())
     .order('scheduled_at', { ascending: false });
@@ -71,12 +73,7 @@ export async function getMeetingDetail(id: string): Promise<MeetingDetail | null
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
-    .select(`
-      *,
-      host:profiles!meetings_host_id_fkey(*),
-      questions:discussion_questions(*),
-      attendances(*, profile:profiles(*))
-    `)
+    .select(`${MEETING_WITH_HOST}, questions:discussion_questions(*), attendances(*, profile:profiles(*))`)
     .eq('id', id)
     .maybeSingle();
   if (error) throw error;
@@ -90,7 +87,7 @@ export async function getHostedMeetings(userId: string): Promise<Array<Meeting &
   const supabase = await getSupabaseServer();
   const { data, error } = await supabase
     .from('meetings')
-    .select('*, host:profiles!meetings_host_id_fkey(*)')
+    .select(MEETING_WITH_HOST)
     .eq('host_id', userId)
     .order('scheduled_at', { ascending: false });
   if (error) throw error;
